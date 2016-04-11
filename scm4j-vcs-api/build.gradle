@@ -1,0 +1,39 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'eclipse'
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
+
+configurations {
+	providedCompile
+}
+
+eclipse {
+	classpath {
+		downloadJavadoc = true
+		plusConfigurations += [configurations.providedCompile]
+	}
+}
+
+tasks.eclipse.dependsOn(cleanEclipse)
+
+repositories {
+	mavenCentral()
+}
+
+defaultTasks 'ide'
+
+dependencies {
+    compile 'junit:junit:4.12'
+    compile 'commons-logging:commons-logging:1.1.1'
+    compile 'commons-io:commons-io:2.4'
+}
+
+task ide(dependsOn: [tasks.eclipse, build]) {
+	group = 'IDE'
+	description = 'preparing for work in the development environment'
+}
+
+
+
