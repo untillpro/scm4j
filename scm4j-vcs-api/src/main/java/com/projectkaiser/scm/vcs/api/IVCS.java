@@ -6,5 +6,4 @@ public interface IVCS {
 	void deleteBranch(String branchUrl, String commitMessage);
 	void setCredentials(String user, String password);
 	void setProxy(String host, int port, String proxyUser, String proxyPassword);
-	void test();
 }
