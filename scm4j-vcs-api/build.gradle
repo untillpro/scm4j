@@ -17,8 +17,6 @@ dependencies {
     compile 'commons-io:commons-io:2.4'
 }
 
-//build.dependsOn javadocJar
-
 task sourcesJar(type: Jar, dependsOn: classes) {
 	classifier = 'sources'
 	from sourceSets.main.allSource

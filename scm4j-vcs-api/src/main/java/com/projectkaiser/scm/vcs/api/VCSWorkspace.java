@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.apache.commons.io.FileUtils;
+
 public class VCSWorkspace {
 	private File folder;
 	private Boolean isCorrupt = false;
@@ -38,7 +40,7 @@ public class VCSWorkspace {
 		try {
 			lockedFileStream.close();
 			if (isCorrupt) {
-				folder.delete();
+				FileUtils.deleteDirectory(folder);
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
