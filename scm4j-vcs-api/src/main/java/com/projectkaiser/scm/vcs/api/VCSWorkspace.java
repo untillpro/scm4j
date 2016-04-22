@@ -9,17 +9,12 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 
 public class VCSWorkspace {
-	private File folder;
 	private Boolean isCorrupt = false;
-	private FileOutputStream lockedFileStream;
+	private VCSLockData lockData;
 
 
 	public File getFolder() {
-		return folder;
-	}
-
-	public void setFolder(File folder) {
-		this.folder = folder;
+		return lockData.getFolder();
 	}
 
 	public Boolean getIsBroken() {
@@ -30,17 +25,17 @@ public class VCSWorkspace {
 		this.isCorrupt = isBroken;
 	}
 
-	public VCSWorkspace(VCSLockedData lockData) {
+	public VCSWorkspace(VCSLockData lockData) {
 		super();
-		this.folder = lockData.getFolder();
-		this.lockedFileStream = lockData.getLockedStream();
+		this.lockData = lockData;
 	}
 	
 	public void unlock() {
 		try {
-			lockedFileStream.close();
+			lockData.getLockedStream().close();
 			if (isCorrupt) {
-				FileUtils.deleteDirectory(folder);
+				FileUtils.deleteDirectory(lockData.getFolder());
+				lockData.getLockFile().delete();
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -53,11 +48,11 @@ public class VCSWorkspace {
 			workspaceBaseFolder.mkdirs();
 		}
 		
-		VCSLockedData data = getLockedDirStream(workspaceBaseFolder);
+		VCSLockData data = getLockedDirStream(workspaceBaseFolder);
 		return new VCSWorkspace(data);
 	}
 
-	private static VCSLockedData getLockedDirStream(File workspaceBaseFolder) {
+	private static VCSLockData getLockedDirStream(File workspaceBaseFolder) {
 		File[] files = workspaceBaseFolder.listFiles();
 		for (File file : files) {
 			if (file.isDirectory()) {
@@ -68,8 +63,7 @@ public class VCSWorkspace {
 					}
 					try {
 						FileOutputStream s = new FileOutputStream(lockFile, false);
-						VCSLockedData res = new VCSLockedData(file, s);
-						return res;
+						return new VCSLockData(file, s, lockFile);
 					} catch (SecurityException e) {
 						continue;
 					}
@@ -90,6 +84,6 @@ public class VCSWorkspace {
 			throw new RuntimeException(e);
 		}
 		
-		return new VCSLockedData(newFolder, s);
+		return new VCSLockData(newFolder, s, lockFile);
 	}
 }
