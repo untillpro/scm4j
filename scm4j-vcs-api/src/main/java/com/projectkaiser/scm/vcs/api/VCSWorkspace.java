@@ -86,4 +86,9 @@ public class VCSWorkspace {
 		
 		return new VCSLockData(newFolder, s, lockFile);
 	}
+
+	@Override
+	public String toString() {
+		return "VCSWorkspace [isCorrupt=" + isCorrupt + ", folder=" + lockData.getFolder().toString() + "]";
+	}
 }

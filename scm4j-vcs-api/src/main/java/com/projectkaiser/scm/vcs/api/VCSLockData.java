@@ -37,5 +37,4 @@ public class VCSLockData {
 		this.lockedStream = lockedStream;
 		this.lockFile = lockFile;
 	}
-
 }
