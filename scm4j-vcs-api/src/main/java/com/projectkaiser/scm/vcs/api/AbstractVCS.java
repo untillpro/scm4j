@@ -9,20 +9,20 @@ import org.apache.commons.logging.Log;
 public abstract class AbstractVCS {
 	protected String repoFolder;
 	protected Log logger;
-	protected String trunkUrl;
+	protected String baseUrl;
 	protected String workspaceBasePath;
 		
-	public AbstractVCS(Log logger, String workspaceBasePath, String trunkUrl) {
-		repoFolder = getRepoFolder(workspaceBasePath, trunkUrl);
+	public AbstractVCS(Log logger, String workspaceBasePath, String baseUrl) {
+		repoFolder = getRepoFolder(workspaceBasePath, baseUrl);
 		this.logger = logger;
-		this.trunkUrl = trunkUrl;
+		this.baseUrl = baseUrl;
 		this.workspaceBasePath = workspaceBasePath;
 	}
 	
-	private String getRepoFolder(String workspaceBasePath, String trunkUrl) {
+	private String getRepoFolder(String workspaceBasePath, String baseUrl) {
 		URI uri;
 		try {
-			uri = new URI(trunkUrl);
+			uri = new URI(baseUrl);
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}

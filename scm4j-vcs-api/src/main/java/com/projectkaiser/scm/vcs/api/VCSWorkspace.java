@@ -1,69 +1,92 @@
 package com.projectkaiser.scm.vcs.api;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 
 public class VCSWorkspace {
+
+	public static final String LOCK_FILE_PREFIX = "lock_";
+
 	private Boolean isCorrupt = false;
-	private VCSLockData lockData;
-
-
-	public File getFolder() {
-		return lockData.getFolder();
+	private File folder;
+	private FileOutputStream lockedStream;
+	private File lockFile;
+	private FileLock fileLock;
+	
+	public File getLockFile() {
+		return lockFile;
 	}
 
-	public Boolean getIsBroken() {
-		return isCorrupt;
+	public void setLockFile(File lockFile) {
+		this.lockFile = lockFile;
+	}
+
+	public File getFolder() {
+		return folder;
+	}
+
+	public void setFolder(File folder) {
+		this.folder = folder;
 	}
 
 	public void setIsCorrupt(Boolean isBroken) {
 		this.isCorrupt = isBroken;
 	}
 
-	public VCSWorkspace(VCSLockData lockData) {
-		super();
-		this.lockData = lockData;
+	private VCSWorkspace(File folder, FileOutputStream lockedStream, File lockFile, FileLock fileLock) {
+		this.folder = folder;
+		this.lockedStream = lockedStream;
+		this.lockFile = lockFile;
+		this.fileLock = fileLock;
 	}
-	
+
+	public Boolean getIsCorrupt() {
+		return isCorrupt;
+	}
+
 	public void unlock() {
 		try {
-			lockData.getLockedStream().close();
+			fileLock.close();
+			lockedStream.close();
 			if (isCorrupt) {
-				FileUtils.deleteDirectory(lockData.getFolder());
-				lockData.getLockFile().delete();
+				FileUtils.deleteDirectory(folder);
+				lockFile.delete();
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public static VCSWorkspace getLockedWorkspace(String workspaceBasePath) {
 		File workspaceBaseFolder = new File(workspaceBasePath);
 		if (!workspaceBaseFolder.exists()) {
 			workspaceBaseFolder.mkdirs();
 		}
-		
-		VCSLockData data = getLockedDirStream(workspaceBaseFolder);
-		return new VCSWorkspace(data);
-	}
 
-	private static VCSLockData getLockedDirStream(File workspaceBaseFolder) {
 		File[] files = workspaceBaseFolder.listFiles();
 		for (File file : files) {
 			if (file.isDirectory()) {
-				File lockFile = new File(workspaceBaseFolder, "lock_" + file.getName());
+				File lockFile = new File(workspaceBaseFolder, LOCK_FILE_PREFIX + file.getName());
 				try {
 					if (!lockFile.exists()) {
 						lockFile.createNewFile();
 					}
+
 					try {
 						FileOutputStream s = new FileOutputStream(lockFile, false);
-						return new VCSLockData(file, s, lockFile);
+						try {
+							FileLock fileLock = s.getChannel().lock();
+							return new VCSWorkspace(file, s, lockFile, fileLock);
+						} catch (OverlappingFileLockException e) {
+							s.close();
+							continue;
+						}
 					} catch (SecurityException e) {
 						continue;
 					}
@@ -72,23 +95,30 @@ public class VCSWorkspace {
 				}
 			}
 		}
-		
+
 		String guid = UUID.randomUUID().toString();
 		File newFolder = new File(workspaceBaseFolder, guid);
 		newFolder.mkdirs();
 		FileOutputStream s;
-		File lockFile = new File(workspaceBaseFolder, "lock_" + newFolder.getName());
+		File lockFile = new File(workspaceBaseFolder, LOCK_FILE_PREFIX + newFolder.getName());
+
 		try {
 			s = new FileOutputStream(lockFile, false);
-		} catch (FileNotFoundException e) {
+			try {
+				FileLock fileLock = s.getChannel().lock();
+				return new VCSWorkspace(newFolder, s, lockFile, fileLock);
+			} catch (Exception e) {
+				s.close();
+				throw new RuntimeException(e);
+			}
+
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
-		return new VCSLockData(newFolder, s, lockFile);
 	}
 
 	@Override
 	public String toString() {
-		return "VCSWorkspace [isCorrupt=" + isCorrupt + ", folder=" + lockData.getFolder().toString() + "]";
+		return "VCSWorkspace [isCorrupt=" + isCorrupt + ", folder=" + folder.toString() + "]";
 	}
 }
