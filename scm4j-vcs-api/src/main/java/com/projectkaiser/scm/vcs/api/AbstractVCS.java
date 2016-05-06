@@ -30,4 +30,8 @@ public abstract class AbstractVCS {
 		path = path.replaceAll("[^a-zA-Z0-9.-]", "_");
 		return FilenameUtils.concat(workspaceBasePath, path);
 	}
+	
+	public String getBaseUrl() {
+		return baseUrl;
+	}
 }

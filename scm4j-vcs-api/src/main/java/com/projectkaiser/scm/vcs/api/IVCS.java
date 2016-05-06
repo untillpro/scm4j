@@ -11,8 +11,6 @@ public interface IVCS {
 
 	void setProxy(String host, int port, String proxyUser, String proxyPassword);
 
-	VCSWorkspace getWorkspace();
-
 	String getBaseUrl();
 
 	String getFileContent(String filePath);
