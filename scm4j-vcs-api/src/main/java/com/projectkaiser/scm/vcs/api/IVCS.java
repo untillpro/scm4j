@@ -13,7 +13,7 @@ public interface IVCS {
 
 	String getBaseUrl();
 
-	String getFileContent(String filePath);
+	String getFileContent(String branchName, String filePath, String encoding);
 
-	void setFileContent(String filePath, String content, String commitMessage);
+	void setFileContent(String branchName, String filePath, String content, String commitMessage);
 }
