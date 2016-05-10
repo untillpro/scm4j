@@ -68,7 +68,7 @@ public class VCSWorkspace {
 		if (!workspaceBaseFolder.exists()) {
 			workspaceBaseFolder.mkdirs();
 		}
-
+		
 		File[] files = workspaceBaseFolder.listFiles();
 		for (File file : files) {
 			if (file.isDirectory()) {
