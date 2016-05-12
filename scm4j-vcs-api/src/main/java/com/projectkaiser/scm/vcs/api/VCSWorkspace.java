@@ -18,6 +18,11 @@ public class VCSWorkspace {
 	private FileOutputStream lockedStream;
 	private File lockFile;
 	private FileLock fileLock;
+	private VCSWorkspaceState state = VCSWorkspaceState.NOT_INITIALIZED;
+	
+	public VCSWorkspaceState getState() {
+		return state;
+	}
 	
 	public File getLockFile() {
 		return lockFile;
@@ -44,6 +49,7 @@ public class VCSWorkspace {
 		this.lockedStream = lockedStream;
 		this.lockFile = lockFile;
 		this.fileLock = fileLock;
+		state = VCSWorkspaceState.LOCKED;
 	}
 
 	public Boolean getIsCorrupt() {
@@ -54,6 +60,7 @@ public class VCSWorkspace {
 		try {
 			fileLock.close();
 			lockedStream.close();
+			state = VCSWorkspaceState.RELEASED;
 			if (isCorrupt) {
 				FileUtils.deleteDirectory(folder);
 				lockFile.delete();
