@@ -22,17 +22,18 @@ public class VCSWorkspaceTest {
 	}
 	
 	@Test 
-	public void testWrokspaceCreate() {
+	public void testBasicWorkspaceWorkflow() {
 		VCSWorkspace workspace = VCSWorkspace.getLockedWorkspace(WORKSPACE_DIR);
 		try {
 			assertTrue(workspace.getFolder().exists());
 			assertTrue(workspace.getFolder().getParentFile().getAbsolutePath().equals(WORKSPACE_DIR));
-			assertFalse(workspace.getIsCorrupt());
+			assertFalse(workspace.getCorrupt());
 			assertTrue(workspace.getLockFile().exists());
 			assertTrue(workspace.getLockFile().getName().equals(VCSWorkspace.LOCK_FILE_PREFIX + workspace.getFolder().getName()));
 		} finally {
 			workspace.unlock();
 		}
+		assertEquals(workspace.getState(), VCSWorkspaceState.OBSOLETE);
 	}
 	
 	@Test
@@ -65,7 +66,7 @@ public class VCSWorkspaceTest {
 	@Test 
 	public void testCorruptingWorkspace() {
 		VCSWorkspace workspace = VCSWorkspace.getLockedWorkspace(WORKSPACE_DIR);
-		workspace.setIsCorrupt(true);
+		workspace.setCorrupt(true);
 		workspace.unlock();
 		
 		assertFalse(workspace.getFolder().exists());

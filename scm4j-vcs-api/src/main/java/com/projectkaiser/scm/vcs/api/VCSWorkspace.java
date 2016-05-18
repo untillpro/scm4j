@@ -13,7 +13,7 @@ public class VCSWorkspace {
 
 	public static final String LOCK_FILE_PREFIX = "lock_";
 
-	private Boolean isCorrupt = false;
+	private Boolean corrupt = false;
 	private File folder;
 	private FileOutputStream lockedStream;
 	private File lockFile;
@@ -40,8 +40,8 @@ public class VCSWorkspace {
 		this.folder = folder;
 	}
 
-	public void setIsCorrupt(Boolean isBroken) {
-		this.isCorrupt = isBroken;
+	public void setCorrupt(Boolean isCorrupt) {
+		this.corrupt = isCorrupt;
 	}
 
 	private VCSWorkspace(File folder, FileOutputStream lockedStream, File lockFile, FileLock fileLock) {
@@ -52,16 +52,16 @@ public class VCSWorkspace {
 		state = VCSWorkspaceState.LOCKED;
 	}
 
-	public Boolean getIsCorrupt() {
-		return isCorrupt;
+	public Boolean getCorrupt() {
+		return corrupt;
 	}
 
 	public void unlock() {
 		try {
 			fileLock.close();
 			lockedStream.close();
-			state = VCSWorkspaceState.RELEASED;
-			if (isCorrupt) {
+			state = VCSWorkspaceState.OBSOLETE;
+			if (corrupt) {
 				FileUtils.deleteDirectory(folder);
 				lockFile.delete();
 			}
@@ -126,6 +126,6 @@ public class VCSWorkspace {
 
 	@Override
 	public String toString() {
-		return "VCSWorkspace [isCorrupt=" + isCorrupt + ", folder=" + folder.toString() + "]";
+		return "VCSWorkspace [corrupt=" + corrupt + ", state=" + state.toString() + ", folder=" + folder.toString() + "]";
 	}
 }
