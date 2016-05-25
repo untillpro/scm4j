@@ -5,15 +5,15 @@ import java.util.List;
 
 public class PKVCSMergeResult {
 
-	private Boolean isSuccess;
+	private Boolean success;
 	private List<String> conflictingFiles = new ArrayList<String>();
 
-	public Boolean getIsSuccess() {
-		return isSuccess;
+	public Boolean getSuccess() {
+		return success;
 	}
 
-	public void setIsSuccess(Boolean isSuccess) {
-		this.isSuccess = isSuccess;
+	public void setSuccess(Boolean success) {
+		this.success = success;
 	}
 
 	public List<String> getConflictingFiles() {
