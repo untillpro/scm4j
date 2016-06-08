@@ -7,5 +7,9 @@ public class EVCSException extends RuntimeException {
 	public EVCSException(Exception e) {
 		super(e);
 	}
+	
+	public EVCSException(String message) {
+		super(message);
+	}
 
 }

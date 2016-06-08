@@ -7,5 +7,8 @@ public class EVCSFileNotFound extends EVCSException {
 	public EVCSFileNotFound(Exception e) {
 		super(e);
 	}
-
+	
+	public EVCSFileNotFound(String message) {
+		super(message);
+	}
 }
