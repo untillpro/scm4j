@@ -23,7 +23,9 @@ public class VCSWorkspaceTest {
 	
 	@Test 
 	public void testBasicWorkspaceWorkflow() {
+		
 		VCSWorkspace workspace = VCSWorkspace.getLockedWorkspace(WORKSPACE_DIR);
+		assertEquals(workspace.getState(), VCSWorkspaceState.LOCKED);
 		try {
 			assertTrue(workspace.getFolder().exists());
 			assertTrue(workspace.getFolder().getParentFile().getAbsolutePath().equals(WORKSPACE_DIR));
@@ -32,6 +34,8 @@ public class VCSWorkspaceTest {
 			assertTrue(workspace.getLockFile().getName().equals(VCSWorkspace.LOCK_FILE_PREFIX + workspace.getFolder().getName()));
 		} finally {
 			workspace.unlock();
+			assertEquals(workspace.getState(), VCSWorkspaceState.OBSOLETE);
+			workspace.unlock(); //nothing should happen
 		}
 		assertEquals(workspace.getState(), VCSWorkspaceState.OBSOLETE);
 	}

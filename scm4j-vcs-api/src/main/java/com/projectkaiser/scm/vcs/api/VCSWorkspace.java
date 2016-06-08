@@ -57,6 +57,10 @@ public class VCSWorkspace {
 	}
 
 	public void unlock() {
+		if (state != VCSWorkspaceState.LOCKED) {
+			return;
+		}
+		
 		try {
 			fileLock.close();
 			lockedStream.close();
