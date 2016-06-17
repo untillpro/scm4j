@@ -14,7 +14,7 @@ public interface IVCS {
 	String getBaseUrl();
 
 	String getFileContent(String branchName, String filePath, String encoding);
-	
+
 	String getFileContent(String branchName, String filePath);
 
 	void setFileContent(String branchName, String filePath, String content, String commitMessage);
