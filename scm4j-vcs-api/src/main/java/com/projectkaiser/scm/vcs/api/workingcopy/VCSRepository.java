@@ -11,6 +11,11 @@ public class VCSRepository implements IVCSRepository {
 	IVCSWorkspace workspace;
 	String repoUrl;
 	File repoFolder;
+	IVCSLockedWorkingCopy mockedLWC;
+	
+	public VCSRepository(String repoUrl, String workspacePath) {
+		this(repoUrl, new VCSWorkspace(workspacePath));
+	}
 
 	public VCSRepository(String repoUrl, IVCSWorkspace workspace) {
 		this.workspace = workspace;
@@ -29,7 +34,11 @@ public class VCSRepository implements IVCSRepository {
 
 	@Override
 	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() {
-		return new VCSLockedWorkingCopy(this);
+		return mockedLWC == null ? new VCSLockedWorkingCopy(this) : mockedLWC;
+	}
+	
+	public void setMockedLWC(IVCSLockedWorkingCopy mockedLWC) {
+		this.mockedLWC = mockedLWC;
 	}
 	
 	private String getRepoFolderName() {
@@ -53,6 +62,11 @@ public class VCSRepository implements IVCSRepository {
 	@Override
 	public File getRepoFolder() {
 		return repoFolder;
+	}
+
+	@Override
+	public String getRepoUrl() {
+		return repoUrl;
 	}
 
 }

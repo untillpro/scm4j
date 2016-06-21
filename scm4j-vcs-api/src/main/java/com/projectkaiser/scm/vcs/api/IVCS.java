@@ -11,11 +11,11 @@ public interface IVCS {
 
 	void setProxy(String host, int port, String proxyUser, String proxyPassword);
 
-	String getBaseUrl();
+	String getRepoUrl();
 
-	String getFileContent(String branchName, String filePath, String encoding);
+	String getFileContent(String branchName, String fileRelativePath, String encoding);
 
-	String getFileContent(String branchName, String filePath);
+	String getFileContent(String branchName, String fileRelativePath);
 
 	void setFileContent(String branchName, String filePath, String content, String commitMessage);
 }

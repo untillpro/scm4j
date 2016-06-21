@@ -9,5 +9,7 @@ public interface IVCSRepository {
 	File getRepoFolder();
 
 	IVCSWorkspace getWorkspace();
+	
+	String getRepoUrl();
 
 }
