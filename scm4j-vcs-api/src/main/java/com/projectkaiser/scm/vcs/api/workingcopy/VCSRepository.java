@@ -11,8 +11,7 @@ public class VCSRepository implements IVCSRepository {
 	IVCSWorkspace workspace;
 	String repoUrl;
 	File repoFolder;
-	IVCSLockedWorkingCopy mockedLWC;
-	
+
 	public VCSRepository(String repoUrl, String workspacePath) {
 		this(repoUrl, new VCSWorkspace(workspacePath));
 	}
@@ -34,17 +33,13 @@ public class VCSRepository implements IVCSRepository {
 
 	@Override
 	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() {
-		return mockedLWC == null ? new VCSLockedWorkingCopy(this) : mockedLWC;
+		return new VCSLockedWorkingCopy(this);
 	}
-	
-	public void setMockedLWC(IVCSLockedWorkingCopy mockedLWC) {
-		this.mockedLWC = mockedLWC;
-	}
-	
+
 	private String getRepoFolderName() {
 		URI uri;
 		try {
-			uri = new URI(repoUrl.replace("\\",  "/"));
+			uri = new URI(repoUrl.replace("\\", "/"));
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
@@ -52,7 +47,7 @@ public class VCSRepository implements IVCSRepository {
 		path = path.replaceAll("[^a-zA-Z0-9.-]", "_");
 		return FilenameUtils.concat(workspace.getFolder().getPath(), path);
 	}
-	
+
 	private void initRepoFolder() {
 		String repoFolderName = getRepoFolderName();
 		repoFolder = new File(repoFolderName);
