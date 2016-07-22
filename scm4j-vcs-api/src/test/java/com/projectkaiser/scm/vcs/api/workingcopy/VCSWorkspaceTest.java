@@ -13,7 +13,7 @@ public class VCSWorkspaceTest extends VCSTestBase {
 	@Test
 	public void testWorkspace() {
 		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
-		assertTrue(w.getFolder().exists());
-		assertNotNull(w.getVCSRepository(""));
+		assertTrue(w.getHomeFolder().exists());
+		assertNotNull(w.getVCSRepositoryWorkspace(""));
 	}
 }

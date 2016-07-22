@@ -11,7 +11,7 @@ import org.apache.commons.io.FileUtils;
 
 public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseable {
 	
-	private IVCSRepository vcsRepo;
+	private IVCSRepositoryWorkspace vcsRepo;
 
 	public static final String LOCK_FILE_PREFIX = "lock_";
 
@@ -36,24 +36,35 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 	}
 
 	@Override
-	public void setCorrupt(Boolean isCorrupt) {
+	public void setCorrupted(Boolean isCorrupt) {
 		this.corrupt = isCorrupt;
 	}
 	
-	public VCSLockedWorkingCopy (IVCSRepository vcsRepo) {
+	/**
+	 * Instantiates a new VCS locked working copy.
+	 *
+	 * @param vcsRepo the vcs repo
+	 */
+	public VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo) {
 		this.vcsRepo = vcsRepo;
 		init();
 	}
 	
+	/**
+	 * Instantiates a new VCS locked working copy.
+	 *
+	 * @param workspacePath the workspace path
+	 * @param repoUrl the repo url
+	 */
 	public VCSLockedWorkingCopy(String workspacePath, String repoUrl) {
 		IVCSWorkspace w = new VCSWorkspace(workspacePath);
-		IVCSRepository r = new VCSRepository(repoUrl, w);
+		IVCSRepositoryWorkspace r = new VCSRepositoryWorkspace(repoUrl, w);
 		this.vcsRepo = r;
 		init();
 	}
 	
 	@Override
-	public Boolean getCorrupt() {
+	public Boolean getCorrupted() {
 		return corrupt;
 	}
 
@@ -138,7 +149,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 	}
 
 	@Override
-	public IVCSRepository getVCSRepository() {
+	public IVCSRepositoryWorkspace getVCSRepository() {
 		return vcsRepo;
 	}
 }

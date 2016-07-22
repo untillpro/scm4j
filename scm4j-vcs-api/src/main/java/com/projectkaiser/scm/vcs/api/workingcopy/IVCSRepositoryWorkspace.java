@@ -2,7 +2,7 @@ package com.projectkaiser.scm.vcs.api.workingcopy;
 
 import java.io.File;
 
-public interface IVCSRepository {
+public interface IVCSRepositoryWorkspace {
 
 	IVCSLockedWorkingCopy getVCSLockedWorkingCopy();
 

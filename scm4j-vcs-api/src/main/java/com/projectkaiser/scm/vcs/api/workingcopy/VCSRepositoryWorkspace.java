@@ -6,17 +6,17 @@ import java.net.URISyntaxException;
 
 import org.apache.commons.io.FilenameUtils;
 
-public class VCSRepository implements IVCSRepository {
+public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
 	IVCSWorkspace workspace;
 	String repoUrl;
 	File repoFolder;
 
-	public VCSRepository(String repoUrl, String workspacePath) {
+	public VCSRepositoryWorkspace(String repoUrl, String workspacePath) {
 		this(repoUrl, new VCSWorkspace(workspacePath));
 	}
 
-	public VCSRepository(String repoUrl, IVCSWorkspace workspace) {
+	public VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace) {
 		this.workspace = workspace;
 		this.repoUrl = repoUrl;
 		initRepoFolder();
@@ -45,13 +45,14 @@ public class VCSRepository implements IVCSRepository {
 		}
 		String path = uri.getPath();
 		path = path.replaceAll("[^a-zA-Z0-9.-]", "_");
-		return FilenameUtils.concat(workspace.getFolder().getPath(), path);
+		return FilenameUtils.concat(workspace.getHomeFolder().getPath(), path);
 	}
 
 	private void initRepoFolder() {
 		String repoFolderName = getRepoFolderName();
 		repoFolder = new File(repoFolderName);
 		repoFolder.mkdirs();
+		// FIXME: check multithreading
 	}
 
 	@Override

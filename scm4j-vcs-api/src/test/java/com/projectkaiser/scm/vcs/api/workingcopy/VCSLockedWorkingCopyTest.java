@@ -6,22 +6,22 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.projectkaiser.scm.vcs.api.workingcopy.IVCSLockedWorkingCopy;
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSRepository;
+import com.projectkaiser.scm.vcs.api.workingcopy.IVCSRepositoryWorkspace;
 import com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace;
 import com.projectkaiser.scm.vcs.api.workingcopy.VCSLockedWorkingCopy;
 import com.projectkaiser.scm.vcs.api.workingcopy.VCSLockedWorkingCopyState;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSRepository;
+import com.projectkaiser.scm.vcs.api.workingcopy.VCSRepositoryWorkspace;
 import com.projectkaiser.scm.vcs.api.workingcopy.VCSWorkspace;
 
 public class VCSLockedWorkingCopyTest extends VCSTestBase {
 	
 	private IVCSWorkspace w;
-	private IVCSRepository r;
+	private IVCSRepositoryWorkspace r;
 	
 	@Before
 	public void setUp() {
 		w = new VCSWorkspace(WORKSPACE_DIR);
-		r = new VCSRepository(TEST_REPO_URL, w);
+		r = new VCSRepositoryWorkspace(TEST_REPO_URL, w);
 	}
 	
 	@Test 
@@ -34,7 +34,7 @@ public class VCSLockedWorkingCopyTest extends VCSTestBase {
 				}
 				assertTrue(wc.getFolder().exists());
 				assertEquals(wc.getState(),  VCSLockedWorkingCopyState.LOCKED);
-				assertFalse(wc.getCorrupt());
+				assertFalse(wc.getCorrupted());
 				assertTrue(wc.getLockFile().exists());
 				assertTrue(wc.getLockFile().getName().equals(VCSLockedWorkingCopy.LOCK_FILE_PREFIX + wc.getFolder().getName()));
 				wc.close();
@@ -73,7 +73,7 @@ public class VCSLockedWorkingCopyTest extends VCSTestBase {
 	@Test 
 	public void testCorruptingWorkspace() throws Exception {
 		VCSLockedWorkingCopy workspace = new VCSLockedWorkingCopy(r);
-		workspace.setCorrupt(true);
+		workspace.setCorrupted(true);
 		workspace.close();
 		assertFalse(workspace.getFolder().exists());
 		assertFalse(workspace.getLockFile().exists());

@@ -4,8 +4,8 @@ import java.io.File;
 
 public interface IVCSWorkspace {
 
-	IVCSRepository getVCSRepository(String repoUrl);
+	IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl);
 	
-	File getFolder();
+	File getHomeFolder();
 
 }

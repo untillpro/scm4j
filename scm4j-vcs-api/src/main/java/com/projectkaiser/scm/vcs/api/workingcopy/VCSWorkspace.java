@@ -2,17 +2,23 @@ package com.projectkaiser.scm.vcs.api.workingcopy;
 
 import java.io.File;
 
+/**
+ * The Class VCSWorkspace.
+ */
 public class VCSWorkspace implements IVCSWorkspace {
 
 	File folder;
 
+	/* (non-Javadoc)
+	 * @see com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace#getVCSRepositoryWorkspace(java.lang.String)
+	 */
 	@Override
-	public IVCSRepository getVCSRepository(String repoUrl) {
-		return new VCSRepository(repoUrl, this);
+	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl) {
+		return new VCSRepositoryWorkspace(repoUrl, this);
 	}
 
 	@Override
-	public File getFolder() {
+	public File getHomeFolder() {
 		return folder;
 	}
 

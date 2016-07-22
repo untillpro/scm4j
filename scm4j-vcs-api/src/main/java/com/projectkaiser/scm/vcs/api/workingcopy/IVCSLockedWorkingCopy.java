@@ -6,13 +6,13 @@ public interface IVCSLockedWorkingCopy extends AutoCloseable {
 
 	VCSLockedWorkingCopyState getState();
 
-	IVCSRepository getVCSRepository();
+	IVCSRepositoryWorkspace getVCSRepository();
 
 	File getFolder();
 	
-	Boolean getCorrupt();
+	Boolean getCorrupted();
 	
-	void setCorrupt(Boolean corrupt);
+	void setCorrupted(Boolean corrupted);
 	
 	File getLockFile();
 	
