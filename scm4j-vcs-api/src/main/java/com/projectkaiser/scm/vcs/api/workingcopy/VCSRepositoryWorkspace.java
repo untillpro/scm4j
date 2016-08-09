@@ -12,11 +12,7 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	String repoUrl;
 	File repoFolder;
 
-	public VCSRepositoryWorkspace(String repoUrl, String workspacePath) {
-		this(repoUrl, new VCSWorkspace(workspacePath));
-	}
-
-	public VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace) {
+	protected VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace) {
 		this.workspace = workspace;
 		this.repoUrl = repoUrl;
 		initRepoFolder();

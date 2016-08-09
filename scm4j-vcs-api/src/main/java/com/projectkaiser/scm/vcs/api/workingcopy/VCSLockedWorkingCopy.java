@@ -45,21 +45,8 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 	 *
 	 * @param vcsRepo the vcs repo
 	 */
-	public VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo) {
+	protected VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo) {
 		this.vcsRepo = vcsRepo;
-		init();
-	}
-	
-	/**
-	 * Instantiates a new VCS locked working copy.
-	 *
-	 * @param workspacePath the workspace path
-	 * @param repoUrl the repo url
-	 */
-	public VCSLockedWorkingCopy(String workspacePath, String repoUrl) {
-		IVCSWorkspace w = new VCSWorkspace(workspacePath);
-		IVCSRepositoryWorkspace r = new VCSRepositoryWorkspace(repoUrl, w);
-		this.vcsRepo = r;
 		init();
 	}
 	

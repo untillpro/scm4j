@@ -1,17 +1,12 @@
 package com.projectkaiser.scm.vcs.api.workingcopy;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSLockedWorkingCopy;
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSRepositoryWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSLockedWorkingCopy;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSLockedWorkingCopyState;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSRepositoryWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSWorkspace;
 
 public class VCSLockedWorkingCopyTest extends VCSTestBase {
 	
@@ -21,34 +16,31 @@ public class VCSLockedWorkingCopyTest extends VCSTestBase {
 	@Before
 	public void setUp() {
 		w = new VCSWorkspace(WORKSPACE_DIR);
-		r = new VCSRepositoryWorkspace(TEST_REPO_URL, w);
+		r = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
 	}
 	
 	@Test 
 	public void testBasicWorkspaceWorkflow() throws Exception {
-		for (Integer i = 1; i < 3; i++) {
-			try (IVCSLockedWorkingCopy wc = i == 1 ? new VCSLockedWorkingCopy(r) 
-						: new VCSLockedWorkingCopy(WORKSPACE_DIR, TEST_REPO_URL)) {
-				if (i == 1) {
-					assertEquals(wc.getVCSRepository(), r);
-				}
-				assertTrue(wc.getFolder().exists());
-				assertEquals(wc.getState(),  VCSLockedWorkingCopyState.LOCKED);
-				assertFalse(wc.getCorrupted());
-				assertTrue(wc.getLockFile().exists());
-				assertTrue(wc.getLockFile().getName().equals(VCSLockedWorkingCopy.LOCK_FILE_PREFIX + wc.getFolder().getName()));
-				wc.close();
-				assertEquals(wc.getState(), VCSLockedWorkingCopyState.OBSOLETE);
-				wc.close(); //nothing should happen
-				assertEquals(wc.getState(), VCSLockedWorkingCopyState.OBSOLETE);
-			}
+		try (IVCSLockedWorkingCopy lwc = r.getVCSLockedWorkingCopy()) {
+			assertEquals(lwc.getVCSRepository(), r);
+			assertTrue(lwc.getFolder().exists());
+			assertEquals(lwc.getState(),  VCSLockedWorkingCopyState.LOCKED);
+			assertFalse(lwc.getCorrupted());
+			assertTrue(lwc.getLockFile().exists());
+			assertTrue(lwc.getLockFile().getName().equals(VCSLockedWorkingCopy.LOCK_FILE_PREFIX + lwc.getFolder().getName()));
+			assertFalse(lwc.getLockFile().delete());
+			lwc.close();
+			assertEquals(lwc.getState(), VCSLockedWorkingCopyState.OBSOLETE);
+			assertTrue(lwc.getLockFile().delete());
+			lwc.close(); //nothing should happen
+			assertEquals(lwc.getState(), VCSLockedWorkingCopyState.OBSOLETE);
 		}
 	}
 	
 	@Test
 	public void testLockingFewWorkspaces() throws Exception {
-		try (IVCSLockedWorkingCopy w1 = new VCSLockedWorkingCopy(r)) {
-			try (IVCSLockedWorkingCopy w2 = new VCSLockedWorkingCopy(r)) {
+		try (IVCSLockedWorkingCopy w1 = r.getVCSLockedWorkingCopy()) {
+			try (IVCSLockedWorkingCopy w2 = r.getVCSLockedWorkingCopy()) {
 				assertNotEquals(w1.getFolder().getName(), w2.getFolder().getName());
 				assertNotEquals(w1.getLockFile().getName(), w2.getLockFile().getName());
 			}

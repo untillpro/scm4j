@@ -1,7 +1,6 @@
 package com.projectkaiser.scm.vcs.api.workingcopy;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -13,7 +12,10 @@ public class VCSWorkspaceTest extends VCSTestBase {
 	@Test
 	public void testWorkspace() {
 		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
+		assertEquals(w.getHomeFolder().getAbsolutePath(), WORKSPACE_DIR);
 		assertTrue(w.getHomeFolder().exists());
 		assertNotNull(w.getVCSRepositoryWorkspace(""));
+		assertEquals(w.getVCSRepositoryWorkspace("").getWorkspace(), w);
+		assertEquals(w.getVCSRepositoryWorkspace(TEST_REPO_URL).getRepoUrl(), TEST_REPO_URL);
 	}
 }
