@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api;
+package com.projectkaiser.scm.vcs.api.abstracttest;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.projectkaiser.scm.vcs.api.IVCS;
 import com.projectkaiser.scm.vcs.api.exceptions.EVCSBranchExists;
 import com.projectkaiser.scm.vcs.api.workingcopy.IVCSLockedWorkingCopy;
 import com.projectkaiser.scm.vcs.api.workingcopy.IVCSRepositoryWorkspace;
