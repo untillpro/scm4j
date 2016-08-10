@@ -17,7 +17,7 @@ public enum VCSLockedWorkingCopyState {
 	LOCKED,
 
 	/**
-	 * OBSOLETE state means that {@link IVCSLockedWorkingCopy.close()} method
+	 * OBSOLETE state means that {@link IVCSLockedWorkingCopy#close()}
 	 * had been called and current instance does not corresponds to a locked
 	 * folder anymore. Instance of {@link VCSLockedWorkingCopy} with this state
 	 * should not be used anymore.
