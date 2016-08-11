@@ -15,6 +15,7 @@ repositories {
 dependencies {
     compile 'junit:junit:4.12'
     compile 'org.mockito:mockito-core:2.0.62-beta'
+    compile rootProject
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
