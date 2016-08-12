@@ -21,21 +21,24 @@ sourceSets {
 	}
 }
 
+//jar {
+//    from sourceSets.abstractTest.output
+//    from sourceSets.main.output
+//}
+
 sourceSets.all { set ->
     def jarTask = task("${set.name}Jar", type: Jar) {
         baseName = "$set.name"
         from set.output
     }
+    
+    //println(jarTask)
 
     artifacts {
         archives jarTask
     }
 }
 
-configurations {
-    intTestCompile.extendsFrom testCompile
-    intTestRuntime.extendsFrom testRuntime
-}
 
 //task abstractTestJar (type:Jar, dependsOn: testClasses) {
 //	classifier = 'abstractTest'
@@ -52,6 +55,8 @@ dependencies {
     
     compile 'commons-logging:commons-logging:1.2'
     compile 'commons-io:commons-io:2.4'
+    
+    runtime configurations.abstractTestRuntime
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -65,7 +70,14 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 artifacts {
-	archives sourcesJar
-	archives javadocJar
-//	archives abstractTestJar
+	//archives sourcesJar
+	//archives javadocJar
+	//archives abstractTestJar
+}
+
+install {
+    repositories.mavenInstaller {
+		addFilter('abstractTest') { artifact, file -> artifact.name.endsWith('abstractTest') }
+		addFilter('pk-vcs-api') { artifact, file -> artifact.name.endsWith('main') }
+    }
 }
