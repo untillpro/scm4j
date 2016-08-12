@@ -21,15 +21,26 @@ sourceSets {
 	}
 }
 
+sourceSets.all { set ->
+    def jarTask = task("${set.name}Jar", type: Jar) {
+        baseName = "$set.name"
+        from set.output
+    }
+
+    artifacts {
+        archives jarTask
+    }
+}
+
 configurations {
     intTestCompile.extendsFrom testCompile
     intTestRuntime.extendsFrom testRuntime
 }
 
-task abstractTestJar (type:Jar, dependsOn: testClasses) {
-	classifier = 'abstractTest'
-	from sourceSets.abstractTest.output
-}	
+//task abstractTestJar (type:Jar, dependsOn: testClasses) {
+//	classifier = 'abstractTest'
+//	from sourceSets.abstractTest.output
+//}	
 
 dependencies {
     testCompile 'junit:junit:4.12'
@@ -56,5 +67,5 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
 	archives sourcesJar
 	archives javadocJar
-	archives abstractTestJar
+//	archives abstractTestJar
 }
