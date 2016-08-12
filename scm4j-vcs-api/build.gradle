@@ -69,3 +69,9 @@ artifacts {
 	archives javadocJar
 //	archives abstractTestJar
 }
+
+install {
+    repositories.mavenInstaller {
+		addFilter('abstractTest') { artifact, file -> artifact.name.endsWith('abstractTest') }
+    }
+}
