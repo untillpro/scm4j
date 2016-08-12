@@ -12,9 +12,33 @@ repositories {
 	mavenCentral()
 }
 
+sourceSets {
+	abstractTest {
+		java {
+			srcDir 'src/test/java/com/projectkaiser/scm/vcs/api/abstracttest'
+	
+	    }
+	}
+}
+
+configurations {
+    intTestCompile.extendsFrom testCompile
+    intTestRuntime.extendsFrom testRuntime
+}
+
+task abstractTestJar (type:Jar, dependsOn: testClasses) {
+	classifier = 'abstractTest'
+	from sourceSets.abstractTest.output
+}	
+
 dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.0.62-beta'
+    
+    abstractTestCompile 'junit:junit:4.12'
+    abstractTestCompile 'org.mockito:mockito-core:2.0.62-beta'
+    abstractTestCompile rootProject
+    
     compile 'commons-logging:commons-logging:1.2'
     compile 'commons-io:commons-io:2.4'
 }
@@ -32,4 +56,5 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
 	archives sourcesJar
 	archives javadocJar
+	archives abstractTestJar
 }
