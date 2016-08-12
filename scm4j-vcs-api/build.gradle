@@ -13,11 +13,17 @@ repositories {
 }
 
 sourceSets {
-	abstractTest {
-		java {
-			srcDir 'src/test/java/com/projectkaiser/scm/vcs/api/abstracttest'
+	abstractTest 
+//	{
+//		java {
+//			srcDir 'src/test/java/com/projectkaiser/scm/vcs/api/abstracttest'
 	
-	    }
+//	    }
+//	}
+	api {
+		java {
+			srcDir 'src/main/java/com/projectkaiser/scm/vcs/api'
+		}
 	}
 }
 
@@ -32,7 +38,7 @@ sourceSets.all { set ->
         from set.output
     }
     
-    //println(jarTask)
+    println(jarTask)
 
     artifacts {
         archives jarTask
@@ -49,13 +55,18 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.0.62-beta'
     
-    abstractTestCompile 'junit:junit:4.12'
-    abstractTestCompile 'org.mockito:mockito-core:2.0.62-beta'
-    abstractTestCompile rootProject
-    
     compile 'commons-logging:commons-logging:1.2'
     compile 'commons-io:commons-io:2.4'
     
+    apiCompile 'commons-logging:commons-logging:1.2'
+    apiCompile 'commons-io:commons-io:2.4'
+    
+    abstractTestCompile 'junit:junit:4.12'
+    abstractTestCompile 'org.mockito:mockito-core:2.0.62-beta'
+    abstractTestCompile sourceSets.api.output
+    abstractTestCompile 'commons-io:commons-io:2.4'
+    
+    runtime configurations.apiRuntime
     runtime configurations.abstractTestRuntime
 }
 
@@ -70,14 +81,14 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 artifacts {
-	//archives sourcesJar
-	//archives javadocJar
+	archives sourcesJar
+	archives javadocJar
 	//archives abstractTestJar
 }
 
 install {
     repositories.mavenInstaller {
 		addFilter('abstractTest') { artifact, file -> artifact.name.endsWith('abstractTest') }
-		addFilter('pk-vcs-api') { artifact, file -> artifact.name.endsWith('main') }
+		addFilter('api') { artifact, file -> artifact.name.endsWith('main') }
     }
 }
