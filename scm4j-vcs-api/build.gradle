@@ -14,12 +14,6 @@ repositories {
 
 sourceSets {
 	abstractTest 
-//	{
-//		java {
-//			srcDir 'src/test/java/com/projectkaiser/scm/vcs/api/abstracttest'
-	
-//	    }
-//	}
 	api {
 		java {
 			srcDir 'src/main/java/com/projectkaiser/scm/vcs/api'
@@ -27,29 +21,17 @@ sourceSets {
 	}
 }
 
-//jar {
-//    from sourceSets.abstractTest.output
-//    from sourceSets.main.output
-//}
-
 sourceSets.all { set ->
     def jarTask = task("${set.name}Jar", type: Jar) {
         baseName = "$set.name"
         from set.output
     }
     
-    println(jarTask)
-
     artifacts {
         archives jarTask
     }
 }
 
-
-//task abstractTestJar (type:Jar, dependsOn: testClasses) {
-//	classifier = 'abstractTest'
-//	from sourceSets.abstractTest.output
-//}	
 
 dependencies {
     testCompile 'junit:junit:4.12'
@@ -83,7 +65,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
 	archives sourcesJar
 	archives javadocJar
-	//archives abstractTestJar
+	archives abstractTestJar
 }
 
 install {
