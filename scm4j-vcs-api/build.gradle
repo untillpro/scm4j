@@ -65,7 +65,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
 	archives sourcesJar
 	archives javadocJar
-	archives abstractTestJar
+	//archives abstractTestJar
 }
 
 install {
