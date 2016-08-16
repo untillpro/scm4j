@@ -26,12 +26,47 @@ sourceSets.all { set ->
         baseName = "$set.name"
         from set.output
     }
+
+    def sourcesJarTask = task("${set.name}SourcesJar", type: Jar) {
+        baseName = "$set.name"
+		classifier = 'sources'
+        from set.allSource
+    }
     
     artifacts {
         archives jarTask
+	    archives sourcesJarTask
     }
 }
 
+task apiJavadocTask(type: Javadoc) {
+	source = sourceSets.api.allJava
+	destinationDir = file("${buildDir}/docs/api")
+	classpath = sourceSets.api.compileClasspath
+}
+
+task abstractTestJavadocTask(type: Javadoc) {
+    source = sourceSets.abstractTest.allJava
+    classpath = sourceSets.abstractTest.compileClasspath
+    destinationDir = file("${buildDir}/docs/abstractTest")
+}
+
+task abstractTestJavadocJar(type: Jar, dependsOn: abstractTestJavadocTask) {
+	baseName = sourceSets.abstractTest.name
+	classifier = 'javadoc'
+    from abstractTestJavadocTask.destinationDir
+}
+
+task apiJavadocJar(type: Jar, dependsOn: apiJavadocTask) {
+	baseName = sourceSets.api.name
+	classifier = 'javadoc'
+    from apiJavadocTask.destinationDir
+}
+
+artifacts {
+	archives apiJavadocJar
+	archives abstractTestJavadocJar
+}
 
 dependencies {
     testCompile 'junit:junit:4.12'
@@ -60,12 +95,6 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 task javadocJar(type: Jar, dependsOn: javadoc) {
 	classifier = 'javadoc'
 	from javadoc.destinationDir
-}
-
-artifacts {
-	archives sourcesJar
-	archives javadocJar
-	//archives abstractTestJar
 }
 
 install {
