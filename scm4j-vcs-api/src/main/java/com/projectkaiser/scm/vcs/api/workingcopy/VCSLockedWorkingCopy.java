@@ -40,11 +40,6 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 		this.corrupt = isCorrupt;
 	}
 	
-	/**
-	 * Instantiates a new VCS locked working copy.
-	 *
-	 * @param vcsRepo the vcs repo
-	 */
 	protected VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo) {
 		this.vcsRepo = vcsRepo;
 		init();
