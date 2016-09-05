@@ -1,5 +1,7 @@
 package com.projectkaiser.scm.vcs.api;
 
+import java.util.List;
+
 public interface IVCS {
 	void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage);
 
@@ -18,4 +20,6 @@ public interface IVCS {
 	String getFileContent(String branchName, String fileRelativePath);
 
 	void setFileContent(String branchName, String filePath, String content, String commitMessage);
+	
+	List<String> getBranchesDiff(String srcBranchName, String destBranchName);
 }
