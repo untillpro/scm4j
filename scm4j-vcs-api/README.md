@@ -10,15 +10,33 @@
 	- Named automatically as guid. 
 	- Can be reused for another vcs-related operation by executing switch operation
 	- Deletes automatically if last VCS-related operation left the working copy in corrupted state, i.e. can not be reverted, re-checkouted and so on
-# Using existing IVCS implementations (pk-vcs-git, pk-vcs-svn)
-# Developing IVCS implementation
-- VCS API could be included to any project as maven dependency hosted on github using jitpack.io. Add following to gradle.build file:
+	
+# Using IVCS implementations (pk-vcs-git, pk-vcs-svn)
+- Add github-hosted IVCS implementation as maven artifact using jitpack.io. Add following to gradle.build file:
 	```gradle
 	allprojects {
 		repositories {
 			maven { url "https://jitpack.io" }
-			}
 		}
+	}
+	
+	dependencies {
+		compile 'com.github.ProjectKaiser:pk-vcs-git:master-SNAPSHOT'
+	}
+	```
+- Create IVCSWorkspace instance, provide any folder as workspace folder, e.g. `System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";`
+- Call `IVCSWorkspace.getVCSRepositoryWorkspace()` providing Repository url you want to work with
+	- Repository foldr will be created within Workspace folder
+- 
+
+# Developing IVCS implementation
+- Add github-hosted VCS API as maven artifact using jitpack.io. Add following to gradle.build file:
+	```gradle
+	allprojects {
+		repositories {
+			maven { url "https://jitpack.io" }
+		}
+	}
 	
 	dependencies {
 		compile 'com.github.ProjectKaiser:pk-vcs-api:master-SNAPSHOT'
@@ -28,8 +46,9 @@
 	This will include VCS API (IVCS, LWC) and abstract test to your project. 
 - implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
-	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stores within IVCS implementation. 
-	- Use IVCSRepositoryWorkspace.getLockedWorkingCopy() to obtain LWC to execute VCS-related operation which requires to be execute in separate folder. Note: if IVCSRepositoryWorkspace.getLockedWorkingCopy() was called then IVCSLockedWorkingCopy.close() method must be called. LWC close() call is checked by Abstract Test. Example:
+	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
+	- Use IVCSRepositoryWorkspace.getLockedWorkingCopy() to obtain LWC to execute VCS-related operation which requires to be executed in separate folder. 
+	- Note: if IVCSRepositoryWorkspace.getLockedWorkingCopy() was called then IVCSLockedWorkingCopy.close() must be called. LWC close() call is checked by Abstract Test. Example:
 	```java
 	public class GitVCS implements IVCS {
 		IVCSRepositoryWorkspace repo;
@@ -51,7 +70,10 @@
 	} 
 	```	
 	- Use exceptions classes from exceptions package
-	- 
+- Implement functional tests
+	- Create VCSAbstractTest subclass, implement all abstract methods
+	- Normally test class should not include any test, just @After\@Before methods. All neccessary testing is implemented within VCSAbstractTest
+	- createVCS() methods should create and store vcs instance which is being testing.
 	
 
 
