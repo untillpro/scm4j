@@ -2,11 +2,13 @@ package com.projectkaiser.scm.vcs.api.abstracttest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,9 +39,11 @@ public abstract class VCSAbstractTest {
 	protected static final String CONTENT_CHANGED_COMMIT_MESSAGE = "changed file content";
 	protected static final String FILE1_ADDED_COMMIT_MESSAGE = "test.txt file added";
 	protected static final String FILE2_ADDED_COMMIT_MESSAGE = "test-branch added";
+	protected static final String FILE1_CONTENT_CHANGED_COMMIT_MESSAGE = "test-branch content changed";
 	protected static final String MERGE_COMMIT_MESSAGE = "merged.";
-	protected static final String LINE_2 = "line 2";
 	protected static final String LINE_1 = "line 1";
+	protected static final String LINE_2 = "line 2";
+	protected static final String LINE_3 = "line 3";
 	protected static final String FILE1_NAME = "test-master.txt";
 	protected static final String FILE2_NAME = "test-branch.txt";
 	protected static final String TEST_FILE_PATH = "folder/file1.txt";
@@ -101,11 +105,7 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testCreateAndDeleteBranch() throws Exception {
 		vcs.createBranch(MASTER_BRANCH, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-
 		verifyMocks();
-		Thread.sleep(2000); // next operation fails time to time. Looks like
-							// github has some latency on branch operations
-
 		assertTrue(getBranches().contains(NEW_BRANCH));
 		assertTrue(getBranches().size() == 2); // master & NEW_BRANCH
 
@@ -118,8 +118,6 @@ public abstract class VCSAbstractTest {
 		resetMocks();
 		vcs.deleteBranch(NEW_BRANCH, DELETE_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
-		Thread.sleep(2000); // next operation fails from time to time. Looks
-							// like github has some latency on branch operations
 		assertTrue(getBranches().size() == 1);
 	}
 
@@ -134,7 +132,7 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testGetSetFileContent() throws Exception {
-		createTestContent(TEST_FILE_PATH, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
+		setTestContent(TEST_FILE_PATH, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(MASTER_BRANCH, TEST_FILE_PATH, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(getCommitMessagesRemote(MASTER_BRANCH).contains(CONTENT_CHANGED_COMMIT_MESSAGE));
@@ -150,8 +148,8 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testMerge() throws Exception {
 		vcs.createBranch(MASTER_BRANCH, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		createTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
-		createTestContent(FILE2_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
+		setTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
+		setTestContent(FILE2_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 
 		PKVCSMergeResult res = vcs.merge(NEW_BRANCH, MASTER_BRANCH, MERGE_COMMIT_MESSAGE);
@@ -170,8 +168,8 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testMergeConflict() throws Exception {
 		vcs.createBranch(MASTER_BRANCH, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		createTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
-		createTestContent(FILE1_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
+		setTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
+		setTestContent(FILE1_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
 		PKVCSMergeResult res = vcs.merge(NEW_BRANCH, MASTER_BRANCH, MERGE_COMMIT_MESSAGE);
 		assertFalse(res.getSuccess());
 		assertFalse(mockedLWC.getCorrupted());
@@ -182,8 +180,8 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testMergeConflictWCCorruption() throws Exception {
 		vcs.createBranch(MASTER_BRANCH, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		createTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
-		createTestContent(FILE1_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
+		setTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
+		setTestContent(FILE1_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		setMakeFailureOnVCSReset(true);
 		PKVCSMergeResult res = vcs.merge(NEW_BRANCH, MASTER_BRANCH, MERGE_COMMIT_MESSAGE);
@@ -195,7 +193,22 @@ public abstract class VCSAbstractTest {
 		assertFalse(mockedLWC.getLockFile().exists());
 	}
 	
-	protected void createTestContent(String filePath, String fileContent, String branchName,
+	@Test
+	public void testBranchesDiff() throws Exception {
+		setTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
+		vcs.createBranch(MASTER_BRANCH, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		Thread.sleep(2000); // github has some latency on branch operations
+		// so next request branches operation will return old branches list
+		setTestContent(FILE2_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
+		setTestContent(FILE1_NAME, LINE_3, NEW_BRANCH, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		List<String> changedFiles = vcs.getBranchesDiff(NEW_BRANCH, MASTER_BRANCH);
+		assertNotNull(changedFiles);
+		assertTrue(changedFiles.size() == 2);
+		assertTrue(changedFiles.contains(FILE1_NAME));
+		assertTrue(changedFiles.contains(FILE2_NAME));
+	}
+	
+	protected void setTestContent(String filePath, String fileContent, String branchName,
 			String commitMessage) throws Exception {
 		try (IVCSLockedWorkingCopy wc = localVCSRepo.getVCSLockedWorkingCopy()) {
 			checkout(branchName, wc);
@@ -209,6 +222,8 @@ public abstract class VCSAbstractTest {
 			sendFile(wc, branchName, filePath, commitMessage);
 		}
 	}
+	
+	
 	
 	public abstract String getVCSTypeString();
 
