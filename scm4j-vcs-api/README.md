@@ -10,11 +10,54 @@
 	- Named automatically as guid. 
 	- Can be reused for another vcs-related operation by executing switch operation
 	- Deletes automatically if last VCS-related operation left the working copy in corrupted state, i.e. can not be reverted, re-checkouted and so on
+- Lock File
+	- A special empty file which is used to lock folders. If a Lock File can be opened then according folder is considered as free, otherwise the folder is in use now.
+	- Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
+	- named as "lock_" + folder name
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass. It is not neccesary to implement additional tests.
+	- 
+# Working Copy locking method
+
+On `IVCSLockedWorkingCopy` instance creation a special Lock File is created for each Working Folder. This file is opening with exclusive lock so any other process can not open it again. So to che if a folder free need to try to lock according Lock File. If success then this folder was free and can be assigned to current `IVCSLockedWorkingCopy` instance. Otherwise folder is locked and we need to check other folders. If there are no folders left then new folder is created and locked.
+	
 # Using Locked Working Copy
 Let's assume we developing Git server which will provide ability to merge branches. So few users could request to merge branches of different repositories simultaneously. Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. Also it is neccessary to protect this folder to be used by merge request from another user during merging. Locked Working Copy is a solution which represents such certain folder and guarantees that this folder will not be used by other vcs-related operation.
-Locked working copy
+- Define Workspace home folder
+	- this folder will contain repositories folders (if different vcs or repositories are used)
+	```java
+		public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
+		...
+		IVCSWorkspace workspace = new VCSWorkspace(WORKSPACE_DIR);
+		...
+	```
+- Create Repository Workspace folder providing a certain Repository's url
+	- this folder will contain all Working copies relating to a certain VCS Repository  
+	```java
+		String repoUrl = "https://github.com/ProjectKaiser/pk-vcs-api";
+		IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
+	```
+- Obtain Locked Working Copy when neccessary
+	- this object will be used to hold a ceratin folder in locked state preventing simultaneouly execute different vcs-related operations by another thread or process
+	- Use try-with-resources or try...finally to release Working Copy after vcs-related operations will be completed
+	```java
+		try (IVCSLockedWorkingCopy wc = repoWorkspace.getVCSLockedWorkingCopy()) {
+		...
+		}
+	```
+	- use `IVCSLockedWorkingCopy.getFolder()` as folder for vcs-related operations
+- Do not use `IVCSLockedWorkingCopy` instance after calling `IVCSLockedWorkingCopy.close()` method because after closing `IVCSLockedWorkingCopy` instance does not guarantees that according folder is not in use
+- Consider `IVCSLockedWorkingCopy.getState()` values:
+	- LOCKED
+		- current `IVCSLockedWorkingCopy` represents a locked folder, i.e. a folder which is not used by other `IVCSLockedWorkingCopy` instances. 
+	- OBSOLETE
+		- `IVCSLockedWorkingCopy.close()` mehtod has been called. Corresponding folder is unlocked and could be used by other `IVCSLockedWorkingCopy` instances. `IVCSLockedWorkingCopy` instance with this state should not be used anymore.
+- If vcs working copy has been damaged during executing vcs-related operation or vcs working copy can not be cleaned, reverted, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
+- 
+	
+	
+	
+	
 
 	
 # Using IVCS implementations ([pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn))
@@ -102,12 +145,4 @@ after that `gradle build' command will produce
 
 - [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test)
 - [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
-- [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn) 
-	
-
-
-    
-
-    
-
-
+- [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn)
