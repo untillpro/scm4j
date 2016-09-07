@@ -16,9 +16,8 @@
 	- named as "lock_" + folder name
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass. It is not neccesary to implement additional tests.
-	- 
-# Working Copy locking method
 
+# Working Copy locking way
 On `IVCSLockedWorkingCopy` instance creation a special Lock File is created for each Working Folder. This file is opening with exclusive lock so any other process can not open it again. So to che if a folder free need to try to lock according Lock File. If success then this folder was free and can be assigned to current `IVCSLockedWorkingCopy` instance. Otherwise folder is locked and we need to check other folders. If there are no folders left then new folder is created and locked.
 	
 # Using Locked Working Copy
@@ -53,13 +52,7 @@ Let's assume we developing Git server which will provide ability to merge branch
 	- OBSOLETE
 		- `IVCSLockedWorkingCopy.close()` mehtod has been called. Corresponding folder is unlocked and could be used by other `IVCSLockedWorkingCopy` instances. `IVCSLockedWorkingCopy` instance with this state should not be used anymore.
 - If vcs working copy has been damaged during executing vcs-related operation or vcs working copy can not be cleaned, reverted, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
-- 
-	
-	
-	
-	
 
-	
 # Using IVCS implementations ([pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn))
 - Add github-hosted IVCS implementation as maven artifact using jitpack.io. Add following to gradle.build file:
 	```gradle
