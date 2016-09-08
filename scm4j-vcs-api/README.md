@@ -16,14 +16,14 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 - Locked Working Copy, LWC
 	- A separate folder used as a place to execute VCS-related operations which are need to be executed on a local file system. E.g. in Git it is need to make checkout somewhere before make merge.
 	- Named automatically as guid. 
-	- Can be reused for another vcs-related operation by executing switch operation
+	- Can be reused for another vcs-related operation automatically
 	- Deletes automatically if last VCS-related operation left the Working Copy in corrupted state, i.e. can not be reverted, re-checkouted and so on
 - Lock File
 	- A special empty file which is used to lock folders. If a Lock File has exclusive file system lock then the according folder is considered as locked otherwise as free
 	- Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 	- named as "lock_" + folder name
 - Abstract Test
-	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass. It is not neccesary to implement additional tests.
+	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
 
 # Using Locked Working Copy
 
@@ -96,7 +96,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 
 # Developing IVCS implementation
 
-- Add github-hosted VCS API as maven artifact using jitpack.io. Add following to gradle.build file:
+- Add github-hosted VCS API as maven artifact using jitpack.io. As an example, add following to gradle.build file:
 	```gradle
 	allprojects {
 		repositories {
@@ -109,14 +109,16 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 		testCompile 'com.github.ProjectKaiser:pk-vcs-test:master-SNAPSHOT'
 	}
 	```
-	This will include VCS API (IVCS, LWC) and abstract test to your project. 
+	This will include VCS API (IVCS, LWC) and AbstractTtest to your project.
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
 	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
-	- All VCS-related operations must be executed within a folder assotiated with IVCSLockedWorkingCopy in LOCKED state. That guarantees that the folder will not be used by another VCS operations simultaneously. Call IVCSRepositoryWorkspace.getLockedWorkingCopy() to obtain LWC.
-	- Note: if IVCSRepositoryWorkspace.getLockedWorkingCopy() was called then IVCSLockedWorkingCopy.close() must be called. LWC close() call is checked by Abstract Test. Example:
+	- All VCS-related operations must be executed within a folder assotiated with IVCSLockedWorkingCopy in LOCKED state. That guarantees that the folder will not be used by another VCS operations simultaneously. Call IVCSRepositoryWorkspace.getLockedWorkingCopy() to obtain LWC when nessessary
+	- Note: if IVCSRepositoryWorkspace.getLockedWorkingCopy() was called then IVCSLockedWorkingCopy.close() must be called. LWC close() call is checked by Abstract Test. 
+	- Example:
 	```java
 	public class GitVCS implements IVCS {
+	
 		IVCSRepositoryWorkspace repo;
 		
 		public GitVCS(IVCSRepositoryWorkspace repo) {
@@ -137,10 +139,10 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 	```	
 	- Throw Exception from exceptions package. Abstract Test checks throwning of these exceptions.
 - Implement functional tests
-	- Create VCSAbstractTest subclass, implement all abstract methods
-	- Normally test class should not include any test, just @After\@Before methods. All neccessary testing is implemented within VCSAbstractTest
+	- Create VCSAbstractTest subclass within test package, implement all abstract methods
+	- Normally test class should not include any test, just @After\@Before methods. All neccessary functional testing is implemented within VCSAbstractTest
 	- See [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) for details
-- Consider the IVCS implementation class is exported as a single Jar. Also it is better to export sources and java doc as well. Example using gradle:
+- Consider the IVCS implementation is exported as a single Jar. Also it is better to export sources and java doc as well. Example using gradle:
 ```gradle
 task sourcesJar(type: Jar, dependsOn: classes) {
 	classifier = 'sources'
@@ -157,7 +159,7 @@ artifacts {
 	archives javadocJar
 }
 ```
-after that `gradle build' command will produce 
+after that `gradle build' command will produce JAR with IVCS implementation, JAR with its sources and JAR with its javadocs
 
 # See also
 
