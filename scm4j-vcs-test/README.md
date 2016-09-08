@@ -15,7 +15,7 @@ Pk-vcs-test provides base functional test class for VCS implementations used by 
 # Overall testing process
 
 - Workspace Home folder defined as `System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces"`
-- A new Repository name and Repository Workspace generates for each test within setUp(). Named as "pk-vcs-" + `getVCSTypeString()` + "-testrepo_" + <uuid>
+- A new Repository name and Repository Workspace generates for each test within setUp(). Named as "pk-vcs-" + `getVCSTypeString()` + "-testrepo_" + uuid
 - A test method executes
 - Mocks are verified. `mockedLWC.close()` call is checked if `mockedVCSRepo.getVCSLockedWorkingCopy()` was called.
 - Workspace Home folder deletes. So all files and dirs within Workspace Home must be released
@@ -40,6 +40,7 @@ Pk-vcs-test provides base functional test class for VCS implementations used by 
   - Create @After method if neccessary
   - Use `mockedVCSRepo` as `IVCSRepositoryWorkspace` parameter passed to VCS constructor. VCS Iimplementation should use this `IVCSRepositoryWorkspace` for obtaining LWC. Also this instance will be tested for method calling using Mockito partial mocking by VCSAbstractTest
   - `createVCS(...)` method must create IVCS implementation providing `mockedVCSRepo` field as `IVCSRepositoryWorkspace` instance and store it as `vcs` field
+ 
       ```java
       @Override
     	protected void createVCS(IVCSRepositoryWorkspace mockedVCSRepo) {
@@ -48,7 +49,16 @@ Pk-vcs-test provides base functional test class for VCS implementations used by 
       ```
   - `sendFile(...)` methods must commit an existing provided file and send it to test Repository. I.e. commit and push for Git, just commit for SVN.
   - Use `WORKSPACE_DIR` constant as a path to Workspace Home folder
-  - Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
+  - Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
   - `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
   - Use `repoName` field to get current testing repository name. It generates again for each test
   - Use `repoUrl` field to get url to current testing repository.
+
+# Examples
+
+- [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
+- [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn)
+
+# See also
+
+- [pk-vcs-api](https://github.com/ProjectKaiser/pk-vcs-api)
