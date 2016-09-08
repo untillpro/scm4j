@@ -1,7 +1,7 @@
 # Overview
 
-Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) plugins for Project Kaiser CRM. Pk-vcs-api consists of:
-- IVCS interface which exposes various vcs-related methods which are used by Project Kaiser CRM
+Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) plugins for [Project Kaiser CRM](http://www.projectkaiser.com/ru/). Pk-vcs-api consists of:
+- IVCS interface which exposes various vcs-related methods which are used by [Project Kaiser CRM](http://www.projectkaiser.com/ru/)
 - Working copy utility classes which are required if some vcs-related operations needs to be executed on a local file system (such as merge)
 Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for test and describe behaviour of IVCS implementation
 
@@ -26,7 +26,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 
 # Using Locked Working Copy
 
-Project Kaiser CRM will provide ability to work with VCS repositories. So few users could request to merge branches of different repositories simultaneously. Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. Also it is neccessary to protect this folder to be used by merge request from another user during merging. Locked Working Copy is a solution which represents such certain folder and guarantees that this folder will not be used by other vcs-related operation.
+[Project Kaiser CRM](http://www.projectkaiser.com/ru/) provides ability to work with VCS repositories. So few users could request to merge branches of different repositories simultaneously. Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. Also it is neccessary to protect this folder to be used by merge request from another user during merging. Locked Working Copy is a solution which represents such certain folder and guarantees that this folder will not be used by other vcs-related operation.
 - Define Workspace Home folder
 	- this folder will contain repositories folders (if different vcs or repositories are used)
 	```java
