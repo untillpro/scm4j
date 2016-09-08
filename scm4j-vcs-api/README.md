@@ -2,7 +2,7 @@
 
 Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) plugins for [Project Kaiser CRM](http://www.projectkaiser.com/). Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods which are used by [Project Kaiser CRM](http://www.projectkaiser.com/)
-- Working copy utility classes which are required if some vcs-related operations needs to be executed on a local file system (such as merge)
+- Working Copy utility classes which are required if some vcs-related operations needs to be executed on a local file system (such as merge)
 
 Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for functional testing and describing behaviour of IVCS implementation
 
@@ -11,13 +11,13 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 - Workspace Home
 	- Home folder of all vcs-related operations which are require to use local file system.
 - Repository workspace
-	- Folder of separate VCS Repository where working copies will be located. Need to group few working copies used by one Repository into one folder. E.g. if there are Git and SVN version control systems then need to know which VCS type each Working Copy belongs to. 
-    - Named automatically as repository url replacing all special characters to "_"
+	- Folder of separate VCS Repository where Working Cpies will be located. Need to group few Working Copies used by one Repository into one folder. E.g. if there are Git and SVN version control systems then need to know which VCS type each Working Copy belongs to. 
+    - Named automatically as repository url replacing all special characters with "_"
 - Locked Working Copy, LWC
 	- A separate folder used as a place to execute VCS-related operations which are need to be executed on a local file system. E.g. in Git it is need to make checkout somewhere before make merge.
 	- Named automatically as guid. 
 	- Can be reused for another vcs-related operation by executing switch operation
-	- Deletes automatically if last VCS-related operation left the working copy in corrupted state, i.e. can not be reverted, re-checkouted and so on
+	- Deletes automatically if last VCS-related operation left the Working Copy in corrupted state, i.e. can not be reverted, re-checkouted and so on
 - Lock File
 	- A special empty file which is used to lock folders. If a Lock File has exclusive file system lock then the according folder is considered as locked otherwise as free
 	- Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
@@ -57,7 +57,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 		- current `IVCSLockedWorkingCopy` represents a locked folder, i.e. a folder which is not used by other `IVCSLockedWorkingCopy` instances. 
 	- OBSOLETE
 		- `IVCSLockedWorkingCopy.close()` mehtod has been called. Corresponding folder is unlocked and could be used by other `IVCSLockedWorkingCopy` instances. `IVCSLockedWorkingCopy` instance with this state should not be used anymore.
-- If vcs working copy has been damaged during executing vcs-related operation or vcs working copy can not be cleaned, reverted, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
+- If vcs Working Copy has been damaged during executing vcs-related operation or vcs Working Copy can not be cleaned, reverted, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
 
 # Folder structure
 
