@@ -76,24 +76,6 @@ A special Lock File is created on `IVCSLockedWorkingCopy` instance creation and 
 So in fact Lock File is locked, not the Folder itself. 
 Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 
-# Using IVCS implementations ([pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn))
-
-- Add github-hosted IVCS implementation as maven artifact using jitpack.io. Add following to gradle.build file:
-	```gradle
-	allprojects {
-		repositories {
-			maven { url "https://jitpack.io" }
-		}
-	}
-	
-	dependencies {
-		compile 'com.github.ProjectKaiser:pk-vcs-git:master-SNAPSHOT'
-	}
-	```
-- Create IVCSWorkspace instance, provide any folder as workspace folder, e.g. `System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";`
-- Call `IVCSWorkspace.getVCSRepositoryWorkspace()` providing Repository url you want to work with
-	- Repository foldr will be created within Workspace folder
-
 # Developing IVCS implementation
 
 - Add github-hosted VCS API as maven artifact using jitpack.io. As an example, add following to gradle.build file:
