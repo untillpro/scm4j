@@ -1,6 +1,13 @@
-# pk-vcs-api
+# Overview
+
+Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) plugins for Project Kaiser CRM. Pk-vcs-api consists of:
+- IVCS interface which exposes various vcs-related methods which are used by Project Kaiser CRM
+- Working copy utility classes which are required if some vcs-related operations needs to be executed on a local file system (such as merge)
+Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for test and describe behaviour of IVCS implementation
+
 # Terms
-- Workspace home
+
+- Workspace Home
 	- Home folder of all vcs-related operations which are require to use local file system.
 - Repository workspace
 	- Folder of separate VCS Repository where working copies will be located. Need to group few working copies used by one Repository into one folder. E.g. if there are Git and SVN version control systems then need to know which VCS type each Working Copy belongs to. 
@@ -17,10 +24,22 @@
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass. It is not neccesary to implement additional tests.
 
+# Folder structure
+
+- Workspace Home folder (e.g. c:\temp\pk-vcs-workspces\)
+	- Repository Workspace (e.g. https_github_com_projectkaiser\
+		- Working Copy 1 
+			- merging executes
+		- Working Copy 2
+			- branch creating executes
+		- ...
+	- ...
 # Working Copy locking way
+
 On `IVCSLockedWorkingCopy` instance creation a special Lock File is created for each Working Folder. This file is opening with exclusive lock so any other process can not open it again. So to che if a folder free need to try to lock according Lock File. If success then this folder was free and can be assigned to current `IVCSLockedWorkingCopy` instance. Otherwise folder is locked and we need to check other folders. If there are no folders left then new folder is created and locked.
 	
 # Using Locked Working Copy
+
 Let's assume we developing Git server which will provide ability to merge branches. So few users could request to merge branches of different repositories simultaneously. Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. Also it is neccessary to protect this folder to be used by merge request from another user during merging. Locked Working Copy is a solution which represents such certain folder and guarantees that this folder will not be used by other vcs-related operation.
 - Define Workspace home folder
 	- this folder will contain repositories folders (if different vcs or repositories are used)
@@ -54,6 +73,7 @@ Let's assume we developing Git server which will provide ability to merge branch
 - If vcs working copy has been damaged during executing vcs-related operation or vcs working copy can not be cleaned, reverted, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
 
 # Using IVCS implementations ([pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn))
+
 - Add github-hosted IVCS implementation as maven artifact using jitpack.io. Add following to gradle.build file:
 	```gradle
 	allprojects {
@@ -69,9 +89,9 @@ Let's assume we developing Git server which will provide ability to merge branch
 - Create IVCSWorkspace instance, provide any folder as workspace folder, e.g. `System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";`
 - Call `IVCSWorkspace.getVCSRepositoryWorkspace()` providing Repository url you want to work with
 	- Repository foldr will be created within Workspace folder
-- 
 
 # Developing IVCS implementation
+
 - Add github-hosted VCS API as maven artifact using jitpack.io. Add following to gradle.build file:
 	```gradle
 	allprojects {
@@ -134,6 +154,7 @@ artifacts {
 }
 ```
 after that `gradle build' command will produce 
+
 # See also
 
 - [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test)
