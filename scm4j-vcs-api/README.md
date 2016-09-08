@@ -34,6 +34,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 			- branch creating executes
 		- ...
 	- ...
+
 # Working Copy locking way
 
 On `IVCSLockedWorkingCopy` instance creation a special Lock File is created for each Working Folder. This file is opening with exclusive lock so any other process can not open it again. So to che if a folder free need to try to lock according Lock File. If success then this folder was free and can be assigned to current `IVCSLockedWorkingCopy` instance. Otherwise folder is locked and we need to check other folders. If there are no folders left then new folder is created and locked.
