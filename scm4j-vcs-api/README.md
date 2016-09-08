@@ -3,6 +3,7 @@
 Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) plugins for [Project Kaiser CRM](http://www.projectkaiser.com/). Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods which are used by [Project Kaiser CRM](http://www.projectkaiser.com/)
 - Working copy utility classes which are required if some vcs-related operations needs to be executed on a local file system (such as merge)
+
 Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for test and describe behaviour of IVCS implementation
 
 # Terms
