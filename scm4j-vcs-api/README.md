@@ -137,7 +137,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 		// ...
 	} 
 	```	
-	- Throw Exception from exceptions package. Abstract Test checks throwning of these exceptions.
+	- Throw exceptions from exceptions package. Abstract Test checks throwning of these exceptions.
 - Implement functional tests
 	- Create VCSAbstractTest subclass within test package, implement all abstract methods
 	- Normally test class should not include any test, just @After\@Before methods. All neccessary functional testing is implemented within VCSAbstractTest
