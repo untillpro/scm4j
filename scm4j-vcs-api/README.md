@@ -28,10 +28,10 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 # Using Locked Working Copy
 
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
-- The simple way to generate these folders automatically
-- Protection of this folder from access by merge request from another user during merging. 
-- Minimize these folders count and reusing ability to prevent of execution checkout operations each time. 
-Locked Working Copy is a solution which represents such certain folder and guarantees that this folder will not be assigned to anoter LWC instance until it's `close()` method will be called
+- The simple way to allocate place for vcs operations execution
+- Make this place "transactional", protecting this place of interfere from other vcs operations
+- Reusing ability for the same Repository to prevent of execution checkout operations each time.
+Locked Working Copy is a solution which solves these requirements by providing a certain folder and guarantees that this folder will not be assigned to anoter LWC instance until its `close()` method will be called
 Steps to use LWC:
 - Create Workspace Home instance providing path to any folder as Workspace Home folder path. This folder will contain repositories folders (if different vcs or repositories are used)
 ```java
