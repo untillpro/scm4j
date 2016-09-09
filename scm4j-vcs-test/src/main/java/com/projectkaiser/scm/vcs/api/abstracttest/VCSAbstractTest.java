@@ -29,29 +29,27 @@ import com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace;
 import com.projectkaiser.scm.vcs.api.workingcopy.VCSWorkspace;
 
 public abstract class VCSAbstractTest {
-	public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
-	public static final String TEST_REPO_URL = "c:/test/utils/";
-	public static String REPO_NAME;
-	public static final String NEW_BRANCH = "new-branch";
-	public static final String MASTER_BRANCH = "master";
-	public static final String CREATED_DST_BRANCH_COMMIT_MESSAGE = "created dst branch";
-	public static final String DELETE_BRANCH_COMMIT_MESSAGE = "deleted";
-	protected static final String CONTENT_CHANGED_COMMIT_MESSAGE = "changed file content";
-	protected static final String FILE1_ADDED_COMMIT_MESSAGE = "test.txt file added";
-	protected static final String FILE2_ADDED_COMMIT_MESSAGE = "test-branch added";
-	protected static final String FILE1_CONTENT_CHANGED_COMMIT_MESSAGE = "test-branch content changed";
-	protected static final String MERGE_COMMIT_MESSAGE = "merged.";
-	protected static final String LINE_1 = "line 1";
-	protected static final String LINE_2 = "line 2";
-	protected static final String LINE_3 = "line 3";
-	protected static final String FILE1_NAME = "test-master.txt";
-	protected static final String FILE2_NAME = "test-branch.txt";
-	protected static final String TEST_FILE_PATH = "folder/file1.txt";
+	private static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
+	private static final String NEW_BRANCH = "new-branch";
+	private static final String CREATED_DST_BRANCH_COMMIT_MESSAGE = "created dst branch";
+	private static final String DELETE_BRANCH_COMMIT_MESSAGE = "deleted";
+	private static final String CONTENT_CHANGED_COMMIT_MESSAGE = "changed file content";
+	private static final String FILE1_ADDED_COMMIT_MESSAGE = "test.txt file added";
+	private static final String FILE2_ADDED_COMMIT_MESSAGE = "test-branch added";
+	private static final String FILE1_CONTENT_CHANGED_COMMIT_MESSAGE = "test-branch content changed";
+	private static final String MERGE_COMMIT_MESSAGE = "merged.";
+	private static final String LINE_1 = "line 1";
+	private static final String LINE_2 = "line 2";
+	private static final String LINE_3 = "line 3";
+	private static final String FILE1_NAME = "test-master.txt";
+	private static final String FILE2_NAME = "test-branch.txt";
+	private static final String TEST_FILE_PATH = "folder/file1.txt";
+	protected static final String MASTER_BRANCH = "master";
 	
 	protected String repoName;
 	protected String repoUrl;
+	protected  IVCSWorkspace localVCSWorkspace;
 	protected IVCSRepositoryWorkspace localVCSRepo;
-	protected IVCSWorkspace localVCSWorkspace;
 	protected IVCSRepositoryWorkspace mockedVCSRepo;
 	protected IVCSLockedWorkingCopy mockedLWC;
 	protected IVCS vcs;
@@ -73,21 +71,20 @@ public abstract class VCSAbstractTest {
 	@Before
 	public void setUp() throws Exception {
 		FileUtils.deleteDirectory(new File(WORKSPACE_DIR));
-		REPO_NAME = "pk-vcs-" + getVCSTypeString() + "-testrepo";
+		repoName = "pk-vcs-" + getVCSTypeString() + "-testrepo";
 
 		String uuid = UUID.randomUUID().toString();
-		repoName = (REPO_NAME + "_" + uuid);
+		repoName = (repoName + "_" + uuid);
 
 		repoUrl = getVCSRepoUrl() + repoName;
 
 		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
-
 		
 		resetMocks();
 
-		createVCS(mockedVCSRepo);
+		vcs = getVCS(mockedVCSRepo);
 		
 		setMakeFailureOnVCSReset(false);
 	}
@@ -96,7 +93,6 @@ public abstract class VCSAbstractTest {
 		if (mockedLWC != null) {
 			mockedLWC.close();
 		}
-		//Mockito.reset(mockedLWC);
 		Mockito.reset(mockedVCSRepo);
 		mockedLWC = Mockito.spy(localVCSRepo.getVCSLockedWorkingCopy());
 		Mockito.doReturn(mockedLWC).when(mockedVCSRepo).getVCSLockedWorkingCopy();
@@ -197,8 +193,6 @@ public abstract class VCSAbstractTest {
 	public void testBranchesDiff() throws Exception {
 		setTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.createBranch(MASTER_BRANCH, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		Thread.sleep(2000); // github has some latency on branch operations
-		// so next request branches operation will return old branches list
 		setTestContent(FILE2_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
 		setTestContent(FILE1_NAME, LINE_3, NEW_BRANCH, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
 		List<String> changedFiles = vcs.getBranchesDiff(NEW_BRANCH, MASTER_BRANCH);
@@ -229,7 +223,7 @@ public abstract class VCSAbstractTest {
 
 	protected abstract String getVCSRepoUrl();
 
-	protected abstract void createVCS(IVCSRepositoryWorkspace mockedVCSRepo);
+	protected abstract IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo);
 
 	protected abstract Set<String> getBranches() throws Exception;
 
