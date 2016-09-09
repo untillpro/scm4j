@@ -9,7 +9,7 @@ import org.junit.Before;
 
 public class VCSTestBase {
 	public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
-	public static final String TEST_REPO_URL = "c:/test/utils/";
+	public static final String TEST_REPO_URL = System.getProperty("java.io.tmpdir") + "pk-vcs-test/utils";
 
 	@Before
 	@After
