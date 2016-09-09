@@ -130,7 +130,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 	- Create VCSAbstractTest subclass within test package, implement all abstract methods
 	- Normally test class should not include any test, just @After\@Before methods. All neccessary functional testing is implemented within VCSAbstractTest
 	- See [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) for details
-- Example of gradle usage to export IVCS implementation, its sources and javadoc as separate single Jars:
+- Example of gradle usage to export IVCS implementation, its sources and javadoc as separate single JARs:
 ```gradle
 task sourcesJar(type: Jar, dependsOn: classes) {
 	classifier = 'sources'
@@ -147,7 +147,7 @@ artifacts {
 	archives javadocJar
 }
 ```
-The `gralde build` command will produce 3 JARs.
+After that the `gralde build` command will produce 3 JARs.
 
 # See also
 
