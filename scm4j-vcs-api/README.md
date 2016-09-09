@@ -1,6 +1,6 @@
 # Overview
 
-Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries. Pk-vcs-api consists of:
+Pk-vcs-api is a single interface for few basic VCS-related operations for different VCSes (Git, SVN etc). It is useful to add code control support for IT project management systems. Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods
 - Working Copy utility classes which are required if some vcs-related operations needs to be executed on a local file system (such as merge)
 
