@@ -101,7 +101,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
 	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
-	- All VCS-related operations must be executed within a folder assotiated with IVCSLockedWorkingCopy in LOCKED state. That guarantees that the folder will not be used by another VCS operations simultaneously. Call `IVCSRepositoryWorkspace.getLockedWorkingCopy()` to obtain LWC when nessessary
+	- All VCS-related operations must be executed within a folder assotiated with IVCSLockedWorkingCopy in LOCKED state. That guarantees that the folder will not be used by another VCS operations simultaneously. Call `IVCSRepositoryWorkspace.getLockedWorkingCopy()` to obtain LWC when neccessary
 	- Use `IVCSLockedWorkingCopy.getFolder()` to get a folder for vcs-related operations
 	- Note: if `IVCSRepositoryWorkspace.getLockedWorkingCopy()` was called then IVCSLockedWorkingCopy.close() must be called. LWC `close()` call is checked by Abstract Test 
 	```java
