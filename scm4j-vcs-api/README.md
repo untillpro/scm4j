@@ -21,7 +21,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 - Lock File
 	- A special empty file which is used to show if according LWC locked or free. If a Lock File has exclusive file system lock then the according LWC folder is considered as locked, otherwise as free
 	- Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
-	- named as "lock_" + <<LWC folder name>>
+	- named as "lock_" + LWC folder name
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
 
