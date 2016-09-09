@@ -42,7 +42,7 @@ Steps to use LWC:
 	IVCSWorkspace workspace = new VCSWorkspace(WORKSPACE_DIR);
 	...
 ```
-- Obtain Repository Workspace from Workspace Home providing a certain Repository's url. The obtained Repository Workspace will represent a folder within Workspace Home dir and will contain all Working Copies relating to the provided VCS Repository  
+- Obtain Repository Workspace from Workspace Home providing a certain Repository's url. The obtained Repository Workspace will represent a folder within Workspace Home dir which will contain all Working Copies relating to the provided VCS Repository  
 ```java
 	String repoUrl = "https://github.com/ProjectKaiser/pk-vcs-api";
 	IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
