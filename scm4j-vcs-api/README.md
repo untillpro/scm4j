@@ -31,6 +31,7 @@ Let's assume we developing a multiuser server which has ability to merge branche
 - The simple way to allocate place for vcs operations execution
 - Make this place "transactional", protecting this place of interfere from other vcs operations
 - Reusing ability for the same Repository to prevent of execution checkout operations each time.
+
 Locked Working Copy is a solution which solves these requirements by providing a certain folder and guarantees that this folder will not be assigned to anoter LWC instance until its `close()` method will be called
 Steps to use LWC:
 - Create Workspace Home instance providing path to any folder as Workspace Home folder path. This folder will contain repositories folders (if different vcs or repositories are used)
