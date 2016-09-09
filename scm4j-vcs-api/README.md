@@ -15,7 +15,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
     - Named automatically as repository url replacing all special characters with "_"
 - Locked Working Copy, LWC
 	- A separate folder used to execute VCS-related operations which are need to be executed on a local file system. E.g. in Git it is need to make checkout somewhere on local file system before making a merge.
-	- Named automatically as guid, located within Repository Workspace fodler
+	- Named automatically as uuid, located within Repository Workspace fodler
 	- Can be reused for another vcs-related operation automatically
 	- Deletes automatically if last VCS-related operation left the Working Copy in corrupted state, i.e. can not be reverted, re-checked out and so on
 - Lock File
