@@ -24,6 +24,43 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 	- named as "lock_" + LWC folder name
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
+- `PKVCSMergeResult`, Merge Result
+	- Result of vcs merge operation. Could be successful or failed and provides list of conflicting files if failed.
+- Head, Head Commit, Branch Head
+	- The latest commit or state of a branch
+
+# Using VCS interface
+
+IVCS interface consists of few basic vcs functions.
+- `void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage)`
+	- Creates a new branch with name `dstBranchPath` from the Head of `srcBranchPath`. 
+	- commitMessage is a log message which will be attached to branch create operation if it possible (e.g. Git does not posts branch create operation as a separate commit)
+- `PKVCSMergeResult merge(String srcBranchPath, String dstBranchPath, String commitMessage);`
+	- Merge all commits from `srcBranchPath` to `dstBranchPah` with `commitMessage` attached
+	- `PKVCSMergeResult.getSuccess() == true`
+		- merge is successful
+	- `PKVCSMergeResult.getSuccess() == false`
+		- Automatic merge can not be completed due of conflicting files
+		- `PKVCSMergeResult.getConflictingFiles()` contains pathes to conflicting files
+	- Heads of branches `srcBranchName` and `dstBranchName` are used
+- `void deleteBranch(String branchPath, String commitMessage)`
+	- Deletes branch with path `branchPath` and attaches `commitMessage` to branch delete operation if possible (e.g. Git does not posts branch delete operation as a separate commit
+-  `void setCredentials(String user, String password)`
+	- Applies credentials to existing IVCS implementation. I.e. first a IVCS implementation should be created, then credentials should be applied when neccessary
+- `void setProxy(String host, int port, String proxyUser, String proxyPassword)`
+	- Sets proxy parameters if neccessary
+- `String getRepoUrl()`
+	- Returns string url to current vcs repository
+- `String getFileContent(String branchName, String fileRelativePath, String encoding)`
+	- Returns file content as a string using `encoding` encoding.
+	- `fileRelativePath` is a path to file within `branchName` branch 
+	- The Head file state is used
+	- Use `String getFileContent(String branchName, String fileRelativePath)` overload to use UTF-8 encoding by default
+- `void setFileContent(String branchName, String filePath, String content, String commitMessage)`
+	- Rewrites an existing file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
+- `List<String> getBranchesDiff(String srcBranchName, String destBranchName)`
+	- 
+
 
 # Using Locked Working Copy
 
