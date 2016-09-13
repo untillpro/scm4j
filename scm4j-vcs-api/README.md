@@ -57,10 +57,10 @@ IVCS interface consists of few basic vcs functions.
 	- The Head file state is used
 	- Use `String getFileContent(String branchName, String fileRelativePath)` overload to use UTF-8 encoding by default
 - `void setFileContent(String branchName, String filePath, String content, String commitMessage)`
-	- Rewrites an existing file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
+	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
+	- Creates the file if it doesn't exists
 - `List<String> getBranchesDiff(String srcBranchName, String destBranchName)`
-	- 
-
+	- Returns list of file names with relative paths showing how srcBranchName differs to destBranchName 
 
 # Using Locked Working Copy
 
