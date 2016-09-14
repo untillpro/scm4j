@@ -41,7 +41,7 @@ dependencies {
 - Create VCSAbstractTest subclass within test package
   - Override `setUp()` method
     - Create all neccessary data, test repositories and so on
-    - Note that `svn` instance is already created within `super.setUp()`
+    - Note that `vcs` instance is already created within `super.setUp()`
   - Create @After method if neccessary
   - Use `mockedVCSRepo` as `IVCSRepositoryWorkspace` parameter passed to VCS constructor. VCS implementation must use this `IVCSRepositoryWorkspace` for obtaining LWC. Also this instance will be tested for method calling using Mockito partial mocking by VCSAbstractTest
   - `getVCS(...)` method must return IVCS implementation using `mockedVCSRepo`
@@ -58,6 +58,7 @@ dependencies {
 - `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
 - Use `repoName` field to get current testing repository name. It generates again for each test
 - Use `repoUrl` field to get url to current testing repository.
+- Use `vcs` field as current IVCS implementation which is being testing
 
 # Examples
 
