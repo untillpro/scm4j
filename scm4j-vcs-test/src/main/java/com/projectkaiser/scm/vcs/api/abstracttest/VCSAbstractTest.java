@@ -44,11 +44,12 @@ public abstract class VCSAbstractTest {
 	private static final String FILE1_NAME = "test-master.txt";
 	private static final String FILE2_NAME = "test-branch.txt";
 	private static final String TEST_FILE_PATH = "folder/file1.txt";
+	private static final String TEST_FILE_PATH_2 = "folder2/file2.txt";
 	protected static final String MASTER_BRANCH = "master";
 	
 	protected String repoName;
 	protected String repoUrl;
-	protected  IVCSWorkspace localVCSWorkspace;
+	protected IVCSWorkspace localVCSWorkspace;
 	protected IVCSRepositoryWorkspace localVCSRepo;
 	protected IVCSRepositoryWorkspace mockedVCSRepo;
 	protected IVCSLockedWorkingCopy mockedLWC;
@@ -75,10 +76,11 @@ public abstract class VCSAbstractTest {
 
 		String uuid = UUID.randomUUID().toString();
 		repoName = (repoName + "_" + uuid);
+		
+		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
 
 		repoUrl = getVCSRepoUrl() + repoName;
 
-		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
 		
@@ -139,6 +141,11 @@ public abstract class VCSAbstractTest {
 			fail("EVCSFileNotFound is not thrown");
 		} catch (EVCSFileNotFound e) {
 		}
+		
+		// test unexisting file creation
+		vcs.setFileContent(MASTER_BRANCH, TEST_FILE_PATH_2, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+		assertEquals(vcs.getFileContent(MASTER_BRANCH, TEST_FILE_PATH_2), LINE_2);
+		
 	}
 
 	@Test
@@ -193,13 +200,12 @@ public abstract class VCSAbstractTest {
 	public void testBranchesDiff() throws Exception {
 		setTestContent(FILE1_NAME, LINE_1, MASTER_BRANCH, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.createBranch(MASTER_BRANCH, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		setTestContent(FILE2_NAME, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
+		setTestContent(TEST_FILE_PATH, LINE_2, NEW_BRANCH, FILE2_ADDED_COMMIT_MESSAGE);
 		setTestContent(FILE1_NAME, LINE_3, NEW_BRANCH, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
 		List<String> changedFiles = vcs.getBranchesDiff(NEW_BRANCH, MASTER_BRANCH);
 		assertNotNull(changedFiles);
-		assertTrue(changedFiles.size() == 2);
 		assertTrue(changedFiles.contains(FILE1_NAME));
-		assertTrue(changedFiles.contains(FILE2_NAME));
+		assertTrue(changedFiles.contains(TEST_FILE_PATH));
 	}
 	
 	protected void setTestContent(String filePath, String fileContent, String branchName,
