@@ -1,8 +1,8 @@
 # Overview
 
-Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries. Pk-vcs-api consists of:
+Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc. Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods
-- Working Copy utility classes which are required if some vcs-related operations needs to be executed on a local file system (such as merge)
+- Working Copy utility classes which are required if vcs-related operations which are need to be executed on a local file system (such as merge)
 
 Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for functional testing and describing behaviour of IVCS implementation
 
@@ -58,16 +58,16 @@ IVCS interface consists of few basic vcs functions.
 	- Use `String getFileContent(String branchName, String fileRelativePath)` overload to use UTF-8 encoding by default
 - `void setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
-	- Creates the file if it doesn't exists
+	- Creates the file and its parent folders if doesn't exists
 - `List<String> getBranchesDiff(String srcBranchName, String destBranchName)`
-	- Returns list of file names with relative paths showing how srcBranchName differs to destBranchName 
+	- Returns list of file names with relative paths showing what was made within srcBranchName relative to destBranchName 
 
 # Using Locked Working Copy
 
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
 - The simple way to allocate place for vcs operations execution
 - Make this place "transactional", protecting this place of interfere from other vcs operations
-- Reusing ability for the same Repository to prevent of execution checkout operations each time
+- Reusing ability for the same Repository to prevent of checkout operation executions each time
 
 Locked Working Copy is a solution which solves these requirements by providing a certain folder and guarantees that this folder will not be assigned to anoter LWC instance until its `close()` method will be called
 
@@ -97,7 +97,7 @@ Steps to use LWC:
 		- current `IVCSLockedWorkingCopy` represents a locked folder, i.e. a folder which is not used by other `IVCSLockedWorkingCopy` instances. 
 	- OBSOLETE
 		- `IVCSLockedWorkingCopy.close()` mehtod has been called. Corresponding folder is unlocked and could be used by other `IVCSLockedWorkingCopy` instances. `IVCSLockedWorkingCopy` instance with this state should not be used anymore.
-- If vcs Working Copy has been damaged during executing vcs-related operation or vcs Working Copy can not be cleaned, reverted, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
+- If a Working copy can not be reused due of VCS system data damage (e.g. .git, .svn folders) or due of vcs Working Copy can not be cleaned, reverted, switched, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
 
 # Folder structure
 
