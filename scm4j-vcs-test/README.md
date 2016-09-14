@@ -20,7 +20,7 @@ Pk-vcs-test project provides base functional test class for IVCS implementations
 # Overall testing process
 
 - Workspace Home folder is defined as `System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces"`
-- A new Test Repository name and Repository Workspace generates for each test within `setUp()`. Test Repository is named as "pk-vcs-" + `getVCSTypeString()` + "-testrepo_" + uuid
+- A new Test Repository name and Repository Workspace generates for each test within `setUp()`. Test Repository is named as `"pk-vcs-" + getVCSTypeString() + "-testrepo_" + uuid`
 - A test method executes
 - Mocks are verified. LWC closing is checked if one was obtained
 - Workspace Home folder deletes. So all files and dirs within Workspace Home must be released
