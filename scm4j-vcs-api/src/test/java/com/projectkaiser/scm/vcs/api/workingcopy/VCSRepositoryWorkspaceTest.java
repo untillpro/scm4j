@@ -9,7 +9,7 @@ import com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace;
 import com.projectkaiser.scm.vcs.api.workingcopy.VCSRepositoryWorkspace;
 import com.projectkaiser.scm.vcs.api.workingcopy.VCSWorkspace;
 
-public class VCSRepositoryWorkspaceTest extends VCSTestBase {
+public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 
 	@Test
 	public void testVCSRepository() throws Exception {

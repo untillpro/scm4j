@@ -2,6 +2,8 @@ package com.projectkaiser.scm.vcs.api;
 
 import java.util.List;
 
+import com.projectkaiser.scm.vcs.api.exceptions.EVCSFileNotFound;
+
 public interface IVCS {
 	void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage);
 
@@ -15,9 +17,9 @@ public interface IVCS {
 
 	String getRepoUrl();
 
-	String getFileContent(String branchName, String fileRelativePath, String encoding);
+	String getFileContent(String branchName, String fileRelativePath, String encoding) throws EVCSFileNotFound;
 
-	String getFileContent(String branchName, String fileRelativePath);
+	String getFileContent(String branchName, String fileRelativePath) throws EVCSFileNotFound;
 
 	void setFileContent(String branchName, String filePath, String content, String commitMessage);
 	

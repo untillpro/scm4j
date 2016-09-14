@@ -7,7 +7,7 @@ import org.junit.Test;
 import com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace;
 import com.projectkaiser.scm.vcs.api.workingcopy.VCSWorkspace;
 
-public class VCSWorkspaceTest extends VCSTestBase {
+public class VCSWorkspaceTest extends VCSWCTestBase {
 
 	@Test
 	public void testWorkspace() {

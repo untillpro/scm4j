@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 
-public class VCSLockedWorkingCopyTest extends VCSTestBase {
+public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 	
 	private IVCSWorkspace w;
 	private IVCSRepositoryWorkspace r;
