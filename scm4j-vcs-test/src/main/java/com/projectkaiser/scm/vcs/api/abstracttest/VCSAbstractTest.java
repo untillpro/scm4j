@@ -79,7 +79,7 @@ public abstract class VCSAbstractTest {
 		
 		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
 
-		repoUrl = getVCSRepoUrl() + repoName;
+		repoUrl = getTestRepoUrl() + repoName;
 
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
@@ -227,7 +227,7 @@ public abstract class VCSAbstractTest {
 	
 	public abstract String getVCSTypeString();
 
-	protected abstract String getVCSRepoUrl();
+	protected abstract String getTestRepoUrl();
 
 	protected abstract IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo);
 
