@@ -122,7 +122,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 
 # Developing IVCS implementation
 
-- Add github-hosted VCS API as maven artifact using jitpack.io. As an example, add following to gradle.build file:
+- Add github-hosted VCS API as maven artifact using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
 	```gradle
 	allprojects {
 		repositories {
