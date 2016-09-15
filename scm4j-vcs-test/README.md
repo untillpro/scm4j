@@ -40,10 +40,12 @@ dependencies {
 ```
 - Create VCSAbstractTest subclass within test package
   - Override `setUp()` method
+    - Call `super.setUp()` 
     - Create all neccessary data, test repositories and so on
     - Note that `vcs` instance is already created within `super.setUp()`
   - Create @After method if neccessary
   - Use `mockedVCSRepo` as `IVCSRepositoryWorkspace` parameter passed to VCS constructor. VCS implementation must use this `IVCSRepositoryWorkspace` for obtaining LWC. Also this instance will be tested for method calling using Mockito partial mocking by VCSAbstractTest
+  - `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
   - `getVCS(...)` method must return IVCS implementation which will be tested. Also this IVCS implementation must use provided `mockedVCSRepo`
       ```java
       @Override
@@ -55,13 +57,12 @@ dependencies {
 - `getTestRepoUrl()` method must return string url to Test Repository
 - `getBranches()` method must return set of branches names from Test Repository
 - `getCommitMessagesRemote(String branchName)` must return set of commit messages of branch `branchName` from Test Repository
-- `checkout(String branchName, IVCSLockedWorkingCopy wc)` method must checout branch `branchName` to provided LWC from Test Repository
-- `setMakeFailureOnVCSReset(Boolean doMakeFailure)` must make so next `merge` operation will fail on LWC reset caused by merge conflict. This need to test LWC corruption.
+- `checkout(String branchName, IVCSLockedWorkingCopy wc)` method must checkout branch `branchName` to provided LWC from Test Repository
+- `setMakeFailureOnVCSReset(Boolean doMakeFailure)` must make so next `merge` operation will fail on LWC reset caused by merge conflict. This need to test LWC corruption. See examples below.
 - `sendFile(...)` methods must commit an existing provided file and send it to test Repository. I.e. commit and push for Git, just commit for SVN.
 - Use `localVCSWorkspace` field as Workspace Home
-- Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
-- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
-- Use `repoName` field to get current testing repository name. It generates again for each test
+- Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git) as an exmaple
+- Use `repoName` field to get current testing repository name. It generates again for each test randomly (uuid is used)
 - Use `repoUrl` field to get url to current testing repository.
 - Use `vcs` field as current IVCS implementation which is being testing
 
