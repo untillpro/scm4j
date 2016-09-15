@@ -24,6 +24,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 	- named as "lock_" + LWC folder name
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
+	- Implemented as [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) separate project
 - `PKVCSMergeResult`, Merge Result
 	- Result of vcs merge operation. Could be successful or failed and provides list of conflicting files if failed.
 - Head, Head Commit, Branch Head
