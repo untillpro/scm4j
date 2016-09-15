@@ -40,6 +40,7 @@ dependencies {
 ```
 - Create VCSAbstractTest subclass within test package
   - Override `setUp()` method
+    - Call `super.setUp()` 
     - Create all neccessary data, test repositories and so on
     - Note that `vcs` instance is already created within `super.setUp()`
   - Create @After method if neccessary
