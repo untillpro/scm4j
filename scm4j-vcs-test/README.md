@@ -61,7 +61,7 @@ dependencies {
 - Use `localVCSWorkspace` field as Workspace Home
 - Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
 - `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
-- Use `repoName` field to get current testing repository name. It generates again for each test
+- Use `repoName` field to get current testing repository name. It generates again for each test randomly (uuid is used)
 - Use `repoUrl` field to get url to current testing repository.
 - Use `vcs` field as current IVCS implementation which is being testing
 
