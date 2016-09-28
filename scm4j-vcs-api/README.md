@@ -1,5 +1,4 @@
 # Overview
-
 Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc. Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods
 - Working Copy utility classes which are required if vcs-related operations which are need to be executed on a local file system (such as merge)
@@ -7,7 +6,8 @@ Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN,
 Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for functional testing and describing behaviour of IVCS implementation
 
 # Terms
-
+- IVCS
+	- Basic exposed interface which contains vcs-related operations
 - Workspace Home
 	- Home folder of all vcs-related operations which are require to use local file system.
 - Repository workspace
@@ -24,13 +24,13 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 	- named as "lock_" + LWC folder name
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
+	- Implemented as [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) separate project
 - `PKVCSMergeResult`, Merge Result
 	- Result of vcs merge operation. Could be successful or failed and provides list of conflicting files if failed.
 - Head, Head Commit, Branch Head
 	- The latest commit or state of a branch
 
 # Using VCS interface
-
 IVCS interface consists of few basic vcs functions.
 - `void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage)`
 	- Creates a new branch with name `dstBranchPath` from the Head of `srcBranchPath`. 
@@ -63,7 +63,6 @@ IVCS interface consists of few basic vcs functions.
 	- Returns list of file names with relative paths showing what was made within srcBranchName relative to destBranchName 
 
 # Using Locked Working Copy
-
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
 - The simple way to allocate place for vcs operations execution
 - Make this place "transactional", protecting this place of interfere from other vcs operations
@@ -100,7 +99,6 @@ Steps to use LWC:
 - If a Working copy can not be reused due of VCS system data damage (e.g. .git, .svn folders) or due of vcs Working Copy can not be cleaned, reverted, switched, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
 
 # Folder structure
-
 - Workspace Home folder (e.g. c:\temp\pk-vcs-workspces\)
 	- Repository Workspace 2 (e.g. <Workspace Home>\https_github_com_projectkaiser\
 		- Working Copy 1 
@@ -114,14 +112,12 @@ Steps to use LWC:
 	- ...
 
 # Working Copy locking way
-
 A special Lock File is created on `IVCSLockedWorkingCopy` instance creation and placed beside the LWC folder which been locking. This file is keeping opened with exclusive lock so any other process (from local or remote PC) can not open it again. So to check if a LWC folder is free it is need to try to lock according Lock File. If success then the according folder was free and can be assigned to current `IVCSLockedWorkingCopy` instance. Otherwise folder is locked and we need to check other folders. If there are no folders left then new folder is created and locked.
 So actually a Lock File is locked, not the LWC folder itself. 
 Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 
 # Developing IVCS implementation
-
-- Add github-hosted VCS API as maven artifact using jitpack.io. As an example, add following to gradle.build file:
+- Add github-hosted VCS API as maven artifact using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
 	```gradle
 	allprojects {
 		repositories {
@@ -187,7 +183,6 @@ artifacts {
 After that the `gralde build` command will produce 3 JARs.
 
 # See also
-
 - [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test)
 - [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
 - [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn)
