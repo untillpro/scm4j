@@ -26,7 +26,7 @@ Pk-vcs-test project provides base functional test class for IVCS implementations
 - Workspace Home folder deletes. So all files and dirs within Workspace Home must be released
 
 # Implementing VCS test
-- Add github-hosted pk-vcs-test project as maven dependency using [jitpack.io](https://jitpack.io/). As a gradle exmaple, add following to gradle.build file:
+- Add github-hosted pk-vcs-test project as maven dependency using [jitpack.io](https://jitpack.io/). As a gradle example, add following to gradle.build file:
 ```gradle
 allprojects {
 	repositories {
@@ -53,13 +53,9 @@ dependencies {
     	return new GitVCS(mockedVCSRepo);
     }
 ```
-- `getVCSTypeString()` method must return short VCS name, e.g. "git", "svn"
+- `getVCSTypeString()` method must return short VCS name, e.g. "git", "svn" (same as `IVC.getVCSTypeString()`)
 - `getTestRepoUrl()` method must return string url to Test Repository
-- `getBranches()` method must return set of branches names from Test Repository
-- `getCommitMessagesRemote(String branchName)` must return set of commit messages of branch `branchName` from Test Repository
-- `checkout(String branchName, IVCSLockedWorkingCopy wc)` method must checkout branch `branchName` to provided LWC from Test Repository
 - `setMakeFailureOnVCSReset(Boolean doMakeFailure)` must make so next `merge` operation will fail on LWC reset caused by merge conflict. This need to test LWC corruption. See examples below.
-- `sendFile(...)` methods must commit an existing provided file and send it to test Repository. I.e. commit and push for Git, just commit for SVN.
 - Use `localVCSWorkspace` field as Workspace Home
 - Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git) as an exmaple
 - Use `repoName` field to get current testing repository name. It generates again for each test randomly (uuid is used)
