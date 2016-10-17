@@ -39,20 +39,20 @@ dependencies {
 }
 ```
 - Create VCSAbstractTest subclass within test package
-  - Override `setUp()` method
-    - Call `super.setUp()` 
-    - Create all neccessary data, test repositories and so on
-    - Note that `vcs` instance is already created within `super.setUp()`
-  - Create @After method if neccessary
-  - Use `mockedVCSRepo` as `IVCSRepositoryWorkspace` parameter passed to VCS constructor. VCS implementation must use this `IVCSRepositoryWorkspace` for obtaining LWC. Also this instance will be tested for method calling using Mockito partial mocking by VCSAbstractTest
-  - `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
-  - `getVCS(...)` method must return IVCS implementation which will be tested. Also this IVCS implementation must use provided `mockedVCSRepo`
-      ```java
-      @Override
-    	protected IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo) {
-    		return new GitVCS(mockedVCSRepo);
-    	}
-      ```
+- Override `setUp()` method
+	- Call `super.setUp()` 
+	- Create all neccessary data, test repositories and so on
+	- Note that `vcs` instance is already created within `super.setUp()`
+- Create @After method if neccessary
+- Use `mockedVCSRepo` as `IVCSRepositoryWorkspace` parameter passed to VCS constructor. VCS implementation must use this `IVCSRepositoryWorkspace` for obtaining LWC. Also this instance will be tested for method calling using Mockito partial mocking by VCSAbstractTest
+- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
+- `getVCS(...)` method must return IVCS implementation which will be tested. Also this IVCS implementation must use provided `mockedVCSRepo`
+```java
+    @Override
+    protected IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo) {
+    	return new GitVCS(mockedVCSRepo);
+    }
+```
 - `getVCSTypeString()` method must return short VCS name, e.g. "git", "svn"
 - `getTestRepoUrl()` method must return string url to Test Repository
 - `getBranches()` method must return set of branches names from Test Repository
