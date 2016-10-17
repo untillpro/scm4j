@@ -8,7 +8,7 @@ import com.projectkaiser.scm.vcs.api.exceptions.EVCSFileNotFound;
 public interface IVCS {
 	void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage);
 
-	PKVCSMergeResult merge(String srcBranchPath, String dstBranchPath, String commitMessage);
+	VCSMergeResult merge(String srcBranchPath, String dstBranchPath, String commitMessage);
 
 	void deleteBranch(String branchPath, String commitMessage);
 
@@ -24,7 +24,7 @@ public interface IVCS {
 
 	void setFileContent(String branchName, String filePath, String content, String commitMessage);
 	
-	List<String> getBranchesDiff(String srcBranchName, String destBranchName);
+	List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName);
 	
 	Set<String> getBranches();
 	
@@ -32,4 +32,5 @@ public interface IVCS {
 	
 	String getVCSTypeString();
 	
+	void removeFile(String branchName, String filePath, String commitMessage);
 }

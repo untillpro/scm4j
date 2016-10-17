@@ -3,7 +3,7 @@ package com.projectkaiser.scm.vcs.api;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PKVCSMergeResult {
+public class VCSMergeResult {
 
 	private Boolean success;
 	private List<String> conflictingFiles = new ArrayList<String>();
@@ -23,5 +23,4 @@ public class PKVCSMergeResult {
 	public void setConflictingFiles(List<String> conflictingFiles) {
 		this.conflictingFiles = conflictingFiles;
 	}
-
 }
