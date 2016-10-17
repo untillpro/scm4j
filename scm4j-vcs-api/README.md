@@ -25,23 +25,24 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
 	- Implemented as [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) separate project
-- `PKVCSMergeResult`, Merge Result
+- `VCSMergeResult`, Merge Result
 	- Result of vcs merge operation. Could be successful or failed and provides list of conflicting files if failed.
 - Head, Head Commit, Branch Head
 	- The latest commit or state of a branch
 
 # Using VCS interface
 IVCS interface consists of few basic vcs functions.
+Note: null passed as a branch name is considered as main branch: master for Git, trunk for SVN etc. Also any branch name is considered as user-created branch within conventional place for branches: any branch except master for Git, any branch within "Branches" branch for SVN etc. For SVN do not use "Branches\my-branch" as branch name, use "my-branch" instead.
 - `void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage)`
 	- Creates a new branch with name `dstBranchPath` from the Head of `srcBranchPath`. 
 	- commitMessage is a log message which will be attached to branch create operation if it possible (e.g. Git does not posts branch create operation as a separate commit)
-- `PKVCSMergeResult merge(String srcBranchPath, String dstBranchPath, String commitMessage);`
+- `VCSMergeResult merge(String srcBranchPath, String dstBranchPath, String commitMessage);`
 	- Merge all commits from `srcBranchPath` to `dstBranchPah` with `commitMessage` attached
-	- `PKVCSMergeResult.getSuccess() == true`
+	- `VCSMergeResult.getSuccess() == true`
 		- merge is successful
-	- `PKVCSMergeResult.getSuccess() == false`
+	- `VCSMergeResult.getSuccess() == false`
 		- Automatic merge can not be completed due of conflicting files
-		- `PKVCSMergeResult.getConflictingFiles()` contains pathes to conflicting files
+		- `VCSMergeResult.getConflictingFiles()` contains pathes to conflicting files
 	- Heads of branches `srcBranchName` and `dstBranchName` are used
 - `void deleteBranch(String branchPath, String commitMessage)`
 	- Deletes branch with path `branchPath` and attaches `commitMessage` to branch delete operation if possible (e.g. Git does not posts branch delete operation as a separate commit
@@ -59,8 +60,16 @@ IVCS interface consists of few basic vcs functions.
 - `void setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
-- `List<String> getBranchesDiff(String srcBranchName, String destBranchName)`
-	- Returns list of file names with relative paths showing what was made within srcBranchName relative to destBranchName 
+- `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
+	- Returns list of file names with relative paths and modification types showing what was made within srcBranchName relative to destBranchName
+- `Set<String> getBranches()`
+	- Returns list of names of all branches. Branches here are considered as user-created branches. E.g. for git they are all branches, for SVN are branches within "Branches" branch, not "Trunk" or "Tags" branches
+- `List<String> getCommitMessages(Stinng branchName)`
+	- Returns list of all commit messages of branch `branchName`
+- `String getVCSTypeString`
+	- Returns short name of current IVCS implementation: "git", "svn" etc
+- `void removeFile(String branchName, String filePath, String commitMessage)`
+	- Removes the file located by `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept
 
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
