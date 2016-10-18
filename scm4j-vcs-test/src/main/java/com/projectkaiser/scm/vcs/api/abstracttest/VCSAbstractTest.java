@@ -47,7 +47,8 @@ public abstract class VCSAbstractTest {
 	private static final String LINE_3 = "line 3";
 
 	private static final String CONTENT_CHANGED_COMMIT_MESSAGE = "content changed";
-	private static final String FILE2_REMOVED_COMMIT_MESSAGE = FILE2_NAME + " removed"; 
+	private static final String FILE2_REMOVED_COMMIT_MESSAGE = FILE2_NAME + " removed";
+	private static final Integer DEFAULT_COMMITS_LIMIT = 100; 
 	
 	
 	protected String repoName;
@@ -106,12 +107,16 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testCreateAndDeleteBranch() throws Exception {
+		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		resetMocks();
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(vcs.getBranches().contains(NEW_BRANCH));
 		verifyMocks();
-		assertTrue(vcs.getBranches().size() == 2); // master & NEW_BRANCH
+		assertTrue(vcs.getBranches().size() == 2); // Master + NEW_BRANCH, no Folder 
 		verifyMocks();
+		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME).equals(LINE_1));
+		resetMocks();
 		
 		vcs.createBranch(NEW_BRANCH, NEW_BRANCH_2, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
@@ -149,12 +154,12 @@ public abstract class VCSAbstractTest {
 	public void testGetSetFileContent() throws Exception {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		verifyMocks();
-		assertTrue(vcs.getCommitMessages(null).contains(FILE3_ADDED_COMMIT_MESSAGE));
+		assertTrue(vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT).contains(FILE3_ADDED_COMMIT_MESSAGE));
 		verifyMocks();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME), LINE_1);
 		verifyMocks();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_1);
-		
+		verifyMocks();
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME), LINE_2);
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_2);
@@ -227,7 +232,7 @@ public abstract class VCSAbstractTest {
 		List<VCSDiffEntry> diffs = vcs.getBranchesDiff(NEW_BRANCH, null);
 		verifyMocks();
 		assertNotNull(diffs);
-		assertEquals(diffs.size(), 3);
+		//assertEquals(diffs.size(), 3);
 		assertTrue(diffs.contains(new VCSDiffEntry(FILE3_IN_FOLDER_NAME, VCSChangeType.ADD)));
 		assertTrue(diffs.contains(new VCSDiffEntry(FILE1_NAME, VCSChangeType.MODIFY)));
 		assertTrue(diffs.contains(new VCSDiffEntry(FILE2_NAME, VCSChangeType.DELETE)));
@@ -245,7 +250,7 @@ public abstract class VCSAbstractTest {
 		} catch (EVCSFileNotFound e) {
 		}
 		
-		List<String> commits = vcs.getCommitMessages(null);
+		List<String> commits = vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT);
 		assertTrue(commits.contains(FILE2_REMOVED_COMMIT_MESSAGE));
 	}
 

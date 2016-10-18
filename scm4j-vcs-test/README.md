@@ -1,5 +1,5 @@
 # Overview
-Pk-vcs-test project provides base functional test class for IVCS implementations subclassed from [pk-vcs-api](https://github.com/ProjectKaiser/pk-vcs-api). It used as maven dependency for [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn) and other VCS support libraries. All neccessary vcs-related functional testing is implemented within pk-vcs-test. It is need to implement just few abstract methods.
+Pk-vcs-test project provides base functional test class for IVCS implementations subclassed from [pk-vcs-api](https://github.com/ProjectKaiser/pk-vcs-api). It used as maven dependency for [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn) and other VCS support libraries. All necessary vcs-related functional testing is implemented within pk-vcs-test. It is need to implement just few abstract methods.
 
 # Terms
 
@@ -41,11 +41,11 @@ dependencies {
 - Create VCSAbstractTest subclass within test package
 - Override `setUp()` method
 	- Call `super.setUp()` 
-	- Create all neccessary data, test repositories and so on
+	- Create all necessary data, test repositories and so on
 	- Note that `vcs` instance is already created within `super.setUp()`
-- Create @After method if neccessary
+- Create @After method if necessary
 - Use `mockedVCSRepo` as `IVCSRepositoryWorkspace` parameter passed to VCS constructor. VCS implementation must use this `IVCSRepositoryWorkspace` for obtaining LWC. Also this instance will be tested for method calling using Mockito partial mocking by VCSAbstractTest
-- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If neccessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
+- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If necessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
 - `getVCS(...)` method must return IVCS implementation which will be tested. Also this IVCS implementation must use provided `mockedVCSRepo`
 ```java
     @Override
@@ -57,7 +57,7 @@ dependencies {
 - `getTestRepoUrl()` method must return string url to Test Repository
 - `setMakeFailureOnVCSReset(Boolean doMakeFailure)` must make so next `merge` operation will fail on LWC reset caused by merge conflict. This need to test LWC corruption. See examples below.
 - Use `localVCSWorkspace` field as Workspace Home
-- Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git) as an exmaple
+- Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git) as an example
 - Use `repoName` field to get current testing repository name. It generates again for each test randomly (uuid is used)
 - Use `repoUrl` field to get url to current testing repository.
 - Use `vcs` field as current IVCS implementation which is being testing
