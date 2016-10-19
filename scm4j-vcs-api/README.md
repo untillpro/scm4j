@@ -1,16 +1,17 @@
 # Overview
 Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc. Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods
-- Working Copy utility classes which are required if vcs-related operations which are need to be executed on a local file system (such as merge)
+- Working Copy utility classes which are required for vcs-related operations which are need to be executed on a local file system (such as merge)
 
 Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for functional testing and describing behaviour of IVCS implementation
 
 # Terms
 - IVCS
-	- Basic exposed interface which contains vcs-related operations
+	- Basic exposed interface which contains vcs-related methods
 - Workspace Home
 	- Home folder of all vcs-related operations which are require to use local file system.
-- Repository workspace
+	- Defined by IVCS-user side
+- Repository Workspace
 	- A folder of separate VCS Repository where Working Copies will be located. Need to group few Working Copies used by one Repository into one folder. E.g. if there are Git and SVN version control systems then need to know which VCS type each Working Copy belongs to.
     - Named automatically as repository url replacing all special characters with "_"
 - Locked Working Copy, LWC
@@ -26,7 +27,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
 	- Implemented as [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) separate project
 - `VCSMergeResult`, Merge Result
-	- Result of vcs merge operation. Could be successful or failed and provides list of conflicting files if failed.
+	- Result of vcs merge operation. Could be successful or failed. Provides list of conflicting files if failed.
 - Head, Head Commit, Branch Head
 	- The latest commit or state of a branch
 - Master Branch
@@ -34,7 +35,7 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 
 # Using VCS interface
 IVCS interface consists of few basic vcs functions.
-Note: null passed as a branch name is considered as main branch: master for Git, trunk for SVN etc. Also any branch name is considered as user-created branch within conventional place for branches: any branch except master for Git, any branch within "Branches" branch for SVN etc. For SVN do not use "Branches\my-branch" as branch name, use "my-branch" instead.
+Note: null passed as a branch name is considered as Master Branch. Also any branch name is considered as user-created branch within conventional place for branches: any branch except "master" for Git, any branch within "Branches" branch for SVN etc. For SVN do not use "Branches\my-branch" as branch name, use "my-branch" instead.
 - `void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage)`
 	- Creates a new branch with name `dstBranchPath` from the Head of `srcBranchPath`. 
 	- commitMessage is a log message which will be attached to branch create operation if it possible (e.g. Git does not posts branch create operation as a separate commit)
@@ -47,13 +48,13 @@ Note: null passed as a branch name is considered as main branch: master for Git,
 		- `VCSMergeResult.getConflictingFiles()` contains paths to conflicting files
 	- Heads of branches `srcBranchName` and `dstBranchName` are used
 - `void deleteBranch(String branchPath, String commitMessage)`
-	- Deletes branch with path `branchPath` and attaches `commitMessage` to branch delete operation if possible (e.g. Git does not posts branch delete operation as a separate commit
+	- Deletes branch with path `branchPath` and attaches `commitMessage` to branch delete operation if possible (e.g. Git does not posts branch delete operation as a separate commit)
 -  `void setCredentials(String user, String password)`
 	- Applies credentials to existing IVCS implementation. I.e. first a IVCS implementation should be created, then credentials should be applied when necessary
 - `void setProxy(String host, int port, String proxyUser, String proxyPassword)`
 	- Sets proxy parameters if necessary
 - `String getRepoUrl()`
-	- Returns string url to current vcs repository
+	- Returns string url of current vcs repository
 - `String getFileContent(String branchName, String fileRelativePath, String encoding)`
 	- Returns file content as a string using `encoding` encoding.
 	- `fileRelativePath` is a path to file within `branchName` branch 
@@ -63,7 +64,7 @@ Note: null passed as a branch name is considered as main branch: master for Git,
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
-	- Returns list of file names with relative paths and modification types showing what was made within srcBranchName relative to destBranchName
+	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
 - `Set<String> getBranches()`
 	- Returns list of names of all branches. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
 - `List<String> getCommitMessages(Sting branchName, Integer limit)`
@@ -81,7 +82,7 @@ Let's assume we developing a multiuser server which has ability to merge branche
 
 Locked Working Copy is a solution which solves these requirements by providing a certain folder and guarantees that this folder will not be assigned to another LWC instance until its `close()` method will be called
 
-Steps to use LWC:
+LWC usage scenario:
 - Create Workspace Home instance providing path to any folder as Workspace Home folder path. This folder will contain repositories folders (if different vcs or repositories are used)
 ```java
 	public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
