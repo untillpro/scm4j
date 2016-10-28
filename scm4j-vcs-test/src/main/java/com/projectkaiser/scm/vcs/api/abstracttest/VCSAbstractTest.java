@@ -50,7 +50,6 @@ public abstract class VCSAbstractTest {
 	private static final String FILE2_REMOVED_COMMIT_MESSAGE = FILE2_NAME + " removed";
 	private static final Integer DEFAULT_COMMITS_LIMIT = 100; 
 	
-	
 	protected String repoName;
 	protected String repoUrl;
 	protected IVCSWorkspace localVCSWorkspace;
@@ -221,11 +220,24 @@ public abstract class VCSAbstractTest {
 	
 	@Test
 	public void testBranchesDiff() throws Exception {
+		/**
+		 * Master Branch
+		 *          f2-
+		 *  f1-   
+		 *          f1m 
+		 *          f3+
+		 *  f2+       	 
+		 *  f1+
+		 */
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+		
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		
+		vcs.removeFile(null,  FILE1_NAME, "file1 removed");
+		
 		vcs.removeFile(NEW_BRANCH, FILE2_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
 		
 		resetMocks();
@@ -252,6 +264,23 @@ public abstract class VCSAbstractTest {
 		
 		List<String> commits = vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT);
 		assertTrue(commits.contains(FILE2_REMOVED_COMMIT_MESSAGE));
+	}
+	
+	@Test
+	public void testGetCommitMessages() throws Exception {
+		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		resetMocks();
+		List<String> commits = vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT);
+		verifyMocks();
+		assertTrue(commits.contains(FILE1_ADDED_COMMIT_MESSAGE));
+		assertTrue(commits.contains(FILE3_ADDED_COMMIT_MESSAGE));
+		commits = vcs.getCommitMessages(null, 1);
+		assertFalse(commits.contains(FILE1_ADDED_COMMIT_MESSAGE));
+		commits = vcs.getCommitMessages(NEW_BRANCH, DEFAULT_COMMITS_LIMIT);
+		assertTrue(commits.contains(FILE2_ADDED_COMMIT_MESSAGE));
 	}
 
 	protected abstract String getTestRepoUrl();
