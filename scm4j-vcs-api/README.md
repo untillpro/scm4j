@@ -35,20 +35,20 @@ Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It
 
 # Using VCS interface
 IVCS interface consists of few basic vcs functions.
-Note: null passed as a branch name is considered as Master Branch. Also any branch name is considered as user-created branch within conventional place for branches: any branch except "master" for Git, any branch within "Branches" branch for SVN etc. For SVN do not use "Branches\my-branch" as branch name, use "my-branch" instead.
-- `void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage)`
-	- Creates a new branch with name `dstBranchPath` from the Head of `srcBranchPath`. 
+Note: null passed as a branch name is considered as Master Branch. Any non-null branch name is considered as user-created branch within conventional place for branches: any branch except "master" for Git, any branch within "Branches" branch for SVN etc. For SVN do not use "Branches\my-branch" as branch name, use "my-branch" instead.
+- `void createBranch(String srcBranchName, String dstBranchName, String commitMessage)`
+	- Creates a new branch with name `dstBranchName` from the Head of `srcBranchName`. 
 	- commitMessage is a log message which will be attached to branch create operation if it possible (e.g. Git does not posts branch create operation as a separate commit)
-- `VCSMergeResult merge(String srcBranchPath, String dstBranchPath, String commitMessage);`
-	- Merge all commits from `srcBranchPath` to `dstBranchPah` with `commitMessage` attached
+- `VCSMergeResult merge(String srcBranchName, String dstBranchName, String commitMessage);`
+	- Merge all commits from `srcBranchName` to `dstBranchName` with `commitMessage` attached
 	- `VCSMergeResult.getSuccess() == true`
 		- merge is successful
 	- `VCSMergeResult.getSuccess() == false`
 		- Automatic merge can not be completed due of conflicting files
 		- `VCSMergeResult.getConflictingFiles()` contains paths to conflicting files
 	- Heads of branches `srcBranchName` and `dstBranchName` are used
-- `void deleteBranch(String branchPath, String commitMessage)`
-	- Deletes branch with path `branchPath` and attaches `commitMessage` to branch delete operation if possible (e.g. Git does not posts branch delete operation as a separate commit)
+- `void deleteBranch(String branchName, String commitMessage)`
+	- Deletes branch with path `branchName` and attaches `commitMessage` to branch delete operation if possible (e.g. Git does not posts branch delete operation as a separate commit)
 -  `void setCredentials(String user, String password)`
 	- Applies credentials to existing IVCS implementation. I.e. first a IVCS implementation should be created, then credentials should be applied when necessary
 - `void setProxy(String host, int port, String proxyUser, String proxyPassword)`

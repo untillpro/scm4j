@@ -6,11 +6,11 @@ import java.util.Set;
 import com.projectkaiser.scm.vcs.api.exceptions.EVCSFileNotFound;
 
 public interface IVCS {
-	void createBranch(String srcBranchPath, String dstBranchPath, String commitMessage);
+	void createBranch(String srcBranchName, String dstBranchName, String commitMessage);
 
-	VCSMergeResult merge(String srcBranchPath, String dstBranchPath, String commitMessage);
+	VCSMergeResult merge(String srcBranchName, String dstBranchName, String commitMessage);
 
-	void deleteBranch(String branchPath, String commitMessage);
+	void deleteBranch(String branchName, String commitMessage);
 
 	void setCredentials(String user, String password);
 
