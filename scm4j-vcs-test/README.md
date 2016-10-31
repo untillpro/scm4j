@@ -14,7 +14,7 @@ Pk-vcs-test project provides base functional test class for IVCS implementations
   - Folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [pk-vcs-api](https://github.com/ProjectKaiser/pk-vcs-api) for details
 - Test Repository
   - A VCS Repository which is used to execute vcs operations which are being tested.
-  - Generates new before and deletes after each test
+  - New Test Repository is generated before and deleted after each test
   - Named randomly (uuid is used)
 
 # Overall testing process
