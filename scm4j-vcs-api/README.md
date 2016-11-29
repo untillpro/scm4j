@@ -1,3 +1,4 @@
+[![Release](https://jitpack.io/v/User/Repo.svg)](https://jitpack.io/#User/Repo)
 # Overview
 Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc. Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods
