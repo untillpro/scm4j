@@ -4,6 +4,15 @@ public class VCSDiffEntry {
 
 	private String filePath;
 	private VCSChangeType changeType;
+	private String unifiedDiff;
+	
+	public String getUnifiedDiff() {
+		return unifiedDiff;
+	}
+
+	public void setUnifiedDiff(String unifiedDiff) {
+		this.unifiedDiff = unifiedDiff;
+	}
 
 	public String getFilePath() {
 		return filePath;
