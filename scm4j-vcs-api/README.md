@@ -1,5 +1,7 @@
-[![Release](https://jitpack.io/v/User/Repo.svg)](https://jitpack.io/#User/Repo)
+[![Release](https://jitpack.io/v/ProjectKaiser/pk-vcs-api.svg)](https://jitpack.io/#ProjectKaiser/pk-vcs-api)	
+
 # Overview
+
 Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc. Pk-vcs-api consists of:
 - IVCS interface which exposes various vcs-related methods
 - Working Copy utility classes which are required for vcs-related operations which are need to be executed on a local file system (such as merge)
