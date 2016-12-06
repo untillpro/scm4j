@@ -1,36 +1,37 @@
 [![Release](https://jitpack.io/v/ProjectKaiser/pk-vcs-api.svg)](https://jitpack.io/#ProjectKaiser/pk-vcs-api)	
 
 # Overview
-
 Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc. Pk-vcs-api consists of:
-- IVCS interface which exposes various vcs-related methods
-- Working Copy utility classes which are required for vcs-related operations which are need to be executed on a local file system (such as merge)
-
-Also see [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) project. It exposes Abstract Test which is used for functional testing and describing behaviour of IVCS implementation
+Pk-vcs-api provides:
+- A simple interface to implement basic VCS-related operations
+- Set of functional tests which are common to each VCS implementation. Functional tests for a certain VCS implementation are done by implementing few abstract methods of base test class. Implemented in [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test)
+- Working copy management for operations which must be executed on local file system
 
 # Terms
-- IVCS
+- `IVCS`
 	- Basic exposed interface which contains vcs-related methods
 - Workspace Home
 	- Home folder of all vcs-related operations which are require to use local file system.
 	- Defined by IVCS-user side
 - Repository Workspace
-	- A folder of separate VCS Repository where Working Copies will be located. Need to group few Working Copies used by one Repository into one folder. E.g. if there are Git and SVN version control systems then need to know which VCS type each Working Copy belongs to.
-    - Named automatically as repository url replacing all special characters with "_"
+	- A separate folder where Working Copies of one certain Repository will be located. Need to group few Working Copies used by one Repository into one folder. E.g. if there are Git and SVN version control systems then need to know which VCS type each Working Copy belongs to.
+    - Created and named automatically as repository url replacing all special characters with "_"
 - Locked Working Copy, LWC
 	- A separate folder used to execute VCS-related operations which are need to be executed on a local file system. E.g. in Git it is need to make checkout somewhere on local file system before making a merge.
 	- Named automatically as uuid, located within Repository Workspace folder
-	- Can be reused for another vcs-related operation automatically
+	- Can be reused for another vcs-related operation automatically. I.e. checkouted once, then switches between branches.
 	- Deletes automatically if last VCS-related operation left the Working Copy in corrupted state, i.e. can not be reverted, re-checked out and so on
 - Lock File
 	- A special empty file which is used to show if according LWC locked or free. If a Lock File has exclusive file system lock then the according LWC folder is considered as locked, otherwise as free
 	- Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
-	- named as "lock_" + LWC folder name
+	- named as "lock_" + <LWC folder name>
 - Abstract Test
-	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass.
+	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass
 	- Implemented as [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) separate project
 - `VCSMergeResult`, Merge Result
 	- Result of vcs merge operation. Could be successful or failed. Provides list of conflicting files if failed.
+- `VCSDiffEntry`, Diff Entry
+	- Result of VCS branches diff operation. Contains Diff type (added, modified, deleted) and unified diff string for a certain file which differs between branches 
 - Head, Head Commit, Branch Head
 	- The latest commit or state of a branch
 - Master Branch
@@ -68,7 +69,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Creates the file and its parent folders if doesn't exists
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
-	- Note: result is summarized commit of a branch `srcBranchName`. It does not depends of what was made in branch `destBranchName` 
+	- Note: result is summarized commit of a branch `srcBranchName`. 
 - `Set<String> getBranches()`
 	- Returns list of names of all branches. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
 - `List<String> getCommitMessages(Sting branchName, Integer limit)`
