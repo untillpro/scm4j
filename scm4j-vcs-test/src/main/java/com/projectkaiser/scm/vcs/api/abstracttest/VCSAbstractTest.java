@@ -37,14 +37,19 @@ public abstract class VCSAbstractTest {
 	private static final String FILE1_NAME = "file1.txt";
 	private static final String FILE2_NAME = "file2.txt";
 	private static final String FILE3_IN_FOLDER_NAME = "folder/file3.txt";
+	private static final String MOD_FILE_NAME = "mod file.txt";
 	private static final String FILE1_ADDED_COMMIT_MESSAGE = FILE1_NAME + " file added";
 	private static final String FILE2_ADDED_COMMIT_MESSAGE = FILE2_NAME + " file added";
 	private static final String FILE3_ADDED_COMMIT_MESSAGE = FILE3_IN_FOLDER_NAME + " file added";
+	private static final String MOD_FILE_ADDED_COMMIT_MESSAGE = MOD_FILE_NAME + " file added";
 	private static final String FILE1_CONTENT_CHANGED_COMMIT_MESSAGE = FILE1_NAME + " content changed";
+	private static final String MOD_FILE_CONTENT_CHANGED_COMMIT_MESSAGE = MOD_FILE_NAME + " content changed";
 	private static final String MERGE_COMMIT_MESSAGE = "merged.";
 	private static final String LINE_1 = "line 1";
 	private static final String LINE_2 = "line 2";
 	private static final String LINE_3 = "line 3";
+	private static final String MOD_LINE_1= "original line";
+	private static final String MOD_LINE_2= "modified line";
 
 	private static final String CONTENT_CHANGED_COMMIT_MESSAGE = "content changed";
 	private static final String FILE2_REMOVED_COMMIT_MESSAGE = FILE2_NAME + " removed";
@@ -222,34 +227,79 @@ public abstract class VCSAbstractTest {
 	public void testBranchesDiff() throws Exception {
 		/**
 		 * Master Branch
-		 *          f2-
-		 *  f1-   
-		 *          f1m 
-		 *          f3+
-		 *  f2+       	 
+		 *  f1-     
+		 *   |     f2-
+		 *   |     mfm
+		 *   |     mf+ (merge)
+		 *   |   /
+		 *  mf+  
+		 *   |     tf+ (merge) 
+		 *   |   /  |
+		 *  tf+    f1m
+		 *   |     f3+
+		 *  f2+  /     	 
 		 *  f1+
+		 *  
+		 *  Result should be: f3+, f1+, f2-.
 		 */
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
 		
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
 		
-		vcs.removeFile(null,  FILE1_NAME, "file1 removed");
+		vcs.setFileContent(null, "trunk file.txt", "dfdfsdf", "trunk file added");
+		
+		vcs.setFileContent(null, MOD_FILE_NAME, MOD_LINE_1, MOD_FILE_ADDED_COMMIT_MESSAGE);
+		
+		vcs.merge(null, NEW_BRANCH, MERGE_COMMIT_MESSAGE);
+		
+		vcs.setFileContent(NEW_BRANCH, MOD_FILE_NAME, MOD_LINE_2, MOD_FILE_CONTENT_CHANGED_COMMIT_MESSAGE);
+		
+		vcs.merge(null, NEW_BRANCH, "merged from trunk");
 		
 		vcs.removeFile(NEW_BRANCH, FILE2_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
+		
+		vcs.removeFile(null,  FILE1_NAME, "file1 removed");
 		
 		resetMocks();
 		List<VCSDiffEntry> diffs = vcs.getBranchesDiff(NEW_BRANCH, null);
 		verifyMocks();
 		assertNotNull(diffs);
-		//assertEquals(diffs.size(), 3);
-		assertTrue(diffs.contains(new VCSDiffEntry(FILE3_IN_FOLDER_NAME, VCSChangeType.ADD)));
-		assertTrue(diffs.contains(new VCSDiffEntry(FILE1_NAME, VCSChangeType.MODIFY)));
-		assertTrue(diffs.contains(new VCSDiffEntry(FILE2_NAME, VCSChangeType.DELETE)));
+		VCSDiffEntry diff;
+		
+		diff = getEntryDiffForFile(diffs, FILE3_IN_FOLDER_NAME);
+		assertNotNull(diff);
+		assertTrue(diff.getChangeType() == VCSChangeType.ADD);
+		assertTrue(diff.getUnifiedDiff().contains("+" + LINE_2));
+		
+		diff = getEntryDiffForFile(diffs, MOD_FILE_NAME);
+		assertNotNull(diff);
+		assertTrue(diff.getChangeType() == VCSChangeType.MODIFY);
+		assertTrue(diff.getUnifiedDiff().contains("-" + MOD_LINE_1));
+		assertTrue(diff.getUnifiedDiff().contains("+" + MOD_LINE_2));
+		
+		diff = getEntryDiffForFile(diffs, FILE1_NAME);
+		assertNotNull(diff);
+		assertTrue(diff.getChangeType() == VCSChangeType.ADD);
+		assertTrue(diff.getUnifiedDiff().contains("+" + LINE_3));
+		
+		diff = getEntryDiffForFile(diffs, FILE2_NAME);
+		assertNotNull(diff);
+		assertTrue(diff.getChangeType() == VCSChangeType.DELETE);
+		assertTrue(diff.getUnifiedDiff().contains("-" + LINE_1));
 	}
 	
+	private VCSDiffEntry getEntryDiffForFile(List<VCSDiffEntry> entries, String filePath) {
+		for (VCSDiffEntry entry : entries) {
+			if (entry.getFilePath().equals(filePath)) {
+				return entry;
+			}
+		}
+		return null;
+	}
+
 	@Test
 	public void testRemoveFile() throws Exception {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
