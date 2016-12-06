@@ -69,7 +69,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Creates the file and its parent folders if doesn't exists
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
-	- Note: result is summarized commit of a branch `srcBranchName`. 
+	- Note: result is a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
 - `Set<String> getBranches()`
 	- Returns list of names of all branches. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
 - `List<String> getCommitMessages(Sting branchName, Integer limit)`
