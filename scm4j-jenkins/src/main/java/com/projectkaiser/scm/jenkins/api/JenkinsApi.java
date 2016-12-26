@@ -8,18 +8,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJenkinsException;
 import com.projectkaiser.scm.jenkins.api.facade.IJenkinsApiFacade;
 import com.projectkaiser.scm.jenkins.api.facade.JenkinsApiHttpFacade;
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
-
-/*
-    http://localhost:8080/hudson/job/toolkit/api/json
-    http://gmpxp:8080/hudson/api/json?tree=jobs[name]
-    http://localhost:8080/hudson/job/toolkit-2/config.xml
-*/
+import com.projectkaiser.scm.jenkins.data.JobListElement;
+import com.projectkaiser.scm.jenkins.data.QueueItem;
 
 public class JenkinsApi implements IJenkinsApi {
 
@@ -30,13 +32,28 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public void runJob(String jobName) {
+	public Long enqueueBuild(String jobName) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/build";
-		facade.getResponsePOST(url, null);
+		HttpResponse resp = facade.getResponsePOST(url, null);
+		Header[] headers = resp.getHeaders("Location");
+		if (headers == null || headers.length == 0) {
+			throw new EPKJenkinsException("Failed to obtain Location header from response");
+		}
+		String[] strs = headers[0].getValue().split("/");
+		return Long.parseLong(strs[strs.length - 1]);
+	}
+	
+	@Override
+	public QueueItem getBuild(Long buildId) throws EPKJNotFound {
+		String url = String.format("queue/item/%d/api/json?pretty=true", buildId);
+		String queueItemJson = facade.getResponseContentGET(url);
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		QueueItem queueItem = gson.fromJson(queueItemJson, QueueItem.class);
+		return queueItem;
 	}
 
 	@Override
-	public void copyJob(String srcName, String dstName) {
+	public void copyJob(String srcName, String dstName) throws EPKJNotFound, EPKJExists {
 		String url = "createItem";
 		Map<String, String> q = new HashMap<String, String>();
 		q.put("name", dstName);
@@ -47,17 +64,17 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public void createJob(String jobName, String jobConfigXML) {
+	public void createJob(String jobName, String jobConfigXML) throws EPKJExists {
 		String url = "createItem";
 		Map<String, String> q = new HashMap<String, String>();
 		q.put("name", jobName);
 		url = appendQuery(url, q);
-		facade.getResponsePOST(url, null);
+		facade.getResponsePOST(url, jobConfigXML);
 	}
 
 	private static String encodeUrl(String str) {
 		try {
-			return URLEncoder.encode(str, "UTF-8");
+			return URLEncoder.encode(str, "UTF-8").replace("+", "%20");
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
 		}
@@ -81,33 +98,46 @@ public class JenkinsApi implements IJenkinsApi {
 		Map<String, String> q = new HashMap<String, String>();
 		q.put("tree", "jobs[name]");
 		url = appendQuery(url, q);
-		String json = facade.getResponseGET(url);
+		String json = facade.getResponseContentGET(url);
 		Gson gson = new GsonBuilder().create();
-		Type type = new TypeToken<Map<String, Map<String, String>>>() {
+		Type type = new TypeToken<Map<String, List<JobListElement>>>() {
 		}.getType();
 
-		Map<String, Map<String, String>> res = gson.fromJson(json, type);
-		return new ArrayList(res.get("jobs").values());
+		Map<String, List<JobListElement>> jobsMap = gson.fromJson(json, type);
+		List<JobListElement> jobs = jobsMap.get("jobs");
+		List<String> res = new ArrayList<>();
+		for (JobListElement job : jobs) {
+			res.add(job.getName());
+		}
+		return res;
 	}
 
 	@Override
-	public String getJobConfigXml(String jobName) {
+	public String getJobConfigXml(String jobName) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/config.xml";
-		return facade.getResponseGET(url);
+		return facade.getResponseContentGET(url);
 	}
 
 	@Override
-	public void updateJobConfigXml(String jobName, String jobConfigXML) {
+	public void updateJobConfigXml(String jobName, String configXml) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/config.xml";
-		facade.getResponsePOST(url, jobConfigXML);
+		facade.getResponsePOST(url, configXml);
 	}
 
 	@Override
-	public JobDetailed getJobDetailed(String jobName) {
+	public JobDetailed getJobDetailed(String jobName) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/api/json?pretty=true";
-		String json = facade.getResponseGET(url);
+		String json = facade.getResponseContentGET(url);
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		JobDetailed job = gson.fromJson(json, JobDetailed.class);
 		return job;
 	}
+
+	@Override
+	public void deleteJob(String jobName) throws EPKJNotFound {
+		String url = "job/" + encodeUrl(jobName) + "/doDelete";
+		facade.getResponsePOST(url, null);
+	}
+
+	
 }

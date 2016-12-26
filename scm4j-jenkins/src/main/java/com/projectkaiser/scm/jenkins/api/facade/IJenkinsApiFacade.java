@@ -1,7 +1,11 @@
 package com.projectkaiser.scm.jenkins.api.facade;
 
-public interface IJenkinsApiFacade {
-	String getResponseGET(String url);
+import org.apache.http.HttpResponse;
 
-	String getResponsePOST(String url, String entity);
+public interface IJenkinsApiFacade {
+	HttpResponse getResponseGET(String url);
+	
+	String getResponseContentGET(String url);
+
+	HttpResponse getResponsePOST(String url, String entity);
 }
