@@ -1,5 +1,7 @@
 package com.projectkaiser.scm.jenkins.api;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -9,20 +11,41 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import com.projectkaiser.scm.jenkins.api.IJenkinsApi;
-import com.projectkaiser.scm.jenkins.api.JenkinsApi;
 import com.sun.org.apache.xml.internal.serialize.OutputFormat;
 import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
 
 public class JenkinsApiTest  {
 	
-	IJenkinsApi api = new JenkinsApi("http://localhost:8080", "", "");
+	IJenkinsApi api; 
 	
+	private static final String TEST_JENKINS_URL = System.getProperty("PK_TEST_JENKINS_URL") == null ? 
+			System.getenv("PK_TEST_JENKINS_URL") : System.getProperty("PK_TEST_JENKINS_URL");
+	private static final String TEST_JENKINS_USER = System.getProperty("PK_TEST_JENKINS_USER") == null ? 
+			System.getenv("PK_TEST_JENKINS_USER") : System.getProperty("PK_TEST_JENKINS_USER");
+		private static final String TEST_JENKINS_PASS = System.getProperty("PK_TEST_JENKINS_PASS") == null ? 
+				System.getenv("PK_TEST_JENKINS_PASS") : System.getProperty("PK_TEST_JENKINS_PASS");
+	
+	@BeforeClass
+	public static void setUpClass() {
+		assertTrue("Set PK_TEST_JENKINS_URL enviroment variable as url to test Jenkins server to execute tests", 
+				TEST_JENKINS_URL != null);
+		assertTrue("Set TEST_JENKINS_USER enviroment variable as test Jenkins server user name", 
+				TEST_JENKINS_USER != null);
+		assertTrue("Set TEST_JENKINS_PASS enviroment variable as test Jenkins server user password", 
+				TEST_JENKINS_PASS != null);
+	}
+	
+	@Before
+	public void setUp() {
+		api = new JenkinsApi(TEST_JENKINS_URL, TEST_JENKINS_USER, TEST_JENKINS_PASS);
+	}
 	
 	public void JenkinsAPITest() throws ParserConfigurationException, SAXException, IOException {
 		String config = api.getJobConfigXml("test job");
