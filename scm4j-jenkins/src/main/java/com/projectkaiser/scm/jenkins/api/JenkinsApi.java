@@ -8,12 +8,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.projectkaiser.scm.jenkins.api.facade.IJenkinsApiFacade;
 import com.projectkaiser.scm.jenkins.api.facade.JenkinsApiHttpFacade;
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
+import com.projectkaiser.scm.jenkins.data.JobListElement;
 
 /*
     http://localhost:8080/hudson/job/toolkit/api/json
@@ -30,9 +34,16 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public void runJob(String jobName) {
+	public Long runJob(String jobName) {
 		String url = "job/" + encodeUrl(jobName) + "/build";
-		facade.getResponsePOST(url, null);
+		HttpResponse resp = facade.getResponsePOST(url, null);
+		Header[] headers = resp.getHeaders("Location");
+		if (headers == null || headers.length == 0) {
+			return -1L;
+		}
+		
+		String[] strs = headers[0].getValue().split("/");
+		return Long.parseLong(strs[strs.length - 1]);
 	}
 
 	@Override
@@ -52,12 +63,12 @@ public class JenkinsApi implements IJenkinsApi {
 		Map<String, String> q = new HashMap<String, String>();
 		q.put("name", jobName);
 		url = appendQuery(url, q);
-		facade.getResponsePOST(url, null);
+		facade.getResponsePOST(url, jobConfigXML);
 	}
 
 	private static String encodeUrl(String str) {
 		try {
-			return URLEncoder.encode(str, "UTF-8");
+			return URLEncoder.encode(str, "UTF-8").replace("+", "%20");
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
 		}
@@ -81,19 +92,24 @@ public class JenkinsApi implements IJenkinsApi {
 		Map<String, String> q = new HashMap<String, String>();
 		q.put("tree", "jobs[name]");
 		url = appendQuery(url, q);
-		String json = facade.getResponseGET(url);
+		String json = facade.getResponseContentGET(url);
 		Gson gson = new GsonBuilder().create();
-		Type type = new TypeToken<Map<String, Map<String, String>>>() {
+		Type type = new TypeToken<Map<String, List<JobListElement>>>() {
 		}.getType();
 
-		Map<String, Map<String, String>> res = gson.fromJson(json, type);
-		return new ArrayList(res.get("jobs").values());
+		Map<String, List<JobListElement>> jobsMap = gson.fromJson(json, type);
+		List<JobListElement> jobs = jobsMap.get("jobs");
+		List<String> res = new ArrayList<>();
+		for (JobListElement job : jobs) {
+			res.add(job.getName());
+		}
+		return res;
 	}
 
 	@Override
 	public String getJobConfigXml(String jobName) {
 		String url = "job/" + encodeUrl(jobName) + "/config.xml";
-		return facade.getResponseGET(url);
+		return facade.getResponseContentGET(url);
 	}
 
 	@Override
@@ -105,9 +121,15 @@ public class JenkinsApi implements IJenkinsApi {
 	@Override
 	public JobDetailed getJobDetailed(String jobName) {
 		String url = "job/" + encodeUrl(jobName) + "/api/json?pretty=true";
-		String json = facade.getResponseGET(url);
+		String json = facade.getResponseContentGET(url);
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		JobDetailed job = gson.fromJson(json, JobDetailed.class);
 		return job;
+	}
+
+	@Override
+	public void deleteJob(String jobName) {
+		String url = "job/" + encodeUrl(jobName) + "/doDelete";
+		facade.getResponsePOST(url, null);
 	}
 }

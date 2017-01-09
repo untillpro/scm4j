@@ -10,14 +10,16 @@ public interface IJenkinsApi {
 
 	JobDetailed getJobDetailed(String jobName);
 
-	void runJob(String jobName);
+	Long runJob(String jobName);
 
-	void updateJobConfigXml(String jobName, String jobConfigXML);
+	void updateJob(String jobName, String jobConfigXML);
 
 	void copyJob(String srcName, String dstName);
 
 	List<String> getJobsList();
 
 	String getJobConfigXml(String jobName);
+	
+	void deleteJob(String jobName);
 	
 }

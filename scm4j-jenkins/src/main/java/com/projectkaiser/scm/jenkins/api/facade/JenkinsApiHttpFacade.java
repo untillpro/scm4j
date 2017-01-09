@@ -73,8 +73,7 @@ public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 	    return false;
 	}
 
-	private String getResponse(HttpRequestBase request) {
-		
+	private HttpResponse getResponse (HttpRequestBase request) {
 		if (!isEmptyString(user) && !isEmptyString(password)) {
 			String userpass = user + ":" + password;
 			String basicAuth = "Basic " + new String(Base64.encodeBase64(userpass.getBytes()));
@@ -85,7 +84,7 @@ public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 			HttpResponse response = client.execute(request);
 			try {
 				processResponse(response);
-				return IOUtils.toString(response.getEntity().getContent());
+				return response;
 			} finally {
 				EntityUtils.consume(response.getEntity());
 				request.releaseConnection();
@@ -94,15 +93,28 @@ public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	private String responseToString(HttpResponse response) {
+		try {
+			return IOUtils.toString(response.getEntity().getContent());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
-	public String getResponseGET(String url) {
+	public String getResponseContentGET(String url) {
+		return responseToString(getResponseGET(url));
+	}
+	
+	@Override
+	public HttpResponse getResponseGET(String url) {
 		HttpGet request = new HttpGet(getBaseAddress() + url);
 		return getResponse(request);
 	}
 
 	@Override
-	public String getResponsePOST(String url, String entity) {
+	public HttpResponse getResponsePOST(String url, String entity) {
 		HttpPost request = new HttpPost(getBaseAddress() + url);
 		if (entity != null) {
 			request.setEntity(new StringEntity(entity, ContentType.create("text/xml", "utf-8")));
