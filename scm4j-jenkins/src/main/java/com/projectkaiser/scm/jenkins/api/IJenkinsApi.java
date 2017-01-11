@@ -10,9 +10,9 @@ public interface IJenkinsApi {
 
 	JobDetailed getJobDetailed(String jobName);
 
-	Long runJob(String jobName);
+	Long enqueueBuild(String jobName);
 
-	void updateJob(String jobName, String jobConfigXML);
+	void updateJobConfigXml(String jobName, String configXml);
 
 	void copyJob(String srcName, String dstName);
 

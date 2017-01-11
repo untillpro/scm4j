@@ -86,7 +86,6 @@ public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 				processResponse(response);
 				return response;
 			} finally {
-				EntityUtils.consume(response.getEntity());
 				request.releaseConnection();
 			}
 		} catch (Exception e) {

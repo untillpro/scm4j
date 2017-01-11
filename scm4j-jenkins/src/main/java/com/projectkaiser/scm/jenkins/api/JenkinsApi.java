@@ -19,12 +19,6 @@ import com.projectkaiser.scm.jenkins.api.facade.JenkinsApiHttpFacade;
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
 import com.projectkaiser.scm.jenkins.data.JobListElement;
 
-/*
-    http://localhost:8080/hudson/job/toolkit/api/json
-    http://gmpxp:8080/hudson/api/json?tree=jobs[name]
-    http://localhost:8080/hudson/job/toolkit-2/config.xml
-*/
-
 public class JenkinsApi implements IJenkinsApi {
 
 	private IJenkinsApiFacade facade;
@@ -34,7 +28,7 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public Long runJob(String jobName) {
+	public Long enqueueBuild(String jobName) {
 		String url = "job/" + encodeUrl(jobName) + "/build";
 		HttpResponse resp = facade.getResponsePOST(url, null);
 		Header[] headers = resp.getHeaders("Location");
@@ -113,9 +107,9 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public void updateJobConfigXml(String jobName, String jobConfigXML) {
+	public void updateJobConfigXml(String jobName, String configXml) {
 		String url = "job/" + encodeUrl(jobName) + "/config.xml";
-		facade.getResponsePOST(url, jobConfigXML);
+		facade.getResponsePOST(url, configXml);
 	}
 
 	@Override
