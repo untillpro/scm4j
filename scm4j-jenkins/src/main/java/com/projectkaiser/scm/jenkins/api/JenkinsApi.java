@@ -14,10 +14,12 @@ import org.apache.http.HttpResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.projectkaiser.scm.jenkins.api.exceptions.ESCMJenkinsException;
 import com.projectkaiser.scm.jenkins.api.facade.IJenkinsApiFacade;
 import com.projectkaiser.scm.jenkins.api.facade.JenkinsApiHttpFacade;
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
 import com.projectkaiser.scm.jenkins.data.JobListElement;
+import com.projectkaiser.scm.jenkins.data.QueueItem;
 
 public class JenkinsApi implements IJenkinsApi {
 
@@ -33,11 +35,19 @@ public class JenkinsApi implements IJenkinsApi {
 		HttpResponse resp = facade.getResponsePOST(url, null);
 		Header[] headers = resp.getHeaders("Location");
 		if (headers == null || headers.length == 0) {
-			return -1L;
+			throw new ESCMJenkinsException("Failed to obtain Location header from response");
 		}
-		
 		String[] strs = headers[0].getValue().split("/");
 		return Long.parseLong(strs[strs.length - 1]);
+	}
+	
+	@Override
+	public QueueItem getBuild(Long buildId) {
+		String url = String.format("queue/item/%d/api/json?pretty=true", buildId);
+		String queueItemJson = facade.getResponseContentGET(url);
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		QueueItem queueItem = gson.fromJson(queueItemJson, QueueItem.class);
+		return queueItem;
 	}
 
 	@Override
@@ -126,4 +136,6 @@ public class JenkinsApi implements IJenkinsApi {
 		String url = "job/" + encodeUrl(jobName) + "/doDelete";
 		facade.getResponsePOST(url, null);
 	}
+
+	
 }

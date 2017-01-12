@@ -3,6 +3,7 @@ package com.projectkaiser.scm.jenkins.api;
 import java.util.List;
 
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
+import com.projectkaiser.scm.jenkins.data.QueueItem;
 
 public interface IJenkinsApi {
 
@@ -11,6 +12,8 @@ public interface IJenkinsApi {
 	JobDetailed getJobDetailed(String jobName);
 
 	Long enqueueBuild(String jobName);
+	
+	QueueItem getBuild(Long buildId);
 
 	void updateJobConfigXml(String jobName, String configXml);
 

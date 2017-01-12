@@ -2,18 +2,14 @@ package com.projectkaiser.scm.jenkins.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringWriter;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.After;
@@ -22,11 +18,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
+import org.w3c.dom.bootstrap.DOMImplementationRegistry;
+import org.w3c.dom.ls.DOMImplementationLS;
+import org.w3c.dom.ls.LSInput;
+import org.w3c.dom.ls.LSOutput;
+import org.w3c.dom.ls.LSParser;
+import org.w3c.dom.ls.LSSerializer;
 
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
-import com.sun.org.apache.xml.internal.serialize.OutputFormat;
-import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
+import com.projectkaiser.scm.jenkins.data.QueueItem;
 
 public class JenkinsApiTest  {
 	
@@ -79,20 +79,23 @@ public class JenkinsApiTest  {
 	}
 	
 	@Test
-	public void testEnqueueBuild() throws Exception {
-		Long jobId = api.enqueueBuild(TEST_JOB_NAME);
-		assertTrue(jobId > 0);
+	public void testEnqueueBuild() {
+		Long buildId = api.enqueueBuild(TEST_JOB_NAME);
+		assertTrue(buildId > 0);
+		assertNotNull(api.getBuild(buildId));
+	}
+	
+	@Test 
+	public void testGetBuild() {
+		Long buildId = api.enqueueBuild(TEST_JOB_NAME);
+		QueueItem item = api.getBuild(buildId);
+		assertNotNull(item);
+		assertNotNull(item.getId());
+		assertEquals(item.getUrl(), String.format("queue/item/%d/", item.getId()));		
 	}
 
-	
-	public void JenkinsAPITest() throws ParserConfigurationException, SAXException, IOException {
-		String config = api.getJobConfigXml("test job");
-		api.createJob("newe4job", config);
-	}
-	
-	
 	@Test
-	public void testChangeJob() throws ParserConfigurationException, SAXException, IOException {
+	public void testChangeJob() throws Exception {
 		Document doc = getJobDocument(TEST_JOB_NAME);
 		NodeList nodes = doc.getElementsByTagName("disabled");
         nodes.item(0).setTextContent("true");
@@ -123,22 +126,29 @@ public class JenkinsApiTest  {
 		}
 	}
 	
-	private void updateJob(String jobName, Document doc) throws IOException {
-		OutputFormat format = new OutputFormat (doc); 
-        StringWriter stringOut = new StringWriter ();    
-        XMLSerializer serial   = new XMLSerializer (stringOut, 
-                                                    format);
-        serial.serialize(doc);
-        api.updateJobConfigXml(jobName, stringOut.toString());
+	private void updateJob(String jobName, Document doc) throws Exception {
+		DOMImplementationRegistry registry = DOMImplementationRegistry.newInstance();    
+        DOMImplementationLS impl = (DOMImplementationLS) registry.getDOMImplementation("XML 3.0 LS 3.0");
+	    LSSerializer serializer = impl.createLSSerializer();
+        LSOutput output = impl.createLSOutput();
+        output.setEncoding("UTF-8");
+        ByteArrayOutputStream stringOut = new ByteArrayOutputStream();
+        output.setByteStream(stringOut);
+        serializer.write(doc, output);
+        api.updateJobConfigXml(jobName, new String(stringOut.toByteArray(), "UTF-8"));
 	}
 
-	private Document getJobDocument(String jobName) throws ParserConfigurationException, SAXException, IOException {
-		
-		String xml = api.getJobConfigXml(jobName);
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        DocumentBuilder db = dbf.newDocumentBuilder();
-        ByteArrayInputStream input =  new ByteArrayInputStream(xml.getBytes("UTF-8"));
-        Document doc = db.parse(input);
+	private Document getJobDocument(String jobName) throws Exception {
+		DOMImplementationRegistry registry = DOMImplementationRegistry.newInstance();    
+        DOMImplementationLS impl = (DOMImplementationLS) registry.getDOMImplementation("XML 3.0 LS 3.0");
+        
+        LSParser parser = impl.createLSParser(DOMImplementationLS.MODE_SYNCHRONOUS, null);
+        LSInput input = impl.createLSInput();
+        
+        String xml = api.getJobConfigXml(jobName);
+        input.setStringData(xml);
+
+		Document doc = parser.parse(input);
         return doc;
 	}
 	
