@@ -8,7 +8,7 @@
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <jdk>JDK7</jdk>
+  <jdk>(default)</jdk>
   <triggers>
     <hudson.triggers.SCMTrigger>
       <spec>*/2 * * * *</spec>
@@ -19,9 +19,9 @@
   <builders/>
   <publishers>
     <hudson.tasks.Mailer plugin="mailer@1.11">
-      <recipients>kvn@sigma-soft.spb.ru</recipients>
+      <recipients></recipients>
       <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
-      <sendToIndividuals>true</sendToIndividuals>
+      <sendToIndividuals>false</sendToIndividuals>
     </hudson.tasks.Mailer>
   </publishers>
   <buildWrappers/>
