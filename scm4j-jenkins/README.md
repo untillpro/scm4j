@@ -16,6 +16,18 @@ Pk-jenkins is a tiny framework used to manage basic Jenkins tasks:
   - A build queue element. Represents a separate build for a task: color, state(running, finished, stuck etc) etc 
   
 # Using pk-jenkins Api
+- Add github-hosted pk-jenkins project as maven dependency using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
+	```gradle
+	allprojects {
+		repositories {
+			maven { url "https://jitpack.io" }
+		}
+	}
+	
+	dependencies {
+		compile 'com.github.ProjectKaiser:pk-jenkins:master-SNAPSHOT'
+	}
+	```
 - Create IJenkinsApi implementation class providing Jenkins server url, username and password
 ```java
 	IJenkinsApi jenkins = new JenkinsApi("http://localhost:8080", "user", "password");
