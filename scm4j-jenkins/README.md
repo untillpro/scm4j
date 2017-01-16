@@ -46,6 +46,7 @@ Also following environment vars or JVM vars must be defined:
   - Jenkins username used for run tests
 - PK_TEST_JENKINS_PASS
   - Password of Jenkins user used for run tests
+  
 To run functional tests just execute JenkinsApiTest class as JUnit test. All jobs created during testing are deleted after automatically
  
 
