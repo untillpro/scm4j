@@ -7,7 +7,12 @@ Pk-jenkins is a framework used to communicate with Jenkins server exposing base 
 
 # Terms
 - Job
-  - Alias of project in Jenkins terms
+  - Alias of Project in Jenkins terms
+- Job Detailed
+  - An user-level Job description: name, builds list etc 
+- Job Config Xml
+  - A Jenkins-level Job description:  
+  
   
 # Using pk-jenkins Api
 - Create IJenkinsApi implementation class providing Jenkins server url, username and password
@@ -15,7 +20,7 @@ Pk-jenkins is a framework used to communicate with Jenkins server exposing base 
 	IJenkinsApi jenkins = new JenkinsApi("http://localhost:8080", "user", "password");
 ```
 - `void createJob(String jobName, String jobConfigXML)`
-  - Creates new job named `jobName` with provide job config xml. Use `getJobConfigXml()` to obtain one from an existing Job
+  - Creates new job named `jobName` with provided job config xml. Use `getJobConfigXml()` to obtain one from an existing Job
   
 
 

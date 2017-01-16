@@ -14,7 +14,9 @@ import org.apache.http.HttpResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.projectkaiser.scm.jenkins.api.exceptions.ESCMJenkinsException;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJenkinsException;
 import com.projectkaiser.scm.jenkins.api.facade.IJenkinsApiFacade;
 import com.projectkaiser.scm.jenkins.api.facade.JenkinsApiHttpFacade;
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
@@ -30,19 +32,19 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public Long enqueueBuild(String jobName) {
+	public Long enqueueBuild(String jobName) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/build";
 		HttpResponse resp = facade.getResponsePOST(url, null);
 		Header[] headers = resp.getHeaders("Location");
 		if (headers == null || headers.length == 0) {
-			throw new ESCMJenkinsException("Failed to obtain Location header from response");
+			throw new EPKJenkinsException("Failed to obtain Location header from response");
 		}
 		String[] strs = headers[0].getValue().split("/");
 		return Long.parseLong(strs[strs.length - 1]);
 	}
 	
 	@Override
-	public QueueItem getBuild(Long buildId) {
+	public QueueItem getBuild(Long buildId) throws EPKJNotFound {
 		String url = String.format("queue/item/%d/api/json?pretty=true", buildId);
 		String queueItemJson = facade.getResponseContentGET(url);
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -51,7 +53,7 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public void copyJob(String srcName, String dstName) {
+	public void copyJob(String srcName, String dstName) throws EPKJNotFound, EPKJExists {
 		String url = "createItem";
 		Map<String, String> q = new HashMap<String, String>();
 		q.put("name", dstName);
@@ -62,7 +64,7 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public void createJob(String jobName, String jobConfigXML) {
+	public void createJob(String jobName, String jobConfigXML) throws EPKJExists {
 		String url = "createItem";
 		Map<String, String> q = new HashMap<String, String>();
 		q.put("name", jobName);
@@ -111,19 +113,19 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public String getJobConfigXml(String jobName) {
+	public String getJobConfigXml(String jobName) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/config.xml";
 		return facade.getResponseContentGET(url);
 	}
 
 	@Override
-	public void updateJobConfigXml(String jobName, String configXml) {
+	public void updateJobConfigXml(String jobName, String configXml) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/config.xml";
 		facade.getResponsePOST(url, configXml);
 	}
 
 	@Override
-	public JobDetailed getJobDetailed(String jobName) {
+	public JobDetailed getJobDetailed(String jobName) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/api/json?pretty=true";
 		String json = facade.getResponseContentGET(url);
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -132,7 +134,7 @@ public class JenkinsApi implements IJenkinsApi {
 	}
 
 	@Override
-	public void deleteJob(String jobName) {
+	public void deleteJob(String jobName) throws EPKJNotFound {
 		String url = "job/" + encodeUrl(jobName) + "/doDelete";
 		facade.getResponsePOST(url, null);
 	}

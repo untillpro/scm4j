@@ -1,8 +1,6 @@
 package com.projectkaiser.scm.jenkins.data;
 
 public class QueueItem {
-	// actions
-
 	private boolean blocked;
 
 	private boolean buildable;
@@ -14,8 +12,6 @@ public class QueueItem {
 	private String params;
 
 	private boolean stuck;
-
-	// task
 
 	private String url;
 

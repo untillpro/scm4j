@@ -4,12 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.UUID;
 
 import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.After;
@@ -25,6 +27,8 @@ import org.w3c.dom.ls.LSOutput;
 import org.w3c.dom.ls.LSParser;
 import org.w3c.dom.ls.LSSerializer;
 
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
 import com.projectkaiser.scm.jenkins.data.JobDetailed;
 import com.projectkaiser.scm.jenkins.data.QueueItem;
 
@@ -36,17 +40,15 @@ public class JenkinsApiTest  {
 			System.getenv("PK_TEST_JENKINS_URL") : System.getProperty("PK_TEST_JENKINS_URL");
 	private static final String TEST_JENKINS_USER = System.getProperty("PK_TEST_JENKINS_USER") == null ? 
 			System.getenv("PK_TEST_JENKINS_USER") : System.getProperty("PK_TEST_JENKINS_USER");
-		private static final String TEST_JENKINS_PASS = System.getProperty("PK_TEST_JENKINS_PASS") == null ? 
-				System.getenv("PK_TEST_JENKINS_PASS") : System.getProperty("PK_TEST_JENKINS_PASS");
+	private static final String TEST_JENKINS_PASS = System.getProperty("PK_TEST_JENKINS_PASS") == null ? 
+			System.getenv("PK_TEST_JENKINS_PASS") : System.getProperty("PK_TEST_JENKINS_PASS");
 
-		private static final String TEST_JOB_XML_FN = "TestJob.xml";
+	private static final String TEST_JOB_XML_FN = "TestJob.xml";
+	private static final String TEST_JOB_NAME = "pk_jenkins_test_job";
+	private static final String NEW_JOB_NAME = "pk_jenkins_new__test_job";
+	private static final String TEST_UNEXISTING_JOB_NAME = UUID.randomUUID().toString();
+	private String ethalonJobXML = readResource(this.getClass(), TEST_JOB_XML_FN);
 
-		private static final String TEST_JOB_NAME = "pk_jenkins_test_job";
-
-		private static final String NEW_JOB_NAME = "pk_jenkins_new__test_job";
-		
-		private String ethalonJobXML = readResource(this.getClass(), TEST_JOB_XML_FN);
-	
 	@BeforeClass
 	public static void setUpClass() {
 		assertTrue("Set PK_TEST_JENKINS_URL enviroment variable as url to test Jenkins server to execute tests", 
@@ -69,6 +71,12 @@ public class JenkinsApiTest  {
 		JobDetailed job = api.getJobDetailed(TEST_JOB_NAME);
 		assertTrue(job != null);
 		assertTrue(job.getDisplayName().equals(TEST_JOB_NAME));
+		
+		try {
+			api.getJobDetailed(TEST_UNEXISTING_JOB_NAME);
+			fail(EPKJNotFound.class.getName() + " is not thrown");
+		} catch (EPKJNotFound e) {
+		}
 	}
 	
 	@Test
@@ -76,6 +84,12 @@ public class JenkinsApiTest  {
 		assertTrue(api.getJobsList().contains(TEST_JOB_NAME));
 		String actualJobXML = api.getJobConfigXml(TEST_JOB_NAME);
 		assertTrue(XMLUnit.compareXML(actualJobXML, ethalonJobXML).identical());
+		
+		try {
+			api.createJob(TEST_JOB_NAME, ethalonJobXML);
+			fail(EPKJExists.class.getName() + " is not thrown");
+		} catch (EPKJExists e) {
+		}
 	}
 	
 	@Test
@@ -83,6 +97,12 @@ public class JenkinsApiTest  {
 		Long buildId = api.enqueueBuild(TEST_JOB_NAME);
 		assertTrue(buildId > 0);
 		assertNotNull(api.getBuild(buildId));
+		
+		try {
+			api.enqueueBuild(TEST_UNEXISTING_JOB_NAME);
+			fail(EPKJNotFound.class.getName() + " is not thrown");
+		} catch (EPKJNotFound e) {
+		}
 	}
 	
 	@Test 
@@ -92,6 +112,12 @@ public class JenkinsApiTest  {
 		assertNotNull(item);
 		assertNotNull(item.getId());
 		assertEquals(item.getUrl(), String.format("queue/item/%d/", item.getId()));		
+		
+		try {
+			 api.getBuild(Long.MIN_VALUE);
+			fail(EPKJNotFound.class.getName() + " is not thrown");
+		} catch (EPKJNotFound e) {
+		}
 	}
 
 	@Test
@@ -104,6 +130,12 @@ public class JenkinsApiTest  {
         doc = getJobDocument(TEST_JOB_NAME);
         nodes = doc.getElementsByTagName("disabled");
         assertEquals(nodes.item(0).getTextContent(), "true");
+        
+        try {
+        	updateJob(TEST_UNEXISTING_JOB_NAME, doc);
+        	fail(EPKJNotFound.class.getName() + " is not thrown");
+        } catch (EPKJNotFound e) {
+        }
 	}
 	
 	@Test
@@ -114,6 +146,19 @@ public class JenkinsApiTest  {
 		} finally {
 			api.deleteJob(NEW_JOB_NAME);
 		}
+		
+		try {
+			api.copyJob(TEST_JOB_NAME, TEST_JOB_NAME);
+			fail(EPKJExists.class.getName() + " is not thrown");
+		} catch (EPKJExists e) {
+		}
+		
+		try {
+			api.copyJob(TEST_UNEXISTING_JOB_NAME, NEW_JOB_NAME);
+			fail(EPKJNotFound.class.getName() + " is not thrown");
+		} catch (EPKJNotFound e) {
+		}
+		
 	}
 	
 	@Test
@@ -123,6 +168,12 @@ public class JenkinsApiTest  {
 			assertFalse(api.getJobsList().contains(TEST_JOB_NAME));
 		} finally { 
 			api.createJob(TEST_JOB_NAME, ethalonJobXML);
+		}
+		
+		try {
+			api.deleteJob(TEST_UNEXISTING_JOB_NAME);
+			fail(EPKJNotFound.class.getName() + " is not thrown");
+		} catch (EPKJNotFound e) {
 		}
 	}
 	

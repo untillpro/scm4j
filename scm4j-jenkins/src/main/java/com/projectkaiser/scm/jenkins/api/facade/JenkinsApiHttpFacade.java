@@ -13,9 +13,15 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HTTP;
 
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
+import com.projectkaiser.scm.jenkins.api.exceptions.EPKJenkinsServerException;
+
 
 public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 
+	private static final String JOB_EXISTS_MESSAGE = "A job already exists with the name";
+	private static final CharSequence NO_SUCH_JOB_MESSAGE = "No such job";
 	private CloseableHttpClient client;
 	private String baseAddress;
 	private String user;
@@ -65,11 +71,7 @@ public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 	}
 	
 	public static boolean isEmptyString(String s) {
-	    if (null == s)
-	        return true;
-	    if (s.length() == 0)
-	        return true;
-	    return false;
+		return s == null || s.isEmpty();
 	}
 
 	private HttpResponse getResponse (HttpRequestBase request) {
@@ -78,18 +80,18 @@ public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 			String basicAuth = "Basic " + new String(Base64.encodeBase64(userpass.getBytes()));
 			request.setHeader("Authorization", basicAuth);
 		}
-
+		
+		HttpResponse response;
 		try {
-			HttpResponse response = client.execute(request);
-			try {
-				processResponse(response);
-				return response;
-			} finally {
-				request.releaseConnection();
-			}
+			response = client.execute(request);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
+		} finally {
+			request.releaseConnection();
 		}
+		
+		processResponse(response);
+		return response;
 	}
 	
 	private String responseToString(HttpResponse response) {
@@ -125,22 +127,19 @@ public class JenkinsApiHttpFacade implements IJenkinsApiFacade {
 	private void processResponse(HttpResponse response) {
 		int code = response.getStatusLine().getStatusCode();
 		if (code < HttpStatus.SC_OK || code >= HttpStatus.SC_BAD_REQUEST) {
-			String errorMes;
+			if (code == HttpStatus.SC_NOT_FOUND) {
+				throw new EPKJNotFound(code, "Resource not found");
+			}
 			if (response.containsHeader("X-Error")) {
-				errorMes = response.getLastHeader("X-Error").getValue();
-			} else if (response.containsHeader(HTTP.CONTENT_TYPE) && 
-					response.getLastHeader(HTTP.CONTENT_TYPE).getValue().contains(("text/html"))) {
-				try {
-					errorMes = IOUtils.toString(response.getEntity().getContent());
-				} catch(Exception e) {
-					errorMes = "Failed to read response fom Jenkins server: " + e.getMessage();
+				String errorMes = response.getLastHeader("X-Error").getValue();
+				if (errorMes.contains(JOB_EXISTS_MESSAGE)) {
+					throw new EPKJExists(code, errorMes);
+				} else if(errorMes.contains(NO_SUCH_JOB_MESSAGE)) {
+					throw new EPKJNotFound(code, errorMes);
 				}
 			} else {
-				errorMes = "Unknown error";
+				throw new EPKJenkinsServerException(code, "Server error");
 			}
-			throw new RuntimeException(
-					String.format("Jenkins server returned code %d: %s", code, errorMes));
 		}
 	}
-
 }

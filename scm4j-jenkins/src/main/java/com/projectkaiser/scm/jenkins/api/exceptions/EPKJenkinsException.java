@@ -1,8 +1,8 @@
 package com.projectkaiser.scm.jenkins.api.exceptions;
 
-public class ESCMJenkinsException extends RuntimeException {
+public class EPKJenkinsException extends RuntimeException {
 
-	public ESCMJenkinsException(String string) {
+	public EPKJenkinsException(String string) {
 		super(string);
 	}
 
