@@ -26,4 +26,9 @@ public class VCSWorkspace implements IVCSWorkspace {
 		folder = new File(workspacePath);
 		folder.mkdirs();
 	}
+
+	@Override
+	public String toString() {
+		return folder.toString();
+	}
 }
