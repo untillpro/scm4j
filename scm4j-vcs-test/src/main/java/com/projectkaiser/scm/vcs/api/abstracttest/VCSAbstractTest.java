@@ -240,7 +240,8 @@ public abstract class VCSAbstractTest {
 		 *  f2+  /     	 
 		 *  f1+
 		 *  
-		 *  Result should be: f3+, f1+, f2-.
+		 *  Result should be: f3+, f1+, f2-, mfm.
+		 *  But: Result of merge operation for f1 is missing file even by TortouiseSVN 
 		 */
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
@@ -262,6 +263,11 @@ public abstract class VCSAbstractTest {
 		vcs.removeFile(NEW_BRANCH, FILE2_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
 		
 		vcs.removeFile(null,  FILE1_NAME, "file1 removed");
+		
+		//vcs.setFileContent(null, "folder/file 2 in folder.txt", "file 2 in folder line", "conflicting folder added");
+		vcs.setFileContent(null, "moved file trunk.txt", "file 2 in folder line", "moved file added");
+		//vcs.merge(null, NEW_BRANCH, "merged moved file trunk.txt from trunk");
+		
 		
 		resetMocks();
 		List<VCSDiffEntry> diffs = vcs.getBranchesDiff(NEW_BRANCH, null);
