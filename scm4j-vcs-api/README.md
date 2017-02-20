@@ -148,7 +148,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 		testCompile 'com.github.ProjectKaiser:pk-vcs-test:+'
 	}
 	```
-	This will include VCS API (IVCS, LWC) and Abstract Ttest to your project.
+	This will include VCS API (IVCS, LWC) and Abstract Test to your project.
 	Also you can download release jars from https://github.com/ProjectKaiser/pk-vcs-api/releases, https://github.com/ProjectKaiser/pk-vcs-test/releases
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
