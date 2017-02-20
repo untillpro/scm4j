@@ -108,7 +108,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 
 	@Override
 	public String toString() {
-		return "VCSWorkspace [corrupt=" + corrupt + ", state=" + state.toString() + ", folder=" + folder.toString() + "]";
+		return "LWC [folder=" + folder.toString() + ", corrupt=" + corrupt + ", state=" + state.toString() +"]";
 	}
 
 	@Override

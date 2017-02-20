@@ -61,4 +61,10 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 		return repoUrl;
 	}
 
+	@Override
+	public String toString() {
+		return "VCSRepositoryWorkspace [workspace=" + workspace + ", repoUrl=" + repoUrl + ", repoFolder=" + repoFolder
+				+ "]";
+	}
+
 }
