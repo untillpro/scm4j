@@ -35,7 +35,8 @@ allprojects {
 }
 
 dependencies {
-	testCompile 'com.github.ProjectKaiser:pk-vcs-test:master-SNAPSHOT'
+	// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
+	testCompile 'com.github.ProjectKaiser:pk-vcs-test:+'
 }
 ```
 - Create VCSAbstractTest subclass within test package
