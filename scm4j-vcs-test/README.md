@@ -39,6 +39,7 @@ dependencies {
 	testCompile 'com.github.ProjectKaiser:pk-vcs-test:+'
 }
 ```
+Or download release jars from https://github.com/ProjectKaiser/pk-vcs-test/releases
 - Create VCSAbstractTest subclass within test package
 - Override `setUp()` method
 	- Call `super.setUp()` 
