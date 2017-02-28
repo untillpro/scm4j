@@ -143,13 +143,11 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 	}
 	
 	dependencies {
-		// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
-		compile 'com.github.ProjectKaiser:pk-vcs-api:+'
-		testCompile 'com.github.ProjectKaiser:pk-vcs-test:+'
+		compile 'com.github.ProjectKaiser:pk-vcs-api:master-SNAPSHOT'
+		testCompile 'com.github.ProjectKaiser:pk-vcs-test:master-SNAPSHOT'
 	}
 	```
 	This will include VCS API (IVCS, LWC) and Abstract Ttest to your project.
-	Also you can download release jars from https://github.com/ProjectKaiser/pk-vcs-api/releases, https://github.com/ProjectKaiser/pk-vcs-test/releases
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
 	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
