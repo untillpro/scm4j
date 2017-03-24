@@ -11,9 +11,9 @@ Pk-jenkins is a tiny framework used to manage basic Jenkins tasks:
 - Job Detailed
   - An user-level Job description: name, builds list etc 
 - Job Config Xml
-  - A Jenkins-level Job description: schtdule, used plugins config etc
+  - A Jenkins-level Job description: schedule, used plugins config etc
 - Queue Item
-  - A build queue element. Represents a separate build for a task: color, state(running, finished, stuck etc) etc 
+  - A Jenkins build queue element. Represents a separate build of a Job. Contains such fields as color, state(running, finished, stuck etc) etc 
   
 # Using pk-jenkins Api
 - Add github-hosted pk-jenkins project as maven dependency using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
@@ -36,6 +36,8 @@ Pk-jenkins is a tiny framework used to manage basic Jenkins tasks:
   - Creates new job named `jobName` with provided job config xml. Use `getJobConfigXml()` to obtain one from an existing Job
 - `JobDetailed getJobDetailed(String jobName) throws EPKJNotFound`
   - Returns Job Detailed object
+- `Long enqueueBuild(String jobName)`
+  - Initiates a new build of job named `jobName` and returns id of this build which could be used in `getBuild` method
 - `QueueItem getBuild(Long buildId) throws EPKJNotFound`
   - Returns Queue item object
 - `void updateJobConfigXml(String jobName, String configXml) throws EPKJNotFound`
@@ -49,7 +51,7 @@ Pk-jenkins is a tiny framework used to manage basic Jenkins tasks:
 - `void deleteJob(String jobName) throws EPKJNotFound`
   - Deletes job
   
-#Functional testing
+# Functional testing
 A working Jenkins server is required to run functional tests. 
 Also following environment vars or JVM vars must be defined: 
 - PK_TEST_JENKINS_URL
@@ -57,9 +59,10 @@ Also following environment vars or JVM vars must be defined:
 - TEST_JENKINS_USER
   - Jenkins username used for run tests
 - PK_TEST_JENKINS_PASS
-  - Password of Jenkins user used for run tests
+  - Password of Jenkins user used to run tests
   
-To run functional tests just execute JenkinsApiTest class as JUnit test. All jobs created during testing are deleted after automatically
+To run functional tests just execute JenkinsApiTest class as JUnit test or run `gradle test`. All jobs created during testing are deleted after automatically.
+
  
 
     
