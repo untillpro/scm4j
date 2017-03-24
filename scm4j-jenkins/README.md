@@ -25,7 +25,8 @@ Pk-jenkins is a tiny framework used to manage basic Jenkins tasks:
 	}
 	
 	dependencies {
-		compile 'com.github.ProjectKaiser:pk-jenkins:master-SNAPSHOT'
+		// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
+		compile 'com.github.ProjectKaiser:pk-jenkins:+'
 	}
 	```
 - Create IJenkinsApi implementation class providing Jenkins server url, username and password
