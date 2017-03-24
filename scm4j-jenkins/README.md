@@ -62,9 +62,4 @@ Also following environment vars or JVM vars must be defined:
   - Password of Jenkins user used to run tests
   
 To run functional tests just execute JenkinsApiTest class as JUnit test or run `gradle test`. All jobs created during testing are deleted after automatically.
-
- 
-
-    
-
-
+Note: tests are skipped by gradle if `build` task is present in tasks graph.  
