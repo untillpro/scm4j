@@ -29,6 +29,8 @@ Pk-jenkins is a tiny framework used to manage basic Jenkins tasks:
 		compile 'com.github.ProjectKaiser:pk-jenkins:+'
 	}
 	```
+	This will include pk-jenkins library to your project.
+    Also you can download release jars from https://github.com/ProjectKaiser/pk-jenkins/releases
 - Create IJenkinsApi implementation class providing Jenkins server url, username and password
 ```java
 	IJenkinsApi jenkins = new JenkinsApi("http://localhost:8080", "user", "password");
@@ -63,4 +65,4 @@ Also following environment vars or JVM vars must be defined:
   - Password of Jenkins user used to run tests
   
 To run functional tests just execute JenkinsApiTest class as JUnit test or run `gradle test`. All jobs created during testing are deleted after automatically.
-Note: tests are skipped by gradle if `build` task is present in tasks graph.  
+Note: All tests are ignored if PK_TEST_JENKINS_URL environment var is not defined.

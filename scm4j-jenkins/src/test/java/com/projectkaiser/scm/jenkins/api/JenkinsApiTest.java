@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -51,7 +52,7 @@ public class JenkinsApiTest  {
 
 	@BeforeClass
 	public static void setUpClass() {
-		assertTrue("Set PK_TEST_JENKINS_URL enviroment variable as url to test Jenkins server to execute tests", 
+		assumeTrue("Set PK_TEST_JENKINS_URL environment variable as url to test Jenkins server to execute tests",
 				TEST_JENKINS_URL != null);
 	}
 	
@@ -204,7 +205,7 @@ public class JenkinsApiTest  {
 	}
 	
 	public static String readResource(Class<?> cls, String resourceName) {
-	    StringBuffer res = new StringBuffer();
+	    StringBuilder res = new StringBuilder();
 	    char buf[] = new char[256];
 	    try {
 	        InputStream is = cls.getResourceAsStream(resourceName);
