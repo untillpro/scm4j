@@ -58,9 +58,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 				if (!lockFile.exists()) {
 					continue;
 				}
-				if (!tryLockFile(lockFile)) {
-					continue;
-				} else {
+				if (tryLockFile(lockFile)) {
 					folder = file;
 					state = VCSLockedWorkingCopyState.LOCKED;
 					return;
