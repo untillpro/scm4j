@@ -53,7 +53,7 @@ public class JenkinsApiTest  {
 	@BeforeClass
 	public static void setUpClass() {
 		assumeTrue("Set PK_TEST_JENKINS_URL environment variable as url to test Jenkins server to execute tests",
-				TEST_JENKINS_URL != null);
+				TEST_JENKINS_URL == null);
 	}
 	
 	@Before
