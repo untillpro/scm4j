@@ -22,7 +22,7 @@ public interface IVCS {
 
 	String getFileContent(String branchName, String fileRelativePath) throws EVCSFileNotFound;
 
-	void setFileContent(String branchName, String filePath, String content, String commitMessage);
+	String setFileContent(String branchName, String filePath, String content, String commitMessage);
 	
 	List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName);
 	
@@ -32,5 +32,7 @@ public interface IVCS {
 	
 	String getVCSTypeString();
 	
-	void removeFile(String branchName, String filePath, String commitMessage);
+	String removeFile(String branchName, String filePath, String commitMessage);
+	
+	List<VCSCommit> getCommitsRange(String branchName, String afterCommitId, String untilCommitId);
 }
