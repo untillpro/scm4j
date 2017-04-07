@@ -19,6 +19,7 @@ import org.mockito.exceptions.verification.WantedButNotInvoked;
 
 import com.projectkaiser.scm.vcs.api.IVCS;
 import com.projectkaiser.scm.vcs.api.VCSChangeType;
+import com.projectkaiser.scm.vcs.api.VCSCommit;
 import com.projectkaiser.scm.vcs.api.VCSDiffEntry;
 import com.projectkaiser.scm.vcs.api.VCSMergeResult;
 import com.projectkaiser.scm.vcs.api.exceptions.EVCSBranchExists;
@@ -337,6 +338,80 @@ public abstract class VCSAbstractTest {
 		assertFalse(commits.contains(FILE1_ADDED_COMMIT_MESSAGE));
 		commits = vcs.getCommitMessages(NEW_BRANCH, DEFAULT_COMMITS_LIMIT);
 		assertTrue(commits.contains(FILE2_ADDED_COMMIT_MESSAGE));
+	}
+	
+	@Test 
+	public void testGetCommitsRange() throws Exception {
+		/**
+		 * Master Branch
+		 * 
+		 *        f11+
+		 *        f2+
+		 *  f5+    |  
+		 *  f4+    |
+		 *   |   / 
+		 *  f3+       	
+		 *  f1+ 
+		 */
+		String c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		String c3 = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		String c4 = vcs.setFileContent(null, "file 4.txt", "dfdfsdf", "File 4 master added");
+		String c5 = vcs.setFileContent(null, "file 5.txt", "dfdfsdf", "File 5 master added");
+		String c2 = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		String c11 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, "file 1 branch added");
+
+		resetMocks();
+		List<VCSCommit> commits = vcs.getCommitsRange(null, c1, null);
+		verifyMocks();
+		assertTrue(commitsConsistsOfIds(commits, c3, c4, c5));
+		
+		commits = vcs.getCommitsRange(null, null, null);
+		assertTrue(commitsConsistsOfIds(commits, c3, c4, c5));
+		
+		commits = vcs.getCommitsRange(NEW_BRANCH, c1, null);
+		assertTrue(commitsContainsIds(commits, c2, c11));
+		
+		commits = vcs.getCommitsRange(null, c1, c4);
+		assertTrue(commitsConsistsOfIds(commits, c3, c4));
+	}
+	
+	private Boolean commitsContainsIds(List<VCSCommit> commits, String... ids) {
+		if (commits.size() == 0 || ids.length == 0) {
+			return false;
+		}
+		Integer count = 0;
+		for (String id : ids) {
+			for(VCSCommit commit : commits) {
+				if (commit.getId().equals(id)) {
+					count++;
+					break;
+				}
+			}
+		}
+		return count == ids.length;
+	}
+	
+	private Boolean commitsConsistsOfIds(List<VCSCommit> commits, String... ids) {
+		if (commits.size() == 0 || ids.length == 0) {
+			return false;
+		}
+		Integer count = 0;
+		Boolean found = false;
+		for (String id : ids) {
+			found = false;
+			for(VCSCommit commit : commits) {
+				if (commit.getId().equals(id)) {
+					count++;
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				return false;
+			}
+		}
+		return count == ids.length;
 	}
 
 	protected abstract String getTestRepoUrl();
