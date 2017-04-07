@@ -5,7 +5,7 @@ sourceCompatibility = JavaVersion.VERSION_1_7
 targetCompatibility = JavaVersion.VERSION_1_7
 
 group = 'com.projectkaiser.scm'
-version = '1.1'
+version = '1.2'
 
 repositories {
 	mavenCentral()
@@ -15,10 +15,10 @@ repositories {
 }
 
 dependencies {
-	compile 'com.github.ProjectKaiser:pk-vcs-api:1.1'
-    compile 'junit:junit:4.12'
-    compile 'org.mockito:mockito-core:2.0.62-beta'
-    compile 'commons-io:commons-io:2.4'
+	compile 'com.github.ProjectKaiser:pk-vcs-api:1.2'
+	compile 'junit:junit:4.12'
+	compile 'org.mockito:mockito-core:2.0.62-beta'
+	compile 'commons-io:commons-io:2.4'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
