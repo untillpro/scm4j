@@ -12,10 +12,10 @@ repositories {
 }
 
 dependencies {
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:2.0.62-beta'
-    
-    compile 'commons-io:commons-io:2.4'
+	testCompile 'junit:junit:4.12'
+	testCompile 'org.mockito:mockito-core:2.0.62-beta'
+	
+	compile 'commons-io:commons-io:2.4'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
