@@ -64,9 +64,10 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- `fileRelativePath` is a path to file within `branchName` branch 
 	- The Head file state is used
 	- Use `String getFileContent(String branchName, String fileRelativePath)` overload to use UTF-8 encoding by default
-- `void setFileContent(String branchName, String filePath, String content, String commitMessage)`
+- `String setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
+	- Returns commit id (hash, revision number etc)
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
 	- Note: result is a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
@@ -76,8 +77,11 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Returns list of commit messages of branch `branchName` limited by `limit` in descending order
 - `String getVCSTypeString`
 	- Returns short name of current IVCS implementation: "git", "svn" etc
-- `void removeFile(String branchName, String filePath, String commitMessage)`
+- `String removeFile(String branchName, String filePath, String commitMessage)`
 	- Removes the file located by `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept
+	- Returns commit id (hash, revision number etc)
+- `List<VCSCommit> getCommitsRange(String branchName, String afterCommitId, String untilCommitId);`
+	- Returns ordered list of all commits located between commits specified by `aftercommitId` and `untilCommitId` within branch `branchName` 
 
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:

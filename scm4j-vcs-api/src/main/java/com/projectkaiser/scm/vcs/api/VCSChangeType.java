@@ -12,5 +12,5 @@ public enum VCSChangeType {
 	MODIFY,
 
 	/** Delete an existing file from the project */
-	DELETE;
+	DELETE
 }

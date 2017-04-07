@@ -9,13 +9,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
-	
-	private IVCSWorkspace w;
+
 	private IVCSRepositoryWorkspace r;
 	
 	@Before
 	public void setUp() {
-		w = new VCSWorkspace(WORKSPACE_DIR);
+		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
 		r = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
 	}
 	
