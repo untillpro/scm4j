@@ -82,6 +82,8 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Returns commit id (hash, revision number etc)
 - `List<VCSCommit> getCommitsRange(String branchName, String afterCommitId, String untilCommitId);`
 	- Returns ordered list of all commits located between commits specified by `aftercommitId` and `untilCommitId` within branch `branchName` 
+	- If `aftercommitId` is null then all commits until commit specified by `untilCommitId` are fetched 
+	- If `untilCommitId` is null then all commits after commit specified by `afterCommitId` are fetched  
 
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
