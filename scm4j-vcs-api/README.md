@@ -19,7 +19,7 @@ Pk-vcs-api provides:
 - Locked Working Copy, LWC
 	- A separate folder used to execute VCS-related operations which are need to be executed on a local file system. E.g. in Git it is need to make checkout somewhere on local file system before making a merge.
 	- Named automatically as uuid, located within Repository Workspace folder
-	- Can be reused for another vcs-related operation automatically. I.e. checkouted once, then switches between branches.
+	- Can be reused for another vcs-related operation automatically. I.e. checked out once, then switches between branches.
 	- Deletes automatically if last VCS-related operation left the Working Copy in corrupted state, i.e. can not be reverted, re-checked out and so on
 - Lock File
 	- A special empty file which is used to show if according LWC locked or free. If a Lock File has exclusive file system lock then the according LWC folder is considered as locked, otherwise as free
@@ -140,7 +140,7 @@ So actually a Lock File is locked, not the LWC folder itself.
 Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 
 # Developing IVCS implementation
-- Add github-hosted VCS API as maven artifact using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
+- Add github-hosted pk-vcs-api and pk-vcs-test projects as maven artifacts using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
 	```gradle
 	allprojects {
 		repositories {
