@@ -26,6 +26,10 @@ public class VCSWorkspace implements IVCSWorkspace {
 		folder = new File(workspacePath);
 		folder.mkdirs();
 	}
+	
+	public VCSWorkspace() {
+		this(System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces");
+	}
 
 	@Override
 	public String toString() {
