@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.exceptions;
+package org.scm4j.vcs.api.exceptions;
 
 public class EVCSFileNotFound extends EVCSException {
 

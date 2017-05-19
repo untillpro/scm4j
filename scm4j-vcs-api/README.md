@@ -1,10 +1,10 @@
-[![Release](https://jitpack.io/v/ProjectKaiser/pk-vcs-api.svg)](https://jitpack.io/#ProjectKaiser/pk-vcs-api)	
+[![Release](https://jitpack.io/v/ProjectKaiser/scm4j-vcs-api.svg)](https://jitpack.io/#ProjectKaiser/scm4j-vcs-api)	
 
 # Overview
-Pk-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc. Pk-vcs-api consists of:
-Pk-vcs-api provides:
+scm4j-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc.
+scm4j-vcs-api provides:
 - A simple interface to implement basic VCS-related operations
-- Set of functional tests which are common to each VCS implementation. Functional tests for a certain VCS implementation are done by implementing few abstract methods of base test class. Implemented in [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test)
+- Set of functional tests which are common to each VCS implementation. Functional tests for a certain VCS implementation are done by implementing few abstract methods of base test class. Implemented in [scm4j-vcs-test](https://github.com/ProjectKaiser/scm4j-vcs-test)
 - Working copy management for operations which must be executed on local file system
 
 # Terms
@@ -27,7 +27,7 @@ Pk-vcs-api provides:
 	- named as "lock_" + <LWC folder name>
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass
-	- Implemented as [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) separate project
+	- Implemented as [scm4j-vcs-test](https://github.com/ProjectKaiser/scm4j-vcs-test) separate project
 - `VCSMergeResult`, Merge Result
 	- Result of vcs merge operation. Could be successful or failed. Provides list of conflicting files if failed.
 - `VCSDiffEntry`, Diff Entry
@@ -96,14 +96,14 @@ Locked Working Copy is a solution which solves these requirements by providing a
 LWC usage scenario:
 - Create Workspace Home instance providing path to any folder as Workspace Home folder path. This folder will contain repositories folders (if different vcs or repositories are used)
 ```java
-	public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
+	public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
 	...
 	IVCSWorkspace workspace = new VCSWorkspace(WORKSPACE_DIR);
 	...
 ```
 - Obtain Repository Workspace from Workspace Home providing a certain Repository's url. The obtained Repository Workspace will represent a folder within Workspace Home dir which will contain all Working Copies relating to the provided VCS Repository  
 ```java
-	String repoUrl = "https://github.com/ProjectKaiser/pk-vcs-api";
+	String repoUrl = "https://github.com/ProjectKaiser/scm4j-vcs-api";
 	IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
 ```
 - Obtain Locked Working Copy from Repository Workspace when necessary. The obtained LWC will represent a locked folder within Workspace Repository. The folder is protected from simultaneously execute different vcs-related operations by another thread or even process. Use try-with-resources or try...finally to release Working Copy after vcs-related operations will be completed
@@ -122,7 +122,7 @@ LWC usage scenario:
 - If a Working copy can not be reused due of VCS system data damage (e.g. .git, .svn folders) or due of vcs Working Copy can not be cleaned, reverted, switched, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
 
 # Folder structure
-- Workspace Home folder (e.g. c:\temp\pk-vcs-workspces\)
+- Workspace Home folder (e.g. c:\temp\scm4j-vcs-workspces\)
 	- Repository Workspace 2 (e.g. <Workspace Home>\https_github_com_projectkaiser\
 		- Working Copy 1 
 			- Branch1 is checked out, merging executes
@@ -140,7 +140,7 @@ So actually a Lock File is locked, not the LWC folder itself.
 Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 
 # Developing IVCS implementation
-- Add github-hosted pk-vcs-api and pk-vcs-test projects as maven artifacts using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
+- Add github-hosted scm4j-vcs-api and scm4j-vcs-test projects as maven artifacts using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
 	```gradle
 	allprojects {
 		repositories {
@@ -150,12 +150,12 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 	
 	dependencies {
 		// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
-		compile 'com.github.ProjectKaiser:pk-vcs-api:+'
-		testCompile 'com.github.ProjectKaiser:pk-vcs-test:+'
+		compile 'com.github.ProjectKaiser:scm4j-vcs-api:+'
+		testCompile 'com.github.ProjectKaiser:scm4j-vcs-test:+'
 	}
 	```
 	This will include VCS API (IVCS, LWC) and Abstract Test to your project.
-	Also you can download release jars from https://github.com/ProjectKaiser/pk-vcs-api/releases, https://github.com/ProjectKaiser/pk-vcs-test/releases
+	Also you can download release jars from https://github.com/ProjectKaiser/scm4j-vcs-api/releases, https://github.com/ProjectKaiser/scm4j-vcs-test/releases
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
 	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
@@ -183,11 +183,11 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 		// ...
 	} 
 	```	
-	- Throw exceptions from exceptions package. Abstract Test checks throwning of these exceptions.
+	- Throw exceptions from scm4j.vcs.api.exceptions package. Abstract Test checks throwning of these exceptions.
 - Implement functional tests
 	- Create VCSAbstractTest subclass within test package, implement all abstract methods
 	- Normally test class should not include any test, just @After\@Before methods. All necessary functional testing is implemented within VCSAbstractTest
-	- See [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test) for details
+	- See [scm4j-vcs-test](https://github.com/ProjectKaiser/scm4j-vcs-test) for details
 - Example of gradle usage to export IVCS implementation, its sources and javadoc as separate single JARs:
 ```gradle
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -208,6 +208,6 @@ artifacts {
 After that the `gralde build` command will produce 3 JARs.
 
 # See also
-- [pk-vcs-test](https://github.com/ProjectKaiser/pk-vcs-test)
-- [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git)
-- [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn)
+- [scm4j-vcs-test](https://github.com/ProjectKaiser/scm4j-vcs-test)
+- [scm4j-vcs-git](https://github.com/ProjectKaiser/scm4j-vcs-git)
+- [scm4j-vcs-svn](https://github.com/ProjectKaiser/scm4j-vcs-svn)

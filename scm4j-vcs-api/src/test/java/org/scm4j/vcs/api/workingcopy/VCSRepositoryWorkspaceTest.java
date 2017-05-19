@@ -1,13 +1,13 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSRepositoryWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSRepositoryWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSWorkspace;
+import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
+import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
+import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
+import org.scm4j.vcs.api.workingcopy.VCSRepositoryWorkspace;
+import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
 public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 

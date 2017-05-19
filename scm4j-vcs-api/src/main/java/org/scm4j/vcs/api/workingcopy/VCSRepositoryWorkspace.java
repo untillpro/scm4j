@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
 import java.net.URI;

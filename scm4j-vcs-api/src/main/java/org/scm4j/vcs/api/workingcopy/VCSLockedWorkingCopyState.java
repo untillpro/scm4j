@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 public enum VCSLockedWorkingCopyState {
 	/**

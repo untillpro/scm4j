@@ -1,9 +1,9 @@
-package com.projectkaiser.scm.vcs.api;
+package org.scm4j.vcs.api;
 
 import java.util.List;
 import java.util.Set;
 
-import com.projectkaiser.scm.vcs.api.exceptions.EVCSFileNotFound;
+import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
 
 public interface IVCS {
 	void createBranch(String srcBranchName, String dstBranchName, String commitMessage);

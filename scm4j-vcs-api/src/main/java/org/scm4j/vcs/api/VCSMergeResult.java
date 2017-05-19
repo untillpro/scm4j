@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api;
+package org.scm4j.vcs.api;
 
 import java.util.ArrayList;
 import java.util.List;

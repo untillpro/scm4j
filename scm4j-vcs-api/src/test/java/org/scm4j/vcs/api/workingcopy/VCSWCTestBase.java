@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,8 +8,8 @@ import org.junit.After;
 import org.junit.Before;
 
 public class VCSWCTestBase {
-	public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
-	public static final String TEST_REPO_URL = System.getProperty("java.io.tmpdir") + "pk-vcs-test/utils";
+	public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
+	public static final String TEST_REPO_URL = System.getProperty("java.io.tmpdir") + "scm4j-vcs-test/utils";
 
 	@Before
 	@After

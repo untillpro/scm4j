@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
 
@@ -28,7 +28,7 @@ public class VCSWorkspace implements IVCSWorkspace {
 	}
 	
 	public VCSWorkspace() {
-		this(System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces");
+		this(System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces");
 	}
 
 	@Override

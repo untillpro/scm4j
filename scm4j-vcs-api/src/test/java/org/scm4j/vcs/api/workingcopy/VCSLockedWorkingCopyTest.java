@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -7,6 +7,12 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
+import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
+import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
+import org.scm4j.vcs.api.workingcopy.VCSLockedWorkingCopy;
+import org.scm4j.vcs.api.workingcopy.VCSLockedWorkingCopyState;
+import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
 public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
