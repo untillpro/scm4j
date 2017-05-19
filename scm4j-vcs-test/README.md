@@ -1,7 +1,7 @@
 [![Release](https://jitpack.io/v/ProjectKaiser/pk-vcs-test.svg)](https://jitpack.io/#ProjectKaiser/pk-vcs-test)	
 
 # Overview
-Pk-vcs-test project provides base functional test class for IVCS implementations subclassed from [pk-vcs-api](https://github.com/ProjectKaiser/pk-vcs-api). It used as maven dependency for [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn) and other VCS support libraries. All necessary vcs-related functional testing is implemented within pk-vcs-test. It is need to implement just few abstract methods.
+Pk-vcs-test project provides base functional test class for IVCS implementations subclassed from [pk-vcs-api](https://github.com/ProjectKaiser/pk-vcs-api). It used as maven dependency for [pk-vcs-git](https://github.com/ProjectKaiser/pk-vcs-git), [pk-vcs-svn](https://github.com/ProjectKaiser/pk-vcs-svn) and other VCS support libraries.  All necessary vcs-related functional testing is implemented within pk-vcs-test. It is need to implement just few abstract methods.
 
 # Terms
 - Abstract Test
