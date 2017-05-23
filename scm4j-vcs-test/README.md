@@ -1,18 +1,18 @@
-[![Release](https://jitpack.io/v/ProjectKaiser/scm4j-vcs-test.svg)](https://jitpack.io/#ProjectKaiser/scm4j-vcs-test)	
+[![Release](https://jitpack.io/v/scm4j/scm4j-vcs-test.svg)](https://jitpack.io/#scm4j/scm4j-vcs-test)	
 
 # Overview
-scm4j-vcs-test project provides base functional test class for IVCS implementations subclassed from [scm4j-vcs-api](https://github.com/ProjectKaiser/scm4j-vcs-api). It used as maven dependency for [scm4j-vcs-git](https://github.com/ProjectKaiser/scm4j-vcs-git), [scm4j-vcs-svn](https://github.com/ProjectKaiser/scm4j-vcs-svn) and other VCS support libraries. All necessary vcs-related functional testing is implemented within scm4j-vcs-test. It is need to implement just few abstract methods.
+scm4j-vcs-test project provides base functional test class for IVCS implementations subclassed from [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api). It used as maven dependency for [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git), [scm4j-vcs-svn](https://github.com/scm4j/scm4j-vcs-svn) and other VCS support libraries. All necessary vcs-related functional testing is implemented within scm4j-vcs-test. It is need to implement just few abstract methods.
 
 # Terms
 - Abstract Test
   - Functional test of common behaviour of a certain VCS implementation. 
   - Exposed as VCSAbstractTest class
 - Workspace Home
-  - Home folder of all folders used by vcs-related operations. See [scm4j-vcs-api](https://github.com/ProjectKaiser/scm4j-vcs-api) for details
+  - Home folder of all folders used by vcs-related operations. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
 - Repository Workspace
-  - Folder for LWC folders related to Repository of one type. See [scm4j-vcs-api](https://github.com/ProjectKaiser/scm4j-vcs-api) for details
+  - Folder for LWC folders related to Repository of one type. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
 - Locked Working Copy, LWC
-  - Folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](https://github.com/ProjectKaiser/scm4j-vcs-api) for details
+  - Folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
 - Test Repository
   - A VCS Repository which is used to execute vcs operations which are being tested.
   - New Test Repository is generated before and deleted after each test
@@ -36,10 +36,10 @@ allprojects {
 
 dependencies {
 	// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
-	testCompile 'com.github.ProjectKaiser:scm4j-vcs-test:+'
+	testCompile 'com.github.scm4j:scm4j-vcs-test:+'
 }
 ```
-Or download release jars from https://github.com/ProjectKaiser/scm4j-vcs-test/releases
+Or download release jars from https://github.com/scm4j/scm4j-vcs-test/releases
 - Create VCSAbstractTest subclass within test package
 - Override `setUp()` method
 	- Call `super.setUp()` 
@@ -47,7 +47,7 @@ Or download release jars from https://github.com/ProjectKaiser/scm4j-vcs-test/re
 	- Note that `vcs` instance is already created within `super.setUp()`
 - Create @After method if necessary
 - Use `mockedVCSRepo` as `IVCSRepositoryWorkspace` parameter passed to VCS constructor. VCS implementation must use this `IVCSRepositoryWorkspace` for obtaining LWC. Also this instance will be tested for method calling using Mockito partial mocking by VCSAbstractTest
-- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If necessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [scm4j-vcs-git](https://github.com/ProjectKaiser/scm4j-vcs-git)
+- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If necessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git)
 - `getVCS(...)` method must return IVCS implementation which will be tested. Also this IVCS implementation must use provided `mockedVCSRepo`
 ```java
     @Override
@@ -59,14 +59,14 @@ Or download release jars from https://github.com/ProjectKaiser/scm4j-vcs-test/re
 - `getTestRepoUrl()` method must return string url to Test Repository
 - `setMakeFailureOnVCSReset(Boolean doMakeFailure)` must make so next `merge` operation will fail on LWC reset caused by merge conflict. This need to test LWC corruption. See examples below.
 - Use `localVCSWorkspace` field as Workspace Home
-- Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [scm4j-vcs-git](https://github.com/ProjectKaiser/scm4j-vcs-git) as an example
+- Use `localVCSRepo` field for creating utility Locked Working Copies, e.g. for test content generating. See `getCommitMessagesRemote()` method in [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git) as an example
 - Use `repoName` field to get current testing repository name. It generates again for each test randomly (uuid is used)
 - Use `repoUrl` field to get url to current testing repository.
 - Use `vcs` field as current IVCS implementation which is being testing
 
 # Examples
-- [scm4j-vcs-git](https://github.com/ProjectKaiser/scm4j-vcs-git)
-- [scm4j-vcs-svn](https://github.com/ProjectKaiser/scm4j-vcs-svn)
+- [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git)
+- [scm4j-vcs-svn](https://github.com/scm4j/scm4j-vcs-svn)
 
 # See also
-- [scm4j-vcs-api](https://github.com/ProjectKaiser/scm4j-vcs-api)
+- [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api)
