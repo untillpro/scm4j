@@ -9,9 +9,6 @@ public class VCSWorkspace implements IVCSWorkspace {
 
 	File folder;
 
-	/* (non-Javadoc)
-	 * @see com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace#getVCSRepositoryWorkspace(java.lang.String)
-	 */
 	@Override
 	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl) {
 		return new VCSRepositoryWorkspace(repoUrl, this);
