@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.jenkins.api;
+package org.scm4j.jenkins.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -19,6 +19,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.scm4j.jenkins.api.IJenkinsApi;
+import org.scm4j.jenkins.api.JenkinsApi;
+import org.scm4j.jenkins.api.exceptions.EPKJExists;
+import org.scm4j.jenkins.api.exceptions.EPKJNotFound;
+import org.scm4j.jenkins.data.JobDetailed;
+import org.scm4j.jenkins.data.QueueItem;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.bootstrap.DOMImplementationRegistry;
@@ -28,32 +34,27 @@ import org.w3c.dom.ls.LSOutput;
 import org.w3c.dom.ls.LSParser;
 import org.w3c.dom.ls.LSSerializer;
 
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
-import com.projectkaiser.scm.jenkins.data.JobDetailed;
-import com.projectkaiser.scm.jenkins.data.QueueItem;
-
 public class JenkinsApiTest  {
 	
 	IJenkinsApi api; 
 	
-	private static final String TEST_JENKINS_URL = System.getProperty("PK_TEST_JENKINS_URL") == null ? 
-			System.getenv("PK_TEST_JENKINS_URL") : System.getProperty("PK_TEST_JENKINS_URL");
-	private static final String TEST_JENKINS_USER = System.getProperty("PK_TEST_JENKINS_USER") == null ? 
-			System.getenv("PK_TEST_JENKINS_USER") : System.getProperty("PK_TEST_JENKINS_USER");
-	private static final String TEST_JENKINS_PASS = System.getProperty("PK_TEST_JENKINS_PASS") == null ? 
-			System.getenv("PK_TEST_JENKINS_PASS") : System.getProperty("PK_TEST_JENKINS_PASS");
+	private static final String TEST_JENKINS_URL = System.getProperty("SCM4J_TEST_JENKINS_URL") == null ? 
+			System.getenv("SCM4J_TEST_JENKINS_URL") : System.getProperty("SCM4J_TEST_JENKINS_URL");
+	private static final String TEST_JENKINS_USER = System.getProperty("SCM4J_TEST_JENKINS_USER") == null ? 
+			System.getenv("SCM4J_TEST_JENKINS_USER") : System.getProperty("SCM4J_TEST_JENKINS_USER");
+	private static final String TEST_JENKINS_PASS = System.getProperty("SCM4J_TEST_JENKINS_PASS") == null ? 
+			System.getenv("SCM4J_TEST_JENKINS_PASS") : System.getProperty("SCM4J_TEST_JENKINS_PASS");
 
 	private static final String TEST_JOB_XML_FN = "TestJob.xml";
-	private static final String TEST_JOB_NAME = "pk_jenkins_test_job";
-	private static final String NEW_JOB_NAME = "pk_jenkins_new__test_job";
+	private static final String TEST_JOB_NAME = "scm4j_jenkins_test_job";
+	private static final String NEW_JOB_NAME = "scm4j_jenkins_new_test_job";
 	private static final String TEST_UNEXISTING_JOB_NAME = UUID.randomUUID().toString();
 	private String ethalonJobXML = readResource(this.getClass(), TEST_JOB_XML_FN);
 
 	@BeforeClass
 	public static void setUpClass() {
-		assumeTrue("Set PK_TEST_JENKINS_URL environment variable as url to test Jenkins server to execute tests",
-				TEST_JENKINS_URL == null);
+		assumeTrue("Set SCM4J_TEST_JENKINS_URL environment variable as url to test Jenkins server to execute tests",
+				TEST_JENKINS_URL != null);
 	}
 	
 	@Before

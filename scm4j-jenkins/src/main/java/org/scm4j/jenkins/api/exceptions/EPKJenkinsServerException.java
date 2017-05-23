@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.jenkins.api.exceptions;
+package org.scm4j.jenkins.api.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
 

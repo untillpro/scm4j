@@ -1,11 +1,11 @@
-package com.projectkaiser.scm.jenkins.api;
+package org.scm4j.jenkins.api;
 
 import java.util.List;
 
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
-import com.projectkaiser.scm.jenkins.data.JobDetailed;
-import com.projectkaiser.scm.jenkins.data.QueueItem;
+import org.scm4j.jenkins.api.exceptions.EPKJExists;
+import org.scm4j.jenkins.api.exceptions.EPKJNotFound;
+import org.scm4j.jenkins.data.JobDetailed;
+import org.scm4j.jenkins.data.QueueItem;
 
 public interface IJenkinsApi {
 

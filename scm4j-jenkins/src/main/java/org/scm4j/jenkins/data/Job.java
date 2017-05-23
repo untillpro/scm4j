@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.jenkins.data;
+package org.scm4j.jenkins.data;
 
 public class Job {
 

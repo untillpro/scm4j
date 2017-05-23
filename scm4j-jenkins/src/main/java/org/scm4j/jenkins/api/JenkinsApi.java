@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.jenkins.api;
+package org.scm4j.jenkins.api;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
@@ -10,18 +10,18 @@ import java.util.Map;
 
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
+import org.scm4j.jenkins.api.exceptions.EPKJExists;
+import org.scm4j.jenkins.api.exceptions.EPKJNotFound;
+import org.scm4j.jenkins.api.exceptions.EPKJenkinsException;
+import org.scm4j.jenkins.api.facade.IJenkinsApiFacade;
+import org.scm4j.jenkins.api.facade.JenkinsApiHttpFacade;
+import org.scm4j.jenkins.data.JobDetailed;
+import org.scm4j.jenkins.data.JobListElement;
+import org.scm4j.jenkins.data.QueueItem;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJenkinsException;
-import com.projectkaiser.scm.jenkins.api.facade.IJenkinsApiFacade;
-import com.projectkaiser.scm.jenkins.api.facade.JenkinsApiHttpFacade;
-import com.projectkaiser.scm.jenkins.data.JobDetailed;
-import com.projectkaiser.scm.jenkins.data.JobListElement;
-import com.projectkaiser.scm.jenkins.data.QueueItem;
 
 public class JenkinsApi implements IJenkinsApi {
 

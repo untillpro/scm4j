@@ -4,7 +4,7 @@ apply plugin: 'maven'
 sourceCompatibility = JavaVersion.VERSION_1_7
 targetCompatibility = JavaVersion.VERSION_1_7
 
-group = 'com.projectkaiser.scm'
+group = 'org.scm4j'
 version = '2.0-SNAPSHOT'
 
 repositories {
@@ -12,11 +12,11 @@ repositories {
 }
 
 dependencies {
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:2.0.62-beta'
+	testCompile 'junit:junit:4.12'
+	testCompile 'org.mockito:mockito-core:2.0.62-beta'
 	testCompile 'xmlunit:xmlunit:1.6'
     
-    compile 'commons-io:commons-io:2.4'
+	compile 'commons-io:commons-io:2.4'
 	compile 'com.google.code.gson:gson:2.8.0'
 	compile 'org.apache.httpcomponents:httpclient:4.5.2'
 	compile 'commons-httpclient:commons-httpclient:3.1'

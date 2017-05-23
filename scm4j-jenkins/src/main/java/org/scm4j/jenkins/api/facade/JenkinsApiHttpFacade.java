@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.jenkins.api.facade;
+package org.scm4j.jenkins.api.facade;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
@@ -12,10 +12,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HTTP;
-
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJExists;
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJNotFound;
-import com.projectkaiser.scm.jenkins.api.exceptions.EPKJenkinsServerException;
+import org.scm4j.jenkins.api.exceptions.EPKJExists;
+import org.scm4j.jenkins.api.exceptions.EPKJNotFound;
+import org.scm4j.jenkins.api.exceptions.EPKJenkinsServerException;
 
 
 public class JenkinsApiHttpFacade implements IJenkinsApiFacade {

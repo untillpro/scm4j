@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.jenkins.api.facade;
+package org.scm4j.jenkins.api.facade;
 
 import org.apache.http.HttpResponse;
 
