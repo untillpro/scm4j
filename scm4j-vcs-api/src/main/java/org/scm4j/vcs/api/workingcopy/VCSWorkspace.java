@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
 
@@ -7,11 +7,8 @@ import java.io.File;
  */
 public class VCSWorkspace implements IVCSWorkspace {
 
-	File folder;
+	private final File folder;
 
-	/* (non-Javadoc)
-	 * @see com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace#getVCSRepositoryWorkspace(java.lang.String)
-	 */
 	@Override
 	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl) {
 		return new VCSRepositoryWorkspace(repoUrl, this);
@@ -25,6 +22,10 @@ public class VCSWorkspace implements IVCSWorkspace {
 	public VCSWorkspace(String workspacePath) {
 		folder = new File(workspacePath);
 		folder.mkdirs();
+	}
+	
+	public VCSWorkspace() {
+		this(System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces");
 	}
 
 	@Override

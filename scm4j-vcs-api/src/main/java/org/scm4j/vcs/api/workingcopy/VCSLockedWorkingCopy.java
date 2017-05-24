@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.workingcopy;
+package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,7 +11,7 @@ import org.apache.commons.io.FileUtils;
 
 public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseable {
 	
-	private IVCSRepositoryWorkspace vcsRepo;
+	private final IVCSRepositoryWorkspace vcsRepo;
 
 	public static final String LOCK_FILE_PREFIX = "lock_";
 
@@ -52,7 +52,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 
 	private void init() {
 		File[] files = vcsRepo.getRepoFolder().listFiles();
-		for (File file : files) {
+		for (File file : files != null ? files : new File[0]) {
 			if (file.isDirectory()) {
 				lockFile = new File( vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + file.getName());
 				if (!lockFile.exists()) {

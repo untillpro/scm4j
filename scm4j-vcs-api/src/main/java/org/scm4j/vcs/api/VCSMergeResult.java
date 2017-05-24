@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api;
+package org.scm4j.vcs.api;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 public class VCSMergeResult {
 
 	private Boolean success;
-	private List<String> conflictingFiles = new ArrayList<String>();
+	private List<String> conflictingFiles = new ArrayList<>();
 
 	public Boolean getSuccess() {
 		return success;
