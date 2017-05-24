@@ -1,4 +1,4 @@
-package com.projectkaiser.scm.vcs.api.abstracttest;
+package org.scm4j.vcs.api.abstracttest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -17,20 +17,20 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
 
-import com.projectkaiser.scm.vcs.api.IVCS;
-import com.projectkaiser.scm.vcs.api.VCSChangeType;
-import com.projectkaiser.scm.vcs.api.VCSCommit;
-import com.projectkaiser.scm.vcs.api.VCSDiffEntry;
-import com.projectkaiser.scm.vcs.api.VCSMergeResult;
-import com.projectkaiser.scm.vcs.api.exceptions.EVCSBranchExists;
-import com.projectkaiser.scm.vcs.api.exceptions.EVCSFileNotFound;
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSLockedWorkingCopy;
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSRepositoryWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.IVCSWorkspace;
-import com.projectkaiser.scm.vcs.api.workingcopy.VCSWorkspace;
+import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.VCSChangeType;
+import org.scm4j.vcs.api.VCSCommit;
+import org.scm4j.vcs.api.VCSDiffEntry;
+import org.scm4j.vcs.api.VCSMergeResult;
+import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
+import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
+import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
+import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
+import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
+import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
 public abstract class VCSAbstractTest {
-	private static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "pk-vcs-workspaces";
+	private static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
 	private static final String NEW_BRANCH = "new-branch";
 	private static final String NEW_BRANCH_2 = "new-branch-2";
 	private static final String CREATED_DST_BRANCH_COMMIT_MESSAGE = "created dst branch";
@@ -82,7 +82,7 @@ public abstract class VCSAbstractTest {
 	public void setUp() throws Exception {
 		FileUtils.deleteDirectory(new File(WORKSPACE_DIR));
 		
-		repoName = "pk-vcs-" + getVCSTypeString() + "-testrepo";
+		repoName = "scm4j-vcs-" + getVCSTypeString() + "-testrepo";
 
 		String uuid = UUID.randomUUID().toString();
 		repoName = (repoName + "_" + uuid);
@@ -197,7 +197,7 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testMergeConflict() throws Exception {
+	public void testMergeConflict() {
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
