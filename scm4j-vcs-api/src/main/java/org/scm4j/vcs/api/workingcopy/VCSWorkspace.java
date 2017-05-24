@@ -7,7 +7,7 @@ import java.io.File;
  */
 public class VCSWorkspace implements IVCSWorkspace {
 
-	File folder;
+	private final File folder;
 
 	@Override
 	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl) {

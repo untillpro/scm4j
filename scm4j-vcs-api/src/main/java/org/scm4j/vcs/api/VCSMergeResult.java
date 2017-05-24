@@ -6,7 +6,7 @@ import java.util.List;
 public class VCSMergeResult {
 
 	private Boolean success;
-	private List<String> conflictingFiles = new ArrayList<String>();
+	private List<String> conflictingFiles = new ArrayList<>();
 
 	public Boolean getSuccess() {
 		return success;

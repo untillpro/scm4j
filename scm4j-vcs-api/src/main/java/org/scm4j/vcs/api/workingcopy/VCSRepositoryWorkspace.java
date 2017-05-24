@@ -8,9 +8,9 @@ import org.apache.commons.io.FilenameUtils;
 
 public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
-	IVCSWorkspace workspace;
-	String repoUrl;
-	File repoFolder;
+	private final IVCSWorkspace workspace;
+	private final String repoUrl;
+	private File repoFolder;
 
 	protected VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace) {
 		this.workspace = workspace;
@@ -21,10 +21,6 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	@Override
 	public IVCSWorkspace getWorkspace() {
 		return workspace;
-	}
-
-	public void setWorkspace(IVCSWorkspace workspace) {
-		this.workspace = workspace;
 	}
 
 	@Override
@@ -48,7 +44,6 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 		String repoFolderName = getRepoFolderName();
 		repoFolder = new File(repoFolderName);
 		repoFolder.mkdirs();
-		// FIXME: check multithreading
 	}
 
 	@Override

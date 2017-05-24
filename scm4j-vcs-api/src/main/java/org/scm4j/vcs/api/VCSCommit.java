@@ -1,9 +1,9 @@
 package org.scm4j.vcs.api;
 
 public class VCSCommit {
-	private String id;
-	private String logMessage;
-	private String author;
+	private final String id;
+	private final String logMessage;
+	private final String author;
 	
 	public String getAuthor() {
 		return author;
