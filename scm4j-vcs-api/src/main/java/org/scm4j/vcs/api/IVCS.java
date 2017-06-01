@@ -35,9 +35,9 @@ public interface IVCS {
 	
 	String removeFile(String branchName, String filePath, String commitMessage);
 	
-	List<VCSCommit> getCommitsRange(String branchName, String afterCommitId, String untilCommitId);
+	List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId);
 	
-	List<VCSCommit> getCommitsRange(String branchName, String startFromCommitId, WalkDirection direction, int limit);
+	List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit);
 	
 	IVCSWorkspace getWorkspace();
 	
