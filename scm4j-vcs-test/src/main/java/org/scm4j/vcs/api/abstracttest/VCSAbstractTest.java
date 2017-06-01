@@ -17,11 +17,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
 
-import org.scm4j.vcs.api.IVCS;
-import org.scm4j.vcs.api.VCSChangeType;
-import org.scm4j.vcs.api.VCSCommit;
-import org.scm4j.vcs.api.VCSDiffEntry;
-import org.scm4j.vcs.api.VCSMergeResult;
+import org.scm4j.vcs.api.*;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
 import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
@@ -374,8 +370,52 @@ public abstract class VCSAbstractTest {
 		
 		commits = vcs.getCommitsRange(null, c1, c4);
 		assertTrue(commitsConsistsOfIds(commits, c3, c4));
+
+
+		resetMocks();
+		commits = vcs.getCommitsRange(null, c1, WalkDirection.ASC, 0);
+		verifyMocks();
+		assertTrue(commitsContainsSequenceOfIds(commits, c1, c3, c4, c5));
+
+		commits = vcs.getCommitsRange(null, c1, WalkDirection.ASC, 2);
+		verifyMocks();
+		assertTrue(commitsContainsSequenceOfIds(commits, c1, c3));
+		assertTrue(commits.get(0).getRevision().equals(c1));
+
+		commits = vcs.getCommitsRange(null, null, WalkDirection.ASC, 0);
+		assertTrue(commitsContainsSequenceOfIds(commits, c1, c3, c4, c5));
+
+		commits = vcs.getCommitsRange(NEW_BRANCH, c1, WalkDirection.ASC, 0);
+		assertTrue(commitsContainsSequenceOfIds(commits, c2, c11));
+
+
+		commits = vcs.getCommitsRange(null, c5, WalkDirection.DESC, 0);
+		verifyMocks();
+		assertTrue(commitsContainsSequenceOfIds(commits, c5, c4, c3, c1));
+
+		commits = vcs.getCommitsRange(null, c1, WalkDirection.DESC, 1);
+		verifyMocks();
+		assertTrue(commits.get(0).getRevision().equals(c1));
+
+		commits = vcs.getCommitsRange(null, null, WalkDirection.DESC, 0);
+		assertTrue(commitsContainsSequenceOfIds(commits, c5, c4, c3, c1));
+		assertTrue(commits.get(0).getRevision().equals(c5));
+
+		commits = vcs.getCommitsRange(NEW_BRANCH, c11, WalkDirection.DESC, 0);
+		assertTrue(commitsContainsSequenceOfIds(commits, c11, c2));
+		assertTrue(commits.get(0).getRevision().equals(c11));
 	}
-	
+
+	@Test
+	public void testGetHeadCommit() {
+		VCSCommit commit1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit commit2 = vcs.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit commit3 = vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+		assertTrue(vcs.getHeadCommit(null).equals(commit2));
+		assertTrue(vcs.getHeadCommit(NEW_BRANCH).equals(commit3));
+	}
+
 	private Boolean commitsContainsIds(List<VCSCommit> commits, String... ids) {
 		if (commits.size() == 0 || ids.length == 0) {
 			return false;
@@ -390,6 +430,24 @@ public abstract class VCSAbstractTest {
 			}
 		}
 		return count == ids.length;
+	}
+
+	private Boolean commitsContainsSequenceOfIds(List<VCSCommit> commits,String... ids) {
+		if (commits.size() == 0 || ids.length == 0) {
+			return false;
+		}
+		Integer idIndex = 0;
+		for (VCSCommit commit : commits) {
+			if (commit.getRevision().equals(ids[idIndex])) {
+				idIndex++;
+			} else if (idIndex != 0) {
+				return false;
+			}
+			if (idIndex >= ids.length) {
+				return true;
+			}
+		}
+		return idIndex == ids.length;
 	}
 	
 	private Boolean commitsConsistsOfIds(List<VCSCommit> commits, String... ids) {
