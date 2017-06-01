@@ -2,7 +2,7 @@ package org.scm4j.vcs.api;
 
 public class VCSCommit {
 	public static final VCSCommit EMPTY = new VCSCommit();
-	private final String id;
+	private final String revision;
 	private final String logMessage;
 	private final String author;
 	
@@ -10,8 +10,8 @@ public class VCSCommit {
 		return author;
 	}
 
-	public String getId() {
-		return id;
+	public String getRevision() {
+		return revision;
 	}
 
 	public String getLogMessage() {
@@ -19,13 +19,13 @@ public class VCSCommit {
 	}
 	
 	protected VCSCommit() {
-		id = null;
+		revision = null;
 		logMessage = null;
 		author = null;
 	}
 
-	public VCSCommit(String id, String logMessage, String author) {
-		this.id = id;
+	public VCSCommit(String revision, String logMessage, String author) {
+		this.revision = revision;
 		this.logMessage = logMessage;
 		this.author = author;
 	}
@@ -33,6 +33,6 @@ public class VCSCommit {
 	@Override
 	public String toString() {
 		return this == EMPTY ? "EMPTY" : 
-			"VCSCommit [id=" + id + ", logMessage=" + logMessage + ", author=" + author + "]";
+			"VCSCommit [revision=" + revision + ", logMessage=" + logMessage + ", author=" + author + "]";
 	}
 }
