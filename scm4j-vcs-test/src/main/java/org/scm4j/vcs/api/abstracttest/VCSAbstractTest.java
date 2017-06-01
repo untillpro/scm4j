@@ -197,7 +197,7 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testMergeConflict() throws Exception {
+	public void testMergeConflict() {
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
