@@ -353,13 +353,13 @@ public abstract class VCSAbstractTest {
 		 *  f3+       	
 		 *  f1+ 
 		 */
-		String c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		String c3 = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
+		String c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE).getRevision();
+		String c3 = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE).getRevision();
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		String c4 = vcs.setFileContent(null, "file 4.txt", "dfdfsdf", "File 4 master added");
-		String c5 = vcs.setFileContent(null, "file 5.txt", "dfdfsdf", "File 5 master added");
-		String c2 = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
-		String c11 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, "file 1 branch added");
+		String c4 = vcs.setFileContent(null, "file 4.txt", "dfdfsdf", "File 4 master added").getRevision();
+		String c5 = vcs.setFileContent(null, "file 5.txt", "dfdfsdf", "File 5 master added").getRevision();
+		String c2 = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE).getRevision();
+		String c11 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, "file 1 branch added").getRevision();
 
 		resetMocks();
 		List<VCSCommit> commits = vcs.getCommitsRange(null, c1, null);
@@ -383,7 +383,7 @@ public abstract class VCSAbstractTest {
 		Integer count = 0;
 		for (String id : ids) {
 			for(VCSCommit commit : commits) {
-				if (commit.getId().equals(id)) {
+				if (commit.getRevision().equals(id)) {
 					count++;
 					break;
 				}
@@ -401,7 +401,7 @@ public abstract class VCSAbstractTest {
 		for (String id : ids) {
 			found = false;
 			for(VCSCommit commit : commits) {
-				if (commit.getId().equals(id)) {
+				if (commit.getRevision().equals(id)) {
 					count++;
 					found = true;
 					break;
