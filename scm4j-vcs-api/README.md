@@ -85,7 +85,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- If `firstCommitId` is null then all commits until commit specified by `untilCommitId` inclusively are fetched 
 	- If `untilCommitId` is null then all commits starting from commit specified by `firstCommitId` are fetched
 - `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit)`
-    - Returns ordered list of `limit` commits starting from commit specified by `firstCommitId` in direction specified by `direction`
+    - Returns ordered list of `limit` commits (0 is unlimited) starting from commit specified by `firstCommitId` in direction specified by `direction`
     - If `firstCommitId` is null then commits are starting at branch `branchName` first commit (for ASC direction) or at head of branch (for DESC direction)
 
 # Using Locked Working Copy
