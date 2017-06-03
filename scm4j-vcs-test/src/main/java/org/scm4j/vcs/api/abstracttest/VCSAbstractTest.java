@@ -378,7 +378,6 @@ public abstract class VCSAbstractTest {
 		assertTrue(commitsContainsSequenceOfIds(commits, c1, c3, c4, c5));
 
 		commits = vcs.getCommitsRange(null, c1, WalkDirection.ASC, 2);
-		verifyMocks();
 		assertTrue(commitsContainsSequenceOfIds(commits, c1, c3));
 		assertTrue(commits.get(0).getRevision().equals(c1));
 
@@ -390,11 +389,9 @@ public abstract class VCSAbstractTest {
 
 
 		commits = vcs.getCommitsRange(null, c5, WalkDirection.DESC, 0);
-		verifyMocks();
 		assertTrue(commitsContainsSequenceOfIds(commits, c5, c4, c3, c1));
 
 		commits = vcs.getCommitsRange(null, c1, WalkDirection.DESC, 1);
-		verifyMocks();
 		assertTrue(commits.get(0).getRevision().equals(c1));
 
 		commits = vcs.getCommitsRange(null, null, WalkDirection.DESC, 0);
