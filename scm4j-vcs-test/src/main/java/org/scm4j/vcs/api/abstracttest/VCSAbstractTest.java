@@ -470,6 +470,8 @@ public abstract class VCSAbstractTest {
 		}
 		return count == ids.length;
 	}
+	
+	// TODO: add fileExists() test
 
 	protected abstract String getTestRepoUrl();
 	
