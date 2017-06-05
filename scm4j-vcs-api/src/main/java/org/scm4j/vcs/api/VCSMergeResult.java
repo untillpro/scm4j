@@ -5,22 +5,19 @@ import java.util.List;
 
 public class VCSMergeResult {
 
-	private Boolean success;
-	private List<String> conflictingFiles = new ArrayList<>();
+	private final Boolean success;
+	private final List<String> conflictingFiles;
 
 	public Boolean getSuccess() {
 		return success;
-	}
-
-	public void setSuccess(Boolean success) {
-		this.success = success;
 	}
 
 	public List<String> getConflictingFiles() {
 		return conflictingFiles;
 	}
 
-	public void setConflictingFiles(List<String> conflictingFiles) {
+	public VCSMergeResult(Boolean success, List<String> conflictingFiles) {
+		this.success = success;
 		this.conflictingFiles = conflictingFiles;
 	}
 }
