@@ -165,6 +165,8 @@ public abstract class VCSAbstractTest {
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME), LINE_2);
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_2);
 		
+		// TODO: add LWC corruption if commit is failed
+		
 		try {
 			vcs.getFileContent(null, "sdfsdf1.txt");
 			fail("EVCSFileNotFound is not thrown");
