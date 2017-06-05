@@ -42,4 +42,6 @@ public interface IVCS {
 	IVCSWorkspace getWorkspace();
 	
 	VCSCommit getHeadCommit(String branchName);
+	
+	Boolean fileExists(String branchName, String filePath);
 }
