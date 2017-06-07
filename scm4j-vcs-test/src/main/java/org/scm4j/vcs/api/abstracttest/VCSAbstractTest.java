@@ -76,7 +76,10 @@ public abstract class VCSAbstractTest {
 
 	@Before
 	public void setUp() throws Exception {
-		FileUtils.deleteDirectory(new File(WORKSPACE_DIR));
+		File workspaceDir = new File(WORKSPACE_DIR);
+		if (workspaceDir.exists()) {
+			FileUtils.deleteDirectory(new File(WORKSPACE_DIR));
+		}
 		
 		repoName = "scm4j-vcs-" + getVCSTypeString() + "-testrepo";
 
@@ -114,11 +117,11 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertTrue(vcs.getBranches().contains(NEW_BRANCH));
 		verifyMocks();
-		assertTrue(vcs.getBranches().size() == 2); // Master + NEW_BRANCH, no Folder 
+		assertTrue(vcs.getBranches().size() == 2); // Master + NEW_BRANCH, no Folder
 		verifyMocks();
 		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME).equals(LINE_1));
 		resetMocks();
-		
+
 		vcs.createBranch(NEW_BRANCH, NEW_BRANCH_2, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(vcs.getBranches().contains(NEW_BRANCH));
@@ -446,7 +449,7 @@ public abstract class VCSAbstractTest {
 				return true;
 			}
 		}
-		return idIndex == ids.length;
+		return false;
 	}
 	
 	private Boolean commitsConsistsOfIds(List<VCSCommit> commits, String... ids) {
@@ -454,7 +457,7 @@ public abstract class VCSAbstractTest {
 			return false;
 		}
 		Integer count = 0;
-		Boolean found = false;
+		Boolean found;
 		for (String id : ids) {
 			found = false;
 			for(VCSCommit commit : commits) {
