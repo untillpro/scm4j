@@ -33,7 +33,7 @@ public interface IVCS {
 	
 	String getVCSTypeString();
 	
-	String removeFile(String branchName, String filePath, String commitMessage);
+	VCSCommit removeFile(String branchName, String filePath, String commitMessage);
 	
 	List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId);
 	

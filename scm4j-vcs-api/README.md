@@ -64,10 +64,9 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- `fileRelativePath` is a path to file within `branchName` branch 
 	- The Head file state is used
 	- Use `String getFileContent(String branchName, String fileRelativePath)` overload to use UTF-8 encoding by default
-- `String setFileContent(String branchName, String filePath, String content, String commitMessage)`
+- `VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
-	- Returns commit id (hash, revision number etc)
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
 	- Note: result is a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
@@ -77,7 +76,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Returns list of commit messages of branch `branchName` limited by `limit` in descending order
 - `String getVCSTypeString`
 	- Returns short name of current IVCS implementation: "git", "svn" etc
-- `String removeFile(String branchName, String filePath, String commitMessage)`
+- `VCSCommit removeFile(String branchName, String filePath, String commitMessage)`
 	- Removes the file located by `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept
 	- Returns commit id (hash, revision number etc)
 - `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId)`
@@ -87,7 +86,11 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 - `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit)`
     - Returns ordered list of `limit` commits (0 is unlimited) starting from commit specified by `firstCommitId` in direction specified by `direction`
     - If `firstCommitId` is null then commits are starting at branch `branchName` first commit (for ASC direction) or at head of branch (for DESC direction)
-
+- `VCSCommit getHeadCommit(String branchName)`
+    - Returns `VCSCommit` instance which points to the head (last) commit of the branch `branchName`  
+- `Boolean fileExists(String branchName, String filePath)`
+    - Returns true if file with path `filePath` exist in repository in branch `branchName`, false otherwise
+    
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
 - The simple way to allocate place for vcs operations execution
