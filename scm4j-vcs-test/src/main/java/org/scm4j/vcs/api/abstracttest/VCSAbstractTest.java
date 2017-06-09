@@ -417,6 +417,16 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.getHeadCommit(null).equals(commit2));
 		assertTrue(vcs.getHeadCommit(NEW_BRANCH).equals(commit3));
 	}
+	
+	@Test
+	public void testFileExists() {
+		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+		assertTrue(vcs.fileExists(null, FILE1_NAME));
+		assertTrue(vcs.fileExists(NEW_BRANCH, FILE3_IN_FOLDER_NAME));
+		assertFalse(vcs.fileExists(null, "no file"));
+	}
 
 	private Boolean commitsContainsIds(List<VCSCommit> commits, String... ids) {
 		if (commits.size() == 0 || ids.length == 0) {
