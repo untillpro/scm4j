@@ -1,30 +1,25 @@
 package org.scm4j.vcs.api.workingcopy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
-import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
-import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
-import org.scm4j.vcs.api.workingcopy.VCSLockedWorkingCopy;
-import org.scm4j.vcs.api.workingcopy.VCSLockedWorkingCopyState;
-import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
+
+import java.io.FileInputStream;
+import java.nio.channels.FileChannel;
+import java.nio.channels.NonWritableChannelException;
+
+import static org.junit.Assert.*;
 
 public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
 	private IVCSRepositoryWorkspace r;
-	
+
 	@Before
 	public void setUp() {
 		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
 		r = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
 	}
-	
-	@Test 
+
+	@Test
 	public void testBasicWorkspaceWorkflow() throws Exception {
 		try (IVCSLockedWorkingCopy lwc = r.getVCSLockedWorkingCopy()) {
 			assertEquals(lwc.getVCSRepository(), r);
@@ -33,15 +28,19 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 			assertFalse(lwc.getCorrupted());
 			assertTrue(lwc.getLockFile().exists());
 			assertTrue(lwc.getLockFile().getName().equals(VCSLockedWorkingCopy.LOCK_FILE_PREFIX + lwc.getFolder().getName()));
-			assertFalse(lwc.getLockFile().delete());
+			try (FileChannel channel = new FileInputStream(lwc.getLockFile()).getChannel()) {
+				channel.tryLock();
+				fail();
+			} catch (NonWritableChannelException e) {
+
+			}
 			lwc.close();
 			assertEquals(lwc.getState(), VCSLockedWorkingCopyState.OBSOLETE);
-			assertTrue(lwc.getLockFile().delete());
 			lwc.close(); //nothing should happen
 			assertEquals(lwc.getState(), VCSLockedWorkingCopyState.OBSOLETE);
 		}
 	}
-	
+
 	@Test
 	public void testLockingFewWorkspaces() throws Exception {
 		try (IVCSLockedWorkingCopy w1 = r.getVCSLockedWorkingCopy()) {
@@ -51,7 +50,7 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 			}
 		}
 	}
-	
+
 	@Test
 	public void testReusingUnlockedWorkspaces() throws Exception {
 		VCSLockedWorkingCopy w1 = new VCSLockedWorkingCopy(r);
@@ -59,15 +58,15 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 		VCSLockedWorkingCopy w2 = new VCSLockedWorkingCopy(r);
 		assertEquals(w1.getFolder().getName(), w2.getFolder().getName());
 		w2.close();
-		
+
 		// if lock file does not exists then a new WC should be created
 		w1.getLockFile().delete();
 		w2 = new VCSLockedWorkingCopy(r);
 		assertNotEquals(w1.getFolder().getName(), w2.getFolder().getName());
 		w2.close();
 	}
-	
-	@Test 
+
+	@Test
 	public void testCorruptingWorkspace() throws Exception {
 		VCSLockedWorkingCopy workspace = new VCSLockedWorkingCopy(r);
 		workspace.setCorrupted(true);
