@@ -1,13 +1,13 @@
 package org.scm4j.vcs.api.workingcopy;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.UUID;
-
-import org.apache.commons.io.FileUtils;
 
 public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseable {
 	
@@ -100,7 +100,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 			lockFile.createNewFile();
 			lockFile(lockFile);
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException(lockFile.getPath(), e);
 		}
 	}
 
