@@ -9,6 +9,10 @@ targetCompatibility = JavaVersion.VERSION_1_7
 group = ''
 version = new File('version').text
 
+repositories {
+    jcenter()
+}
+
 dependencies {
 	testCompile 'junit:junit:4.12'
 	compile 'org.apache.commons:commons-lang3:3.5'
