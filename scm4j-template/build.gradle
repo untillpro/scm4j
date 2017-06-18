@@ -1,3 +1,8 @@
+plugins {
+	id 'jacoco'
+	id 'com.github.kt3k.coveralls' version '2.8.1'
+}
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'eclipse'
@@ -9,10 +14,6 @@ targetCompatibility = JavaVersion.VERSION_1_7
 group = ''
 version = new File('version').text
 
-repositories {
-    jcenter()
-}
-
 dependencies {
 	testCompile 'junit:junit:4.12'
 	compile 'org.apache.commons:commons-lang3:3.5'
@@ -21,6 +22,17 @@ dependencies {
 task sourcesJar(type: Jar, dependsOn: classes) {
 	classifier = 'sources'
 	from sourceSets.main.allSource
+}
+
+repositories {
+    jcenter()
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
