@@ -19,24 +19,40 @@ public class VCSCommit {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-
-		VCSCommit vcsCommit = (VCSCommit) o;
-
-		if (revision != null ? !revision.equals(vcsCommit.revision) : vcsCommit.revision != null) return false;
-		if (logMessage != null ? !logMessage.equals(vcsCommit.logMessage) : vcsCommit.logMessage != null) return false;
-		return !(author != null ? !author.equals(vcsCommit.author) : vcsCommit.author != null);
-
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((author == null) ? 0 : author.hashCode());
+		result = prime * result + ((logMessage == null) ? 0 : logMessage.hashCode());
+		result = prime * result + ((revision == null) ? 0 : revision.hashCode());
+		return result;
 	}
 
 	@Override
-	public int hashCode() {
-		int result = revision != null ? revision.hashCode() : 0;
-		result = 31 * result + (logMessage != null ? logMessage.hashCode() : 0);
-		result = 31 * result + (author != null ? author.hashCode() : 0);
-		return result;
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		VCSCommit other = (VCSCommit) obj;
+		if (author == null) {
+			if (other.author != null)
+				return false;
+		} else if (!author.equals(other.author))
+			return false;
+		if (logMessage == null) {
+			if (other.logMessage != null)
+				return false;
+		} else if (!logMessage.equals(other.logMessage))
+			return false;
+		if (revision == null) {
+			if (other.revision != null)
+				return false;
+		} else if (!revision.equals(other.revision))
+			return false;
+		return true;
 	}
 
 	protected VCSCommit() {
