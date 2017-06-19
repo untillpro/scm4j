@@ -1,22 +1,11 @@
 package org.scm4j.vcs.api.abstracttest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-import java.util.List;
-import java.util.UUID;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
-
 import org.scm4j.vcs.api.*;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
@@ -25,8 +14,14 @@ import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
+import java.io.File;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.Assert.*;
+
 public abstract class VCSAbstractTest {
-	private static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
+	private static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
 	private static final String NEW_BRANCH = "new-branch";
 	private static final String NEW_BRANCH_2 = "new-branch-2";
 	private static final String CREATED_DST_BRANCH_COMMIT_MESSAGE = "created dst branch";
@@ -88,7 +83,7 @@ public abstract class VCSAbstractTest {
 		
 		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
 
-		repoUrl = getTestRepoUrl() + repoName;
+		repoUrl = appendSlash(getTestRepoUrl()) + repoName;
 
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
@@ -98,6 +93,10 @@ public abstract class VCSAbstractTest {
 		resetMocks();
 		
 		setMakeFailureOnVCSReset(false);
+	}
+
+	private String appendSlash(String testRepoUrl) {
+		return testRepoUrl.endsWith("/") ? testRepoUrl : testRepoUrl + "/";
 	}
 
 	protected void resetMocks() throws Exception {
