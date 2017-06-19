@@ -1,6 +1,7 @@
 package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
+import java.io.IOException;
 
 public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
@@ -20,7 +21,7 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	}
 
 	@Override
-	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() {
+	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() throws IOException {
 		return new VCSLockedWorkingCopy(this);
 	}
 

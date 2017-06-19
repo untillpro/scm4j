@@ -1,10 +1,8 @@
 package org.scm4j.vcs.api.workingcopy;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
-import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
-import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
+
+import static org.junit.Assert.*;
 
 public class VCSWorkspaceTest extends VCSWCTestBase {
 
@@ -16,5 +14,11 @@ public class VCSWorkspaceTest extends VCSWCTestBase {
 		assertNotNull(w.getVCSRepositoryWorkspace(""));
 		assertEquals(w.getVCSRepositoryWorkspace("").getWorkspace(), w);
 		assertEquals(w.getVCSRepositoryWorkspace(TEST_REPO_URL).getRepoUrl(), TEST_REPO_URL);
+	}
+
+	@Test
+	public void testWorskpaceDefaultDir() {
+		IVCSWorkspace w = new VCSWorkspace();
+		assertEquals(w.getHomeFolder().getPath(), VCSWorkspace.DEFAULT_WORKSPACE_DIR);
 	}
 }

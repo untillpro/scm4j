@@ -23,4 +23,11 @@ public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 			assertEquals(lwc.getVCSRepository(), r);
 		}
 	}
+
+	@Test
+	public void testToString() {
+		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
+		IVCSRepositoryWorkspace r = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
+		assertTrue(r.toString().contains(WORKSPACE_DIR));
+	}
 }

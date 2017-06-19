@@ -74,4 +74,11 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 		assertFalse(workspace.getFolder().exists());
 		assertFalse(workspace.getLockFile().exists());
 	}
+
+	@Test
+	public void testToString() throws Exception {
+		try (VCSLockedWorkingCopy lwc = new VCSLockedWorkingCopy(r)) {
+			assertTrue(lwc.toString().contains(r.getRepoFolder().getPath()));
+		}
+	}
 }

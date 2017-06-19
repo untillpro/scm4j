@@ -40,7 +40,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 		this.corrupt = isCorrupt;
 	}
 	
-	protected VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo) {
+	protected VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo) throws IOException {
 		this.vcsRepo = vcsRepo;
 		init();
 	}
@@ -50,7 +50,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 		return corrupt;
 	}
 
-	private void init() {
+	private void init() throws IOException {
 		File[] files = vcsRepo.getRepoFolder().listFiles();
 		for (File file : files != null ? files : new File[0]) {
 			if (file.isDirectory()) {
@@ -75,33 +75,25 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 		fileLock = lockedStream.getChannel().lock();
 	}
 	
-	private Boolean tryLockFile(File file) {
+	private Boolean tryLockFile(File file) throws IOException {
 		try {
 			lockFile(file);
 			return true;
 		} catch (OverlappingFileLockException | SecurityException | IOException e) {
-			try {
-				if (lockedStream != null) {
-					lockedStream.close();
-				}
-			} catch (IOException e1) {
-				throw new RuntimeException(e);
+			if (lockedStream != null) {
+				lockedStream.close();
 			}
 			return false;
 		}
 	}
 
-	private void createNewLockedWorkingCopy() {
+	private void createNewLockedWorkingCopy() throws IOException {
 		String guid = UUID.randomUUID().toString();
 		folder = new File(vcsRepo.getRepoFolder(), guid);
 		folder.mkdirs();
 		lockFile = new File(vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + folder.getName());
-		try {
-			lockFile.createNewFile();
-			lockFile(lockFile);
-		} catch (IOException e) {
-			throw new RuntimeException(lockFile.getPath(), e);
-		}
+		lockFile.createNewFile();
+		lockFile(lockFile);
 	}
 
 	@Override
@@ -115,16 +107,12 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 			return;
 		}
 		
-		try {
-			fileLock.close();
-			lockedStream.close();
-			state = VCSLockedWorkingCopyState.OBSOLETE;
-			if (corrupt) {
-				FileUtils.deleteDirectory(folder);
-				lockFile.delete();
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		fileLock.close();
+		lockedStream.close();
+		state = VCSLockedWorkingCopyState.OBSOLETE;
+		if (corrupt) {
+			FileUtils.deleteDirectory(folder);
+			lockFile.delete();
 		}
 	}
 
