@@ -7,8 +7,4 @@
 
 # Terms
 
-...
-  
-# Data Structure
-
-Ref. [data-structure.md](data-structure.md)
+...  
