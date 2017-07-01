@@ -21,31 +21,31 @@ import java.util.UUID;
 import static org.junit.Assert.*;
 
 public abstract class VCSAbstractTest {
-	private static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
-	private static final String NEW_BRANCH = "new-branch";
-	private static final String NEW_BRANCH_2 = "new-branch-2";
-	private static final String CREATED_DST_BRANCH_COMMIT_MESSAGE = "created dst branch";
-	private static final String DELETE_BRANCH_COMMIT_MESSAGE = "deleted";
-	private static final String FILE1_NAME = "file1.txt";
-	private static final String FILE2_NAME = "file2.txt";
-	private static final String FILE3_IN_FOLDER_NAME = "folder/file3.txt";
-	private static final String MOD_FILE_NAME = "mod file.txt";
-	private static final String FILE1_ADDED_COMMIT_MESSAGE = FILE1_NAME + " file added";
-	private static final String FILE2_ADDED_COMMIT_MESSAGE = FILE2_NAME + " file added";
-	private static final String FILE3_ADDED_COMMIT_MESSAGE = FILE3_IN_FOLDER_NAME + " file added";
-	private static final String MOD_FILE_ADDED_COMMIT_MESSAGE = MOD_FILE_NAME + " file added";
-	private static final String FILE1_CONTENT_CHANGED_COMMIT_MESSAGE = FILE1_NAME + " content changed";
-	private static final String MOD_FILE_CONTENT_CHANGED_COMMIT_MESSAGE = MOD_FILE_NAME + " content changed";
-	private static final String MERGE_COMMIT_MESSAGE = "merged.";
-	private static final String LINE_1 = "line 1";
-	private static final String LINE_2 = "line 2";
-	private static final String LINE_3 = "line 3";
-	private static final String MOD_LINE_1= "original line";
-	private static final String MOD_LINE_2= "modified line";
+	protected static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
+	protected static final String NEW_BRANCH = "new-branch";
+	protected static final String NEW_BRANCH_2 = "new-branch-2";
+	protected static final String CREATED_DST_BRANCH_COMMIT_MESSAGE = "created dst branch";
+	protected static final String DELETE_BRANCH_COMMIT_MESSAGE = "deleted";
+	protected static final String FILE1_NAME = "file1.txt";
+	protected static final String FILE2_NAME = "file2.txt";
+	protected static final String FILE3_IN_FOLDER_NAME = "folder/file3.txt";
+	protected static final String MOD_FILE_NAME = "mod file.txt";
+	protected static final String FILE1_ADDED_COMMIT_MESSAGE = FILE1_NAME + " file added";
+	protected static final String FILE2_ADDED_COMMIT_MESSAGE = FILE2_NAME + " file added";
+	protected static final String FILE3_ADDED_COMMIT_MESSAGE = FILE3_IN_FOLDER_NAME + " file added";
+	protected static final String MOD_FILE_ADDED_COMMIT_MESSAGE = MOD_FILE_NAME + " file added";
+	protected static final String FILE1_CONTENT_CHANGED_COMMIT_MESSAGE = FILE1_NAME + " content changed";
+	protected static final String MOD_FILE_CONTENT_CHANGED_COMMIT_MESSAGE = MOD_FILE_NAME + " content changed";
+	protected static final String MERGE_COMMIT_MESSAGE = "merged.";
+	protected static final String LINE_1 = "line 1";
+	protected static final String LINE_2 = "line 2";
+	protected static final String LINE_3 = "line 3";
+	protected static final String MOD_LINE_1= "original line";
+	protected static final String MOD_LINE_2= "modified line";
 
-	private static final String CONTENT_CHANGED_COMMIT_MESSAGE = "content changed";
-	private static final String FILE2_REMOVED_COMMIT_MESSAGE = FILE2_NAME + " removed";
-	private static final Integer DEFAULT_COMMITS_LIMIT = 100; 
+	protected static final String CONTENT_CHANGED_COMMIT_MESSAGE = "content changed";
+	protected static final String FILE2_REMOVED_COMMIT_MESSAGE = FILE2_NAME + " removed";
+	protected static final Integer DEFAULT_COMMITS_LIMIT = 100;
 	
 	protected String repoName;
 	protected String repoUrl;
@@ -427,6 +427,16 @@ public abstract class VCSAbstractTest {
 		assertFalse(vcs.fileExists(null, "no file"));
 	}
 
+	@Test
+	public void testGetWorkspace() {
+		assertEquals(vcs.getWorkspace(), localVCSWorkspace);
+	}
+
+	@Test
+	public void testToString() {
+		assertTrue(vcs.toString().contains(repoUrl));
+	}
+
 	private Boolean commitsContainsIds(List<VCSCommit> commits, String... ids) {
 		if (commits.size() == 0 || ids.length == 0) {
 			return false;
@@ -487,7 +497,7 @@ public abstract class VCSAbstractTest {
 	
 	protected abstract IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo);
 
-	protected abstract void setMakeFailureOnVCSReset(Boolean doMakeFailure);
+	protected abstract void setMakeFailureOnVCSReset(Boolean doMakeFailure) throws Exception;
 	
 	protected abstract String getVCSTypeString();
 }
