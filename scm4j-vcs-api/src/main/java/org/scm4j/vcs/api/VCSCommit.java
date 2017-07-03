@@ -5,7 +5,7 @@ public class VCSCommit {
 	private final String revision;
 	private final String logMessage;
 	private final String author;
-	
+
 	public String getAuthor() {
 		return author;
 	}
@@ -69,7 +69,7 @@ public class VCSCommit {
 
 	@Override
 	public String toString() {
-		return this == EMPTY ? "EMPTY" : 
-			"VCSCommit [revision=" + revision + ", logMessage=" + logMessage + ", author=" + author + "]";
+		return this == EMPTY ? "EMPTY"
+				: "VCSCommit [revision=" + revision + ", logMessage=" + logMessage + ", author=" + author + "]";
 	}
 }
