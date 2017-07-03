@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
+import org.scm4j.vcs.api.exceptions.EVCSTagExists;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 
 public interface IVCS {
@@ -44,4 +45,8 @@ public interface IVCS {
 	VCSCommit getHeadCommit(String branchName);
 	
 	Boolean fileExists(String branchName, String filePath);
+	
+	VCSTag createTag(String branchName, String tagName, String tagMessage) throws EVCSTagExists;
+	
+	List<VCSTag> getTags();
 }
