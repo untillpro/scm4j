@@ -34,4 +34,12 @@ public class ExceptionsTest {
 		assertTrue(e1.getMessage().contains(TEST_MESSAGE));
 		assertEquals(e1.getCause(), e);
 	}
+	
+	@Test
+	public void testEVCSTagExists() {
+		Exception e = new Exception(TEST_MESSAGE);
+		EVCSTagExists e1 = new EVCSTagExists(e);
+		assertTrue(e1.getMessage().contains(TEST_MESSAGE));
+		assertEquals(e1.getCause(), e);
+	}
 }
