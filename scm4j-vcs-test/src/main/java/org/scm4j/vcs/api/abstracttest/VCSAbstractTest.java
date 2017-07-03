@@ -1,6 +1,7 @@
 package org.scm4j.vcs.api.abstracttest;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,6 +10,7 @@ import org.mockito.exceptions.verification.WantedButNotInvoked;
 import org.scm4j.vcs.api.*;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
+import org.scm4j.vcs.api.exceptions.EVCSTagExists;
 import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
 import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
@@ -21,6 +23,10 @@ import java.util.UUID;
 import static org.junit.Assert.*;
 
 public abstract class VCSAbstractTest {
+	private static final String TAG_MESSAGE_1 = "tag 1 message";
+	private static final String TAG_NAME_1 = "tag1_name";
+	private static final String TAG_MESSAGE_2 = "tag 2 message";
+	private static final String TAG_NAME_2 = "tag2_name";
 	private static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
 	private static final String NEW_BRANCH = "new-branch";
 	private static final String NEW_BRANCH_2 = "new-branch-2";
@@ -83,7 +89,7 @@ public abstract class VCSAbstractTest {
 		
 		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
 
-		repoUrl = appendSlash(getTestRepoUrl()) + repoName;
+		repoUrl = StringUtils.appendIfMissing(getTestRepoUrl(), "/") + repoName;
 
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
@@ -93,10 +99,6 @@ public abstract class VCSAbstractTest {
 		resetMocks();
 		
 		setMakeFailureOnVCSReset(false);
-	}
-
-	private String appendSlash(String testRepoUrl) {
-		return testRepoUrl.endsWith("/") ? testRepoUrl : testRepoUrl + "/";
 	}
 
 	protected void resetMocks() throws Exception {
@@ -109,7 +111,7 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testCreateAndDeleteBranch() throws Exception {
+	public void testBranchCreateAndDelete() throws Exception {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
@@ -154,7 +156,7 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testGetSetFileContent() throws Exception {
+	public void testFileGetSetContent() throws Exception {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT).contains(FILE3_ADDED_COMMIT_MESSAGE));
@@ -166,8 +168,6 @@ public abstract class VCSAbstractTest {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME), LINE_2);
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_2);
-		
-		// TODO: add LWC corruption if commit is failed
 		
 		try {
 			vcs.getFileContent(null, "sdfsdf1.txt");
@@ -308,7 +308,7 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testRemoveFile() throws Exception {
+	public void testFileRemove() throws Exception {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		vcs.removeFile(null, FILE3_IN_FOLDER_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
@@ -324,7 +324,7 @@ public abstract class VCSAbstractTest {
 	}
 	
 	@Test
-	public void testGetCommitMessages() throws Exception {
+	public void testCommitGetMessages() throws Exception {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
@@ -341,7 +341,7 @@ public abstract class VCSAbstractTest {
 	}
 	
 	@Test 
-	public void testGetCommitsRange() throws Exception {
+	public void testCommitsGetRange() throws Exception {
 		/**
 		 * Master Branch
 		 * 
@@ -408,7 +408,7 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testGetHeadCommit() {
+	public void testCommitGetHead() {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		VCSCommit commit2 = vcs.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
@@ -425,6 +425,55 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.fileExists(null, FILE1_NAME));
 		assertTrue(vcs.fileExists(NEW_BRANCH, FILE3_IN_FOLDER_NAME));
 		assertFalse(vcs.fileExists(null, "no file"));
+	}
+	
+	@Test
+	public void testTagCreate() throws InterruptedException {
+		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit initialCommit = vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		VCSTag ethalonTag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		assertEquals(ethalonTag.getRelatedCommit(), initialCommit);
+		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_1);
+		assertEquals(ethalonTag.getTagName(), TAG_NAME_1);
+		assertEquals(ethalonTag.getAuthor(), initialCommit.getAuthor());
+		Thread.sleep(1000);
+		try {
+			vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+			fail();
+		} catch (EVCSTagExists e) {
+			
+		}
+		
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		initialCommit = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+		ethalonTag = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2);
+		assertEquals(ethalonTag.getRelatedCommit(), initialCommit);
+		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_2);
+		assertEquals(ethalonTag.getTagName(), TAG_NAME_2);
+		assertEquals(ethalonTag.getAuthor(), initialCommit.getAuthor());
+		Thread.sleep(1000);
+		try {
+			vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2);
+			fail();
+		} catch (EVCSTagExists e) {
+			
+		}
+	}
+	
+	@Test
+	public void testTagsList() {
+		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSTag ethalonTag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+		VCSTag ethalonTag2 = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2);
+		List<VCSTag> tags = vcs.getTags();
+		assertTrue(tags.size() == 2);
+		
+		VCSTag actualTag1 = tags.get(0);
+		VCSTag actualTag2 = tags.get(1);
+		assertEquals(actualTag1, ethalonTag1);
+		assertEquals(actualTag2, ethalonTag2);
 	}
 
 	private Boolean commitsContainsIds(List<VCSCommit> commits, String... ids) {
