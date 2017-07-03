@@ -1,14 +1,15 @@
 package org.scm4j.vcs.api;
 
-import java.util.List;
-import java.util.Set;
-
+import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSTagExists;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 
+import java.util.List;
+import java.util.Set;
+
 public interface IVCS {
-	void createBranch(String srcBranchName, String dstBranchName, String commitMessage);
+	void createBranch(String srcBranchName, String dstBranchName, String commitMessage) throws EVCSBranchExists;
 
 	VCSMergeResult merge(String srcBranchName, String dstBranchName, String commitMessage);
 
