@@ -50,4 +50,6 @@ public interface IVCS {
 	VCSTag createTag(String branchName, String tagName, String tagMessage) throws EVCSTagExists;
 	
 	List<VCSTag> getTags();
+	
+	VCSTag getLastTag();
 }
