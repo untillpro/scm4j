@@ -38,6 +38,8 @@ scm4j-vcs-api provides:
 	- The latest commit or state of a branch
 - Master Branch
 	- "Master" for Git, "Trunk" for SVN etc
+- `VCSTag`, Tag
+    - Contains tag name, tag log message, tag author and `VCSCommit` instance which represents the tagged commit
 
 # Using VCS interface
 IVCS interface consists of few basic vcs functions.
@@ -91,6 +93,12 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
     - Returns `VCSCommit` instance pointing to the head (last) commit of the branch `branchName`  
 - `Boolean fileExists(String branchName, String filePath)`
     - Returns true if the file with path `filePath` exists in repository in branch `branchName`, false otherwise
+- `VCSTag createTag(String branchName, String tagName, String tagMessage) throws EVCSTagExists`
+    - Creates a tag named `tagName` with log message `tagMessage` on a Head of branch `branchName`
+- `List<VCSTag> getTags()`
+    - Returns list of all tags
+- `VCSTag getLastTag()`
+    - Returns the last created tag
     
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
