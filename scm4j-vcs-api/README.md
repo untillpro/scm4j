@@ -1,10 +1,12 @@
-[![Release](https://jitpack.io/v/scm4j/scm4j-vcs-api.svg)](https://jitpack.io/#scm4j/scm4j-vcs-api)	
+[![Release](https://jitpack.io/v/scm4j/scm4j-vcs-api.svg)](https://jitpack.io/#scm4j/scm4j-vcs-api)
+[![Build Status](https://travis-ci.org/scm4j/scm4j-ai.svg?branch=master)](https://travis-ci.org/scm4j/scm4j-ai)
+[![Coverage Status](https://coveralls.io/repos/github/scm4j/scm4j-vcs-api/badge.svg?branch=master)](https://coveralls.io/github/scm4j/scm4j-vcs-api?branch=master) 
 
 # Overview
 scm4j-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc.
 scm4j-vcs-api provides:
 - A simple interface to implement basic VCS-related operations
-- Set of functional tests which are common to each VCS implementation. Functional tests for a certain VCS implementation are done by implementing few abstract methods of base test class. Implemented in [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test)
+- Set of functional tests wchich are common to each VCS implementation. Functional tests for a certain VCS implementation are done by implementing few abstract methods of base test class. Implemented in [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test)
 - Working copy management for operations which must be executed on local file system
 
 # Terms
@@ -36,6 +38,8 @@ scm4j-vcs-api provides:
 	- The latest commit or state of a branch
 - Master Branch
 	- "Master" for Git, "Trunk" for SVN etc
+- `VCSTag`, Tag
+    - Contains tag name, tag log message, tag author and `VCSCommit` instance which represents the tagged commit
 
 # Using VCS interface
 IVCS interface consists of few basic vcs functions.
@@ -64,27 +68,38 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- `fileRelativePath` is a path to file within `branchName` branch 
 	- The Head file state is used
 	- Use `String getFileContent(String branchName, String fileRelativePath)` overload to use UTF-8 encoding by default
-- `String setFileContent(String branchName, String filePath, String content, String commitMessage)`
+- `VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
-	- Returns commit id (hash, revision number etc)
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
-	- Note: result is a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
+	- Note: result could be considered as a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
 - `Set<String> getBranches()`
 	- Returns list of names of all branches. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
 - `List<String> getCommitMessages(Sting branchName, Integer limit)`
 	- Returns list of commit messages of branch `branchName` limited by `limit` in descending order
 - `String getVCSTypeString`
 	- Returns short name of current IVCS implementation: "git", "svn" etc
-- `String removeFile(String branchName, String filePath, String commitMessage)`
-	- Removes the file located by `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept
-	- Returns commit id (hash, revision number etc)
-- `List<VCSCommit> getCommitsRange(String branchName, String afterCommitId, String untilCommitId);`
-	- Returns ordered list of all commits located between commits specified by `aftercommitId` and `untilCommitId` within branch `branchName` 
-	- If `aftercommitId` is null then all commits until commit specified by `untilCommitId` are fetched 
-	- If `untilCommitId` is null then all commits after commit specified by `afterCommitId` are fetched  
-
+- `VCSCommit removeFile(String branchName, String filePath, String commitMessage)`
+	- Removes the file with path `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept
+- `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId)`
+	- Returns ordered list of all commits located between commits specified by `firstCommitId` and `untilCommitId` inclusively within branch `branchName` 
+	- If `firstCommitId` is null then all commits until commit specified by `untilCommitId` inclusively are fetched 
+	- If `untilCommitId` is null then all commits starting from commit specified by `firstCommitId` are fetched
+- `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit)`
+    - Returns ordered list of `limit` commits (0 is unlimited) starting from commit specified by `firstCommitId` in direction specified by `direction`
+    - If `firstCommitId` is null then commits are starting at branch `branchName` first commit (for ASC direction) or at head of branch (for DESC direction)
+- `VCSCommit getHeadCommit(String branchName)`
+    - Returns `VCSCommit` instance pointing to the head (last) commit of the branch `branchName`  
+- `Boolean fileExists(String branchName, String filePath)`
+    - Returns true if the file with path `filePath` exists in repository in branch `branchName`, false otherwise
+- `VCSTag createTag(String branchName, String tagName, String tagMessage) throws EVCSTagExists`
+    - Creates a tag named `tagName` with log message `tagMessage` on a Head of branch `branchName`
+- `List<VCSTag> getTags()`
+    - Returns list of all tags
+- `VCSTag getLastTag()`
+    - Returns the last created tag
+    
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
 - The simple way to allocate place for vcs operations execution
@@ -186,7 +201,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 	- Throw exceptions from scm4j.vcs.api.exceptions package. Abstract Test checks throwning of these exceptions.
 - Implement functional tests
 	- Create VCSAbstractTest subclass within test package, implement all abstract methods
-	- Normally test class should not include any test, just @After\@Before methods. All necessary functional testing is implemented within VCSAbstractTest
+	- Normally test class should not include any test, just @After and @Before methods. All necessary functional testing is implemented within VCSAbstractTest
 	- See [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test) for details
 - Example of gradle usage to export IVCS implementation, its sources and javadoc as separate single JARs:
 ```gradle

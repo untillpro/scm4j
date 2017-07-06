@@ -1,10 +1,7 @@
 package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import org.apache.commons.io.FilenameUtils;
+import java.io.IOException;
 
 public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
@@ -24,20 +21,13 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	}
 
 	@Override
-	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() {
+	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() throws IOException {
 		return new VCSLockedWorkingCopy(this);
 	}
 
 	private String getRepoFolderName() {
-		URI uri;
-		try {
-			uri = new URI(repoUrl.replace("\\", "/"));
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-		String path = uri.getPath();
-		path = path.replaceAll("[^a-zA-Z0-9.-]", "_");
-		return FilenameUtils.concat(workspace.getHomeFolder().getPath(), path);
+		String tmp = repoUrl.replaceAll("[^a-zA-Z0-9.-]", "_");
+		return new File(workspace.getHomeFolder(), tmp).getPath().replace("\\", File.separator);
 	}
 
 	private void initRepoFolder() {

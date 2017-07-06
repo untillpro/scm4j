@@ -1,13 +1,15 @@
 package org.scm4j.vcs.api;
 
+import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
+import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
+import org.scm4j.vcs.api.exceptions.EVCSTagExists;
+import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
+
 import java.util.List;
 import java.util.Set;
 
-import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
-import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
-
 public interface IVCS {
-	void createBranch(String srcBranchName, String dstBranchName, String commitMessage);
+	void createBranch(String srcBranchName, String dstBranchName, String commitMessage) throws EVCSBranchExists;
 
 	VCSMergeResult merge(String srcBranchName, String dstBranchName, String commitMessage);
 
@@ -23,7 +25,7 @@ public interface IVCS {
 
 	String getFileContent(String branchName, String fileRelativePath) throws EVCSFileNotFound;
 
-	String setFileContent(String branchName, String filePath, String content, String commitMessage);
+	VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage);
 	
 	List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName);
 	
@@ -33,9 +35,21 @@ public interface IVCS {
 	
 	String getVCSTypeString();
 	
-	String removeFile(String branchName, String filePath, String commitMessage);
+	VCSCommit removeFile(String branchName, String filePath, String commitMessage);
 	
-	List<VCSCommit> getCommitsRange(String branchName, String afterCommitId, String untilCommitId);
+	List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId);
 	
-	IVCSWorkspace getWorkspace(); 
+	List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit);
+	
+	IVCSWorkspace getWorkspace();
+	
+	VCSCommit getHeadCommit(String branchName);
+	
+	Boolean fileExists(String branchName, String filePath);
+	
+	VCSTag createTag(String branchName, String tagName, String tagMessage) throws EVCSTagExists;
+	
+	List<VCSTag> getTags();
+	
+	VCSTag getLastTag();
 }

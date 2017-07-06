@@ -7,6 +7,8 @@ import java.io.File;
  */
 public class VCSWorkspace implements IVCSWorkspace {
 
+	public static final String DEFAULT_WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
+
 	private final File folder;
 
 	@Override
@@ -25,7 +27,7 @@ public class VCSWorkspace implements IVCSWorkspace {
 	}
 	
 	public VCSWorkspace() {
-		this(System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces");
+		this(DEFAULT_WORKSPACE_DIR);
 	}
 
 	@Override
