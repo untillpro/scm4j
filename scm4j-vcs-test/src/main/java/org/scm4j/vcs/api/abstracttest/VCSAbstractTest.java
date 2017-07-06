@@ -48,11 +48,13 @@ public abstract class VCSAbstractTest {
 	protected static final String TAG_NAME_1 = "tag1_name";
 	protected static final String TAG_MESSAGE_2 = "tag 2 message";
 	protected static final String TAG_NAME_2 = "tag2_name";
+	protected static final String TAG_MESSAGE_3 = "tag 3 message";
+	protected static final String TAG_NAME_3 = "tag3_name";
 
 	protected static final String CONTENT_CHANGED_COMMIT_MESSAGE = "content changed";
 	protected static final String FILE2_REMOVED_COMMIT_MESSAGE = FILE2_NAME + " removed";
 	protected static final Integer DEFAULT_COMMITS_LIMIT = 100;
-	
+
 	protected String repoName;
 	protected String repoUrl;
 	protected IVCSWorkspace localVCSWorkspace;
@@ -484,6 +486,20 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testToString() {
 		assertTrue(vcs.toString().contains(repoUrl));
+	}
+
+	@Test
+	public void testGetLastTag() {
+		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSTag ethalonTag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		VCSTag ethalonTag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2);
+		assertEquals(vcs.getLastTag(), ethalonTag2);
+
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+		VCSTag ethalonTag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3);
+		assertEquals(vcs.getLastTag(), ethalonTag3);
 	}
 
 	private Boolean commitsContainsIds(List<VCSCommit> commits, String... ids) {
