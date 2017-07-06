@@ -1,4 +1,5 @@
-[![Release](https://jitpack.io/v/scm4j/scm4j-vcs-test.svg)](https://jitpack.io/#scm4j/scm4j-vcs-test)	
+[![Release](https://jitpack.io/v/scm4j/scm4j-vcs-test.svg)](https://jitpack.io/#scm4j/scm4j-vcs-test)
+[![Build Status](https://travis-ci.org/scm4j/scm4j-vcs-test.svg?branch=master)](https://travis-ci.org/scm4j/scm4j-vcs-test)
 
 # Overview
 scm4j-vcs-test project provides base functional test class for IVCS implementations subclassed from [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api). It used as maven dependency for [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git), [scm4j-vcs-svn](https://github.com/scm4j/scm4j-vcs-svn) and other VCS support libraries. All necessary vcs-related functional testing is implemented within scm4j-vcs-test. It is need to implement just few abstract methods.
