@@ -140,10 +140,13 @@ public abstract class VCSAbstractTest {
 		} catch (EVCSBranchExists e) {
 		}
 
+		// make the branch to delete be checked out
+		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		vcs.deleteBranch(NEW_BRANCH, DELETE_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(vcs.getBranches().size() == 2);
+		assertFalse(vcs.getBranches().contains(NEW_BRANCH));
 	}
 
 	private void verifyMocks() throws Exception {
