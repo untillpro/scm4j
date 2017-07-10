@@ -494,7 +494,7 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testGetLastTag() {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
 		vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
 		VCSTag ethalonTag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2);
 		assertEquals(vcs.getLastTag(), ethalonTag2);
