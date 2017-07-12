@@ -76,8 +76,8 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Note: result could be considered as a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
 - `Set<String> getBranches()`
 	- Returns list of names of all branches. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
-- `List<String> getCommitMessages(Sting branchName, Integer limit)`
-	- Returns list of commit messages of branch `branchName` limited by `limit` in descending order
+- `List<VCSCommit> log(Sting branchName, Integer limit)`
+	- Returns list of commits of branch `branchName` limited by `limit` in descending order
 - `String getVCSTypeString`
 	- Returns short name of current IVCS implementation: "git", "svn" etc
 - `VCSCommit removeFile(String branchName, String filePath, String commitMessage)`
