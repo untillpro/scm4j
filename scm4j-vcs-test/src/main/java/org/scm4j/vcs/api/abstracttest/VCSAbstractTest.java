@@ -1,5 +1,18 @@
 package org.scm4j.vcs.api.abstracttest;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.File;
+import java.util.List;
+import java.util.UUID;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
@@ -7,7 +20,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
-import org.scm4j.vcs.api.*;
+import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.VCSChangeType;
+import org.scm4j.vcs.api.VCSCommit;
+import org.scm4j.vcs.api.VCSDiffEntry;
+import org.scm4j.vcs.api.VCSMergeResult;
+import org.scm4j.vcs.api.VCSTag;
+import org.scm4j.vcs.api.WalkDirection;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSTagExists;
@@ -15,12 +34,6 @@ import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
 import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
-
-import java.io.File;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.Assert.*;
 
 public abstract class VCSAbstractTest {
 	protected static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
@@ -164,7 +177,7 @@ public abstract class VCSAbstractTest {
 	public void testFileGetSetContent() throws Exception {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		verifyMocks();
-		assertTrue(vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT).contains(FILE3_ADDED_COMMIT_MESSAGE));
+		assertTrue(logContainsMessage(null, FILE3_ADDED_COMMIT_MESSAGE));
 		verifyMocks();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME), LINE_1);
 		verifyMocks();
@@ -324,25 +337,27 @@ public abstract class VCSAbstractTest {
 		} catch (EVCSFileNotFound e) {
 		}
 		
-		List<String> commits = vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT);
-		assertTrue(commits.contains(FILE2_REMOVED_COMMIT_MESSAGE));
+		assertTrue(logContainsMessage(null, FILE2_REMOVED_COMMIT_MESSAGE));
 	}
 	
 	@Test
-	public void testCommitGetMessages() throws Exception {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
+	public void testLog() throws Exception {
+		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit c2 = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		VCSCommit c3 = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
 		resetMocks();
-		List<String> commits = vcs.getCommitMessages(null, DEFAULT_COMMITS_LIMIT);
+		List<VCSCommit> log = vcs.log(null, DEFAULT_COMMITS_LIMIT);
 		verifyMocks();
-		assertTrue(commits.contains(FILE1_ADDED_COMMIT_MESSAGE));
-		assertTrue(commits.contains(FILE3_ADDED_COMMIT_MESSAGE));
-		commits = vcs.getCommitMessages(null, 1);
-		assertFalse(commits.contains(FILE1_ADDED_COMMIT_MESSAGE));
-		commits = vcs.getCommitMessages(NEW_BRANCH, DEFAULT_COMMITS_LIMIT);
-		assertTrue(commits.contains(FILE2_ADDED_COMMIT_MESSAGE));
+		assertThat(new Object[] {log.get(0), log.get(1)}, is(new Object[] {c2, c1}));
+		
+		log = vcs.log(null, 1);
+		assertTrue(log.size() == 1);
+		assertThat(log.get(0), is(c2));
+		
+		log = vcs.log(NEW_BRANCH, 0);
+		assertTrue(log.size() > 1);
+		assertThat(log, hasItem(c3));
 	}
 	
 	@Test 
@@ -559,6 +574,16 @@ public abstract class VCSAbstractTest {
 			}
 		}
 		return count == ids.length;
+	}
+	
+	private boolean logContainsMessage(String branchName, String commitMessage) {
+		List<VCSCommit> log = vcs.log(branchName, DEFAULT_COMMITS_LIMIT);
+		for (VCSCommit commit : log) {
+			if (commit.getLogMessage().equals(commitMessage)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	protected abstract String getTestRepoUrl();
