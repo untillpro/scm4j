@@ -92,6 +92,7 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 		folder = new File(vcsRepo.getRepoFolder(), guid);
 		folder.mkdirs();
 		lockFile = new File(vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + folder.getName());
+		System.out.println(lockFile.getPath());
 		lockFile.createNewFile();
 		lockFile(lockFile);
 	}
