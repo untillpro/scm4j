@@ -504,6 +504,16 @@ public abstract class VCSAbstractTest {
 		VCSTag ethalonTag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3);
 		assertEquals(vcs.getLastTag(), ethalonTag3);
 	}
+	
+	@Test
+	public void removeTag() {
+		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		assertTrue(vcs.getTags().contains(TAG_NAME_1));
+		vcs.removeTag(TAG_NAME_1);
+		assertFalse(vcs.getTags().contains(TAG_NAME_1));
+	}
 
 	private Boolean commitsContainsIds(List<VCSCommit> commits, String... ids) {
 		if (commits.size() == 0 || ids.length == 0) {
