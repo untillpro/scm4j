@@ -52,4 +52,6 @@ public interface IVCS {
 	List<VCSTag> getTags();
 	
 	VCSTag getLastTag();
+	
+	void removeTag(String tagName);
 }

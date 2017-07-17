@@ -1,5 +1,5 @@
 [![Release](https://jitpack.io/v/scm4j/scm4j-vcs-api.svg)](https://jitpack.io/#scm4j/scm4j-vcs-api)
-[![Build Status](https://travis-ci.org/scm4j/scm4j-ai.svg?branch=master)](https://travis-ci.org/scm4j/scm4j-ai)
+[![Build Status](https://travis-ci.org/scm4j/scm4j-vcs-api.svg?branch=master)](https://travis-ci.org/scm4j/scm4j-vcs-api)
 [![Coverage Status](https://coveralls.io/repos/github/scm4j/scm4j-vcs-api/badge.svg?branch=master)](https://coveralls.io/github/scm4j/scm4j-vcs-api?branch=master) 
 
 # Overview
