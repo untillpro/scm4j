@@ -31,7 +31,7 @@ public interface IVCS {
 	
 	Set<String> getBranches();
 	
-	List<String> getCommitMessages(String branchName, Integer limit);
+	List<VCSCommit> log(String branchName, int limit);
 	
 	String getVCSTypeString();
 	
