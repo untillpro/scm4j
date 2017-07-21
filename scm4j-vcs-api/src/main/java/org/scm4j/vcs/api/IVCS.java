@@ -54,4 +54,6 @@ public interface IVCS {
 	VCSTag getLastTag();
 	
 	void removeTag(String tagName);
+	
+	void checkout(String branchName, String targetPath);
 }
