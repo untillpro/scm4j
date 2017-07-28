@@ -29,7 +29,7 @@ public interface IVCS {
 	
 	List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName);
 	
-	Set<String> getBranches();
+	Set<String> getBranches(String path);
 	
 	List<VCSCommit> log(String branchName, int limit);
 	
