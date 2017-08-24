@@ -58,4 +58,6 @@ public interface IVCS {
 	void checkout(String branchName, String targetPath, String revision);
 	
 	Boolean isRevisionTagged(String revision);
+	
+	VCSTag getTagByName(String tagName);
 }
