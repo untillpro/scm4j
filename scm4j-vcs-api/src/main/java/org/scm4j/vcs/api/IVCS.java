@@ -47,7 +47,7 @@ public interface IVCS {
 	
 	Boolean fileExists(String branchName, String filePath);
 	
-	VCSTag createTag(String branchName, String tagName, String tagMessage) throws EVCSTagExists;
+	VCSTag createTag(String branchName, String tagName, String tagMessage, String revisionToTag) throws EVCSTagExists;
 	
 	List<VCSTag> getTags();
 	
@@ -55,5 +55,7 @@ public interface IVCS {
 	
 	void removeTag(String tagName);
 	
-	void checkout(String branchName, String targetPath);
+	void checkout(String branchName, String targetPath, String revision);
+	
+	Boolean isRevisionTagged(String revision);
 }
