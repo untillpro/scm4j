@@ -452,14 +452,14 @@ public abstract class VCSAbstractTest {
 	public void testTagCreate() throws InterruptedException {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		VCSCommit initialCommit = vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		VCSTag ethalonTag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		assertEquals(ethalonTag.getRelatedCommit(), initialCommit);
 		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_1);
 		assertEquals(ethalonTag.getTagName(), TAG_NAME_1);
 		assertEquals(ethalonTag.getAuthor(), initialCommit.getAuthor());
 		Thread.sleep(1000);
 		try {
-			vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+			vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 			fail();
 		} catch (EVCSTagExists e) {
 			
@@ -467,14 +467,14 @@ public abstract class VCSAbstractTest {
 		
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		initialCommit = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
-		ethalonTag = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2);
+		ethalonTag = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2, null);
 		assertEquals(ethalonTag.getRelatedCommit(), initialCommit);
 		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_2);
 		assertEquals(ethalonTag.getTagName(), TAG_NAME_2);
 		assertEquals(ethalonTag.getAuthor(), initialCommit.getAuthor());
 		Thread.sleep(1000);
 		try {
-			vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2);
+			vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2, null);
 			fail();
 		} catch (EVCSTagExists e) {
 			
@@ -484,10 +484,10 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testTagsList() {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		VCSTag ethalonTag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag2 = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2);
+		VCSTag ethalonTag2 = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2, null);
 		List<VCSTag> tags = vcs.getTags();
 		assertTrue(tags.size() == 2);
 		
@@ -510,14 +510,14 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testGetLastTag() {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
-		VCSTag ethalonTag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2);
+		VCSTag ethalonTag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, null);
 		assertEquals(vcs.getLastTag(), ethalonTag2);
 
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3);
+		VCSTag ethalonTag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3, null);
 		assertEquals(vcs.getLastTag(), ethalonTag3);
 	}
 	
@@ -525,24 +525,52 @@ public abstract class VCSAbstractTest {
 	public void testRemoveTag() {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
-		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1);
+		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		assertTrue(containsTagName(vcs.getTags(), TAG_NAME_1));
 		vcs.removeTag(TAG_NAME_1);
 		assertFalse(containsTagName(vcs.getTags(), TAG_NAME_1));
 	}
 	
 	@Test
-	public void testCheckout() throws Exception {
+	public void testCheckoutHead() throws Exception {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		IVCSRepositoryWorkspace rw = localVCSWorkspace.getVCSRepositoryWorkspace("test_checkout_place");
 		
 		try (IVCSLockedWorkingCopy lwc = rw.getVCSLockedWorkingCopy()) {
 			lwc.setCorrupted(true);
-			vcs.checkout(null, lwc.getFolder().getPath());
+			vcs.checkout(null, lwc.getFolder().getPath(), null);
 			File testFile = new File(lwc.getFolder(), FILE1_NAME);
 			assertTrue(testFile.exists());
 			assertEquals(FileUtils.readFileToString(testFile, StandardCharsets.UTF_8), LINE_1);
 		}
+	}
+	
+	@Test
+	public void testCheckoutRevision() throws Exception {
+		VCSCommit first = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		IVCSRepositoryWorkspace rw = localVCSWorkspace.getVCSRepositoryWorkspace("test_checkout_place");
+		
+		try (IVCSLockedWorkingCopy lwc = rw.getVCSLockedWorkingCopy()) {
+			lwc.setCorrupted(true);
+			vcs.checkout(null, lwc.getFolder().getPath(), first.getRevision());
+			File testFile = new File(lwc.getFolder(), FILE1_NAME);
+			assertTrue(testFile.exists());
+			assertEquals(FileUtils.readFileToString(testFile, StandardCharsets.UTF_8), LINE_1);
+		}
+	}
+	
+	@Test
+	public void testIsRevisionTagged() {
+		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
+		VCSCommit c3 = vcs.setFileContent(null, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
+		
+		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, c2.getRevision());
+		
+		assertFalse(vcs.isRevisionTagged(c1.getRevision()));
+		assertTrue(vcs.isRevisionTagged(c2.getRevision()));
+		assertFalse(vcs.isRevisionTagged(c3.getRevision()));
 	}
 
 	private boolean containsTagName(List<VCSTag> tags, String tagName) {
