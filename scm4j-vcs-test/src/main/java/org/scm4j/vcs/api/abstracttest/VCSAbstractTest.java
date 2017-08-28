@@ -573,6 +573,22 @@ public abstract class VCSAbstractTest {
 		assertFalse(vcs.isRevisionTagged(c3.getRevision()));
 	}
 
+	@Test
+	public void testGetTagByName() {
+		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit c3 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
+
+		VCSTag tag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, c1.getRevision());
+		VCSTag tag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, c2.getRevision());
+		VCSTag tag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3, c3.getRevision());
+
+		assertEquals(tag1, vcs.getTagByName(TAG_NAME_1));
+		assertEquals(tag2, vcs.getTagByName(TAG_NAME_2));
+		assertEquals(tag3, vcs.getTagByName(TAG_NAME_3));
+	}
+
 	private boolean containsTagName(List<VCSTag> tags, String tagName) {
 		for (VCSTag tag : tags) {
 			if (tag.getTagName().equals(tagName)) {
