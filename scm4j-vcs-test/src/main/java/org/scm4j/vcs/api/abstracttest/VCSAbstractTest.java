@@ -2,12 +2,7 @@ package org.scm4j.vcs.api.abstracttest;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -587,6 +582,8 @@ public abstract class VCSAbstractTest {
 		assertEquals(tag1, vcs.getTagByName(TAG_NAME_1));
 		assertEquals(tag2, vcs.getTagByName(TAG_NAME_2));
 		assertEquals(tag3, vcs.getTagByName(TAG_NAME_3));
+
+		assertNull(vcs.getTagByName("wrong_tag"));
 	}
 
 	private boolean containsTagName(List<VCSTag> tags, String tagName) {
