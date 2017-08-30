@@ -8,6 +8,10 @@ targetCompatibility = JavaVersion.VERSION_1_7
 group = 'org.scm4j'
 version = '4.0-SNAPSHOT'
 
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
 repositories {
 	mavenCentral()
 	maven { 
