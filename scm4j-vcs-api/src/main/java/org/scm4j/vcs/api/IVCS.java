@@ -21,9 +21,7 @@ public interface IVCS {
 
 	String getRepoUrl();
 
-	String getFileContent(String branchName, String fileRelativePath, String encoding) throws EVCSFileNotFound;
-
-	String getFileContent(String branchName, String fileRelativePath) throws EVCSFileNotFound;
+	String getFileContent(String branchName, String fileRelativePath, String revision) throws EVCSFileNotFound;
 
 	VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage);
 	
@@ -51,13 +49,9 @@ public interface IVCS {
 	
 	List<VCSTag> getTags();
 	
-	VCSTag getLastTag();
-	
 	void removeTag(String tagName);
 	
 	void checkout(String branchName, String targetPath, String revision);
 	
-	Boolean isRevisionTagged(String revision);
-	
-	VCSTag getTagByName(String tagName);
+	List<VCSTag> getTagsOnRevision(String revision);
 }
