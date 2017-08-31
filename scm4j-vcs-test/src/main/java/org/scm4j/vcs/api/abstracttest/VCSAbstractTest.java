@@ -6,6 +6,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -129,6 +130,8 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertTrue(vcs.getBranches("").contains(NEW_BRANCH));
 		verifyMocks();
+		assertTrue(vcs.getBranches(null).contains(NEW_BRANCH));
+		verifyMocks();
 		assertTrue(vcs.getBranches("").size() == 2); // Master + NEW_BRANCH, no Folder
 		verifyMocks();
 		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null).equals(LINE_1));
@@ -171,18 +174,20 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testFileGetSetContent() throws Exception {
-		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		VCSCommit commit = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(logContainsMessage(null, FILE3_ADDED_COMMIT_MESSAGE));
 		verifyMocks();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_1);
 		verifyMocks();
-		//assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_1);
-		verifyMocks();
+
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_2);
-		//assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_2);
-		
+
+		resetMocks();
+		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, commit.getRevision()), LINE_1);
+		verifyMocks();
+
 		try {
 			vcs.getFileContent(null, "sdfsdf1.txt", null);
 			fail("EVCSFileNotFound is not thrown");
@@ -539,6 +544,24 @@ public abstract class VCSAbstractTest {
 			assertTrue(testFile.exists());
 			assertEquals(FileUtils.readFileToString(testFile, StandardCharsets.UTF_8), LINE_1);
 		}
+	}
+
+	@Test
+	public void testGetTagsOnRevision() {
+		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit c3 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
+
+		VCSTag tag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, c1.getRevision());
+		VCSTag tag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, c1.getRevision());
+		VCSTag tag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3, c3.getRevision());
+
+		assertTrue(vcs.getTagsOnRevision(c1.getRevision()).containsAll(Arrays.asList(
+				tag1, tag2)));
+		assertTrue(vcs.getTagsOnRevision(c2.getRevision()).isEmpty());
+		assertTrue(vcs.getTagsOnRevision(c3.getRevision()).containsAll(Arrays.asList(
+				tag3)));
 	}
 	
 	private boolean containsTagName(List<VCSTag> tags, String tagName) {
