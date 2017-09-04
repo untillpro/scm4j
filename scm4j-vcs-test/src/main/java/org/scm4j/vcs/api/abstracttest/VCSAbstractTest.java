@@ -6,6 +6,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -129,9 +130,11 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertTrue(vcs.getBranches("").contains(NEW_BRANCH));
 		verifyMocks();
+		assertTrue(vcs.getBranches(null).contains(NEW_BRANCH));
+		verifyMocks();
 		assertTrue(vcs.getBranches("").size() == 2); // Master + NEW_BRANCH, no Folder
 		verifyMocks();
-		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME).equals(LINE_1));
+		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null).equals(LINE_1));
 		resetMocks();
 
 		vcs.createBranch(NEW_BRANCH, NEW_BRANCH_2, CREATED_DST_BRANCH_COMMIT_MESSAGE);
@@ -171,20 +174,22 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testFileGetSetContent() throws Exception {
-		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		VCSCommit commit = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(logContainsMessage(null, FILE3_ADDED_COMMIT_MESSAGE));
 		verifyMocks();
-		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME), LINE_1);
+		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_1);
 		verifyMocks();
-		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_1);
-		verifyMocks();
+
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
-		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME), LINE_2);
-		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, "UTF-8"), LINE_2);
-		
+		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_2);
+
+		resetMocks();
+		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, commit.getRevision()), LINE_1);
+		verifyMocks();
+
 		try {
-			vcs.getFileContent(null, "sdfsdf1.txt");
+			vcs.getFileContent(null, "sdfsdf1.txt", null);
 			fail("EVCSFileNotFound is not thrown");
 		} catch (EVCSFileNotFound e) {
 		}
@@ -203,10 +208,10 @@ public abstract class VCSAbstractTest {
 		assertFalse(mockedLWC.getCorrupted());
 		assertTrue(res.getSuccess());
 		assertTrue(res.getConflictingFiles().size() == 0);
-		String content = vcs.getFileContent(null, FILE1_NAME);
+		String content = vcs.getFileContent(null, FILE1_NAME, null);
 
 		assertEquals(content, LINE_1);
-		content = vcs.getFileContent(null, FILE2_NAME);
+		content = vcs.getFileContent(null, FILE2_NAME, null);
 		assertEquals(content, LINE_2);
 	}
 
@@ -328,7 +333,7 @@ public abstract class VCSAbstractTest {
 		vcs.removeFile(null, FILE3_IN_FOLDER_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
 		verifyMocks();
 		try {
-			vcs.getFileContent(null, FILE3_IN_FOLDER_NAME);
+			vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null);
 			fail();
 		} catch (EVCSFileNotFound e) {
 		}
@@ -503,20 +508,6 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testGetLastTag() {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
-		vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
-		VCSTag ethalonTag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, null);
-		assertEquals(vcs.getLastTag(), ethalonTag2);
-
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3, null);
-		assertEquals(vcs.getLastTag(), ethalonTag3);
-	}
-	
-	@Test
 	public void testRemoveTag() {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
@@ -554,38 +545,25 @@ public abstract class VCSAbstractTest {
 			assertEquals(FileUtils.readFileToString(testFile, StandardCharsets.UTF_8), LINE_1);
 		}
 	}
-	
-	@Test
-	public void testIsRevisionTagged() {
-		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
-		VCSCommit c3 = vcs.setFileContent(null, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
-		
-		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, c2.getRevision());
-		
-		assertFalse(vcs.isRevisionTagged(c1.getRevision()));
-		assertTrue(vcs.isRevisionTagged(c2.getRevision()));
-		assertFalse(vcs.isRevisionTagged(c3.getRevision()));
-	}
 
 	@Test
-	public void testGetTagByName() {
+	public void testGetTagsOnRevision() {
 		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		VCSCommit c3 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
 
 		VCSTag tag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, c1.getRevision());
-		VCSTag tag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, c2.getRevision());
+		VCSTag tag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, c1.getRevision());
 		VCSTag tag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3, c3.getRevision());
 
-		assertEquals(tag1, vcs.getTagByName(TAG_NAME_1));
-		assertEquals(tag2, vcs.getTagByName(TAG_NAME_2));
-		assertEquals(tag3, vcs.getTagByName(TAG_NAME_3));
-
-		assertNull(vcs.getTagByName("wrong_tag"));
+		assertTrue(vcs.getTagsOnRevision(c1.getRevision()).containsAll(Arrays.asList(
+				tag1, tag2)));
+		assertTrue(vcs.getTagsOnRevision(c2.getRevision()).isEmpty());
+		assertTrue(vcs.getTagsOnRevision(c3.getRevision()).containsAll(Arrays.asList(
+				tag3)));
 	}
-
+	
 	private boolean containsTagName(List<VCSTag> tags, String tagName) {
 		for (VCSTag tag : tags) {
 			if (tag.getTagName().equals(tagName)) {
