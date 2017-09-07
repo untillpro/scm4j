@@ -9,7 +9,6 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 
 sourceCompatibility = JavaVersion.VERSION_1_7
-
 targetCompatibility = JavaVersion.VERSION_1_7
 
 group = 'org.scm4j'
