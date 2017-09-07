@@ -7,7 +7,7 @@ scm4j-vcs-api is set of base classes and interfaces to build VCS support (Git, S
 scm4j-vcs-api provides:
 - A simple interface to implement basic VCS-related operations
 - Set of functional tests wchich are common to each VCS implementation. Functional tests for a certain VCS implementation are done by implementing few abstract methods of base test class. Implemented in [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test)
-- Working copy management for operations which must be executed on local file system
+- Working copies management for operations which must be executed on a local file system
 
 # Terms
 - `IVCS`
@@ -74,14 +74,14 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
 	- Note: result could be considered as a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
-- `Set<String> getBranches()`
-	- Returns list of names of all branches. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
+- `Set<String> getBranches(String path)`
+	- Returns list of names of all branches which are started from `path`. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
 - `List<VCSCommit> log(Sting branchName, Integer limit)`
 	- Returns list of commits of branch `branchName` limited by `limit` in descending order
 - `String getVCSTypeString`
 	- Returns short name of current IVCS implementation: "git", "svn" etc
 - `VCSCommit removeFile(String branchName, String filePath, String commitMessage)`
-	- Removes the file with path `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept
+	- Removes the file with path `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept. Returns resulting commit.
 - `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId)`
 	- Returns ordered list of all commits located between commits specified by `firstCommitId` and `untilCommitId` inclusively within branch `branchName` 
 	- If `firstCommitId` is null then all commits until commit specified by `untilCommitId` inclusively are fetched 
@@ -97,8 +97,12 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
     - Creates a tag named `tagName` with log message `tagMessage` on a Head of branch `branchName`
 - `List<VCSTag> getTags()`
     - Returns list of all tags
-- `VCSTag getLastTag()`
-    - Returns the last created tag
+- `void removeTag(String tagName)`
+    - Removes tag with name `tagName`
+- `void checkout(String branchName, String targetPath, String revision)`
+    - Checks out a branch `branchName` on a revision `revision` into a local folder `targetPath`
+- `List<VCSTag> getTagsOnRevision(String revision)`
+    - returns list of all tags which are related to commit specified by `revision`    
     
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
