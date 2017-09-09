@@ -1,14 +1,9 @@
 package org.scm4j.commons;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
+import static org.junit.Assert.*;
 
 public class VersionTest {
 	
@@ -171,5 +166,14 @@ public class VersionTest {
 		assertEquals("-SNAPSHOT", new Version("").toSnapshotString());
 		assertEquals("11-SNAPSHOT", new Version("11").toSnapshotString());
 		assertEquals("asd-SNAPSHOT", new Version("asd").toSnapshotString());
+	}
+
+	@Test
+	public void toSnapshot() {
+		assertEquals(new Version("11.21.31.41-SNAPSHOT"), new Version("11.21.31.41").toSnapshot());
+		assertEquals(new Version("11.21.31.41-SNAPSHOT"), new Version("11.21.31.41-SNAPSHOT").toSnapshot());
+		assertEquals(new Version("-SNAPSHOT"), new Version("").toSnapshot());
+		assertEquals(new Version("11-SNAPSHOT"), new Version("11").toSnapshot());
+		assertEquals(new Version("asd-SNAPSHOT"), new Version("asd").toSnapshot());
 	}
 }

@@ -144,6 +144,10 @@ public class Version {
 		return prefix + minor + (patch.isEmpty() ? "" : "." + patch) + SNAPSHOT;
 	}
 
+	public Version toSnapshot() {
+		return new Version(toSnapshotString());
+	}
+
 	public String toReleaseString() {
 		if (!StringUtils.isNumeric(minor)) {
 			return verStr;
