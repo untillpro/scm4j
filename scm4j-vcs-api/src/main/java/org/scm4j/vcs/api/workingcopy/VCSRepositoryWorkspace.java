@@ -22,7 +22,7 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
 	@Override
 	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() throws IOException {
-		return new VCSLockedWorkingCopy(this);
+		return new VCSLockedWorkingCopy(this, false);
 	}
 
 	private String getRepoFolderName() {
@@ -50,6 +50,11 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	public String toString() {
 		return "VCSRepositoryWorkspace [workspace=" + workspace + ", repoUrl=" + repoUrl + ", repoFolder=" + repoFolder
 				+ "]";
+	}
+
+	@Override
+	public IVCSLockedWorkingCopy getVCSLockedWorkingCopyTemp() throws IOException {
+		return new VCSLockedWorkingCopy(this, true);
 	}
 
 }

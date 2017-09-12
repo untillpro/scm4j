@@ -40,9 +40,10 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 		this.corrupt = isCorrupt;
 	}
 	
-	protected VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo) throws IOException {
+	protected VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo, boolean isTemp) throws IOException {
 		this.vcsRepo = vcsRepo;
-		init();
+		this.corrupt = isTemp;
+		init(isTemp);
 	}
 	
 	@Override
@@ -50,18 +51,20 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseabl
 		return corrupt;
 	}
 
-	private void init() throws IOException {
+	private void init(boolean force) throws IOException {
 		File[] files = vcsRepo.getRepoFolder().listFiles();
-		for (File file : files != null ? files : new File[0]) {
-			if (file.isDirectory()) {
-				lockFile = new File( vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + file.getName());
-				if (!lockFile.exists()) {
-					continue;
-				}
-				if (tryLockFile(lockFile)) {
-					folder = file;
-					state = VCSLockedWorkingCopyState.LOCKED;
-					return;
+		if (!force) {
+			for (File file : files != null ? files : new File[0]) {
+				if (file.isDirectory()) {
+					lockFile = new File( vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + file.getName());
+					if (!lockFile.exists()) {
+						continue;
+					}
+					if (tryLockFile(lockFile)) {
+						folder = file;
+						state = VCSLockedWorkingCopyState.LOCKED;
+						return;
+					}
 				}
 			}
 		}

@@ -3,6 +3,7 @@ package org.scm4j.vcs.api.workingcopy;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.NonWritableChannelException;
@@ -53,22 +54,22 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
 	@Test
 	public void testReusingUnlockedWorkspaces() throws Exception {
-		VCSLockedWorkingCopy w1 = new VCSLockedWorkingCopy(r);
+		VCSLockedWorkingCopy w1 = new VCSLockedWorkingCopy(r, false);
 		w1.close();
-		VCSLockedWorkingCopy w2 = new VCSLockedWorkingCopy(r);
+		VCSLockedWorkingCopy w2 = new VCSLockedWorkingCopy(r, false);
 		assertEquals(w1.getFolder().getName(), w2.getFolder().getName());
 		w2.close();
 
 		// if lock file does not exists then a new WC should be created
 		w1.getLockFile().delete();
-		w2 = new VCSLockedWorkingCopy(r);
+		w2 = new VCSLockedWorkingCopy(r, false);
 		assertNotEquals(w1.getFolder().getName(), w2.getFolder().getName());
 		w2.close();
 	}
 
 	@Test
 	public void testCorruptingWorkspace() throws Exception {
-		VCSLockedWorkingCopy workspace = new VCSLockedWorkingCopy(r);
+		VCSLockedWorkingCopy workspace = new VCSLockedWorkingCopy(r, false);
 		workspace.setCorrupted(true);
 		workspace.close();
 		assertFalse(workspace.getFolder().exists());
@@ -77,8 +78,20 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
 	@Test
 	public void testToString() throws Exception {
-		try (VCSLockedWorkingCopy lwc = new VCSLockedWorkingCopy(r)) {
+		try (VCSLockedWorkingCopy lwc = new VCSLockedWorkingCopy(r, false)) {
 			assertTrue(lwc.toString().contains(r.getRepoFolder().getPath()));
+		}
+	}
+	
+	@Test
+	public void testTempLWCObtain() throws Exception {
+		File lwcFolder;
+		try (IVCSLockedWorkingCopy lwc = r.getVCSLockedWorkingCopy()) {
+			lwcFolder = lwc.getFolder();
+		}
+		try (IVCSLockedWorkingCopy tempLWC = r.getVCSLockedWorkingCopyTemp()) {
+			assertFalse(lwcFolder.getName().equals(tempLWC.getFolder().getName()));
+			assertTrue(tempLWC.getCorrupted());
 		}
 	}
 }
