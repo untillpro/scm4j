@@ -6,6 +6,6 @@ Set of components and tools written in Java and aimed to automate Software Confi
 - Release management
 - Deployment management
 
-# Tools and components
+# Tools & Components
 - [scm4j-rm](../../../scm4j-wf/blob/master/README.md): Release management
 - [scm4j-ai](../../../scm4j-ai/blob/master/README.md): Artifacts Installer (deployment management)
