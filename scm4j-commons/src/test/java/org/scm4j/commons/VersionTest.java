@@ -176,4 +176,14 @@ public class VersionTest {
 		assertEquals(new Version("11-SNAPSHOT"), new Version("11").toSnapshot());
 		assertEquals(new Version("asd-SNAPSHOT"), new Version("asd").toSnapshot());
 	}
+	
+	@Test
+	public void testIsExact() {
+		assertFalse(new Version("11.23.31.41-SNAPSHOT").isExact());
+		assertTrue(new Version("11.23.31.41").isExact());
+		assertFalse(new Version("-SNAPSHOT").isExact());
+		assertFalse(new Version("").isExact());
+		assertFalse(new Version("dfgdfg-SNAPSHOT").isExact());
+		
+	}
 }

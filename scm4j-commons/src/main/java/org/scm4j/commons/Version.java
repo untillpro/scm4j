@@ -135,6 +135,10 @@ public class Version {
 	public Boolean isEmpty() {
 		return isEmpty;
 	}
+	
+	public boolean isExact() {
+		return isSemantic && !isSnapshot();
+	}
 
 	public boolean isSnapshot() {
 		return !snapshot.isEmpty();
