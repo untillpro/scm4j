@@ -2,7 +2,7 @@
 
 Confiuration Management: practice of handling changes systematically so that a system maintains its integrity over time
 
-scm4j: set of components and tools written in Java and aimed to automate Software Configuration Management tasks, in particular:
+scm4j: set of components and tools written in Java and aimed to automate part of Software Configuration Management tasks, in particular:
 
 - Build management
 - Release management
