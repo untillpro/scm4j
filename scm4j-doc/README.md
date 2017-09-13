@@ -1,12 +1,13 @@
 # Software Configuration Management For Java (scm4j)
 
-Set of components and tools written in Java and aimed to automate Software Configuration Management tasks, in particular:
+[Confiuration Management](https://en.wikipedia.org/wiki/Configuration_management): practice of handling changes systematically so that a system maintains its integrity over time.
+
+scm4j: set of components and tools written in Java and aimed to automate Software Configuration Management tasks, in particular:
 
 - Build management
 - Release management
 - Deployment management
 
-[Confiuration Management](https://en.wikipedia.org/wiki/Configuration_management): practice of handling changes systematically so that a system maintains its integrity over time
 
 # Tools & Components
 - [scm4j-rm](../../../scm4j-wf/blob/master/README.md): Release management
