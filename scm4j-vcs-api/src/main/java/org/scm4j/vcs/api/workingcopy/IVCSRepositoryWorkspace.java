@@ -6,6 +6,8 @@ import java.io.IOException;
 public interface IVCSRepositoryWorkspace {
 
 	IVCSLockedWorkingCopy getVCSLockedWorkingCopy() throws IOException;
+	
+	IVCSLockedWorkingCopy getVCSLockedWorkingCopyTemp() throws IOException;
 
 	File getRepoFolder();
 
