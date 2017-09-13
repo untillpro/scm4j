@@ -4,7 +4,6 @@
 
 `scm4j`: set of components and tools written in Java and aimed to automate part of Software Configuration Management tasks, in particular:
 
-- Build management
 - Release management
 - Deployment management
 
