@@ -7,4 +7,4 @@ Set of components and tools written in Java and aimed to automate Software Confi
 - Deployment management
 
 # Tools and components
-- [scm4j-rm])(../scm4j-wf/README.md): Release Management
+- [scm4j-rm](../scm4j-wf/README.md): Release Management
