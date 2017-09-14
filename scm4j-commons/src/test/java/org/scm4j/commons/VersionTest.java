@@ -184,6 +184,25 @@ public class VersionTest {
 		assertFalse(new Version("-SNAPSHOT").isExact());
 		assertFalse(new Version("").isExact());
 		assertFalse(new Version("dfgdfg-SNAPSHOT").isExact());
-		
+	}
+	
+	@Test
+	public void testSetMinor() {
+		assertEquals(new Version("12.13.14.15-SNAPSHOT"), new Version("12.13.13.15-SNAPSHOT").setMinor("14"));
+		assertEquals(new Version("12.13.abc.15-SNAPSHOT"), new Version("12.13.13.15-SNAPSHOT").setMinor("abc"));
+		assertEquals(new Version("12.13.abc.15"), new Version("12.13.13.15").setMinor("abc"));
+		try {
+			new Version("-SNAPSHOT").setMinor("14");
+			fail();
+		} catch (IllegalStateException e) {
+			
+		}
+		try {
+			new Version("").setMinor("14");
+			fail();
+		} catch (IllegalStateException e) {
+			
+		}
+		assertEquals(new Version("14-SNAPSHOT"), new Version("12-SNAPSHOT").setMinor("14"));
 	}
 }
