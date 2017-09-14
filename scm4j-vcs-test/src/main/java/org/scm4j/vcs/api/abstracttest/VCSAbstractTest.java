@@ -2,7 +2,12 @@ package org.scm4j.vcs.api.abstracttest;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -449,10 +454,17 @@ public abstract class VCSAbstractTest {
 	}
 	
 	@Test
-	public void testTagCreate() throws InterruptedException {
+	public void testTagCreate() throws Exception {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		VCSCommit initialCommit = vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		// create tag within different working copy
+		VCSTag ethalonTag;
+		try (IVCSLockedWorkingCopy lwc = localVCSRepo.getVCSLockedWorkingCopyTemp()) {
+			IVCSWorkspace tempWS = new VCSWorkspace(lwc.getFolder().toString());
+			IVCSRepositoryWorkspace tempRWS = tempWS.getVCSRepositoryWorkspace(vcs.getRepoUrl());
+			IVCS tempVCS = getVCS(tempRWS);
+			ethalonTag = tempVCS.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		}
 		assertEquals(ethalonTag.getRelatedCommit(), initialCommit);
 		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_1);
 		assertEquals(ethalonTag.getTagName(), TAG_NAME_1);
@@ -464,6 +476,8 @@ public abstract class VCSAbstractTest {
 		} catch (EVCSTagExists e) {
 			
 		}
+		
+		
 		
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		initialCommit = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
@@ -479,6 +493,21 @@ public abstract class VCSAbstractTest {
 		} catch (EVCSTagExists e) {
 			
 		}
+	}
+	
+	@Test
+	public void testTagListAfterDelete() throws Exception {
+		VCSTag tag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		// remove tag within different working copy. Need to test that objects which are removed in origin are removed also in local working copy
+		try (IVCSLockedWorkingCopy lwc = localVCSRepo.getVCSLockedWorkingCopyTemp()) {
+			IVCSWorkspace tempWS = new VCSWorkspace(lwc.getFolder().toString());
+			IVCSRepositoryWorkspace tempRWS = tempWS.getVCSRepositoryWorkspace(vcs.getRepoUrl());
+			IVCS tempVCS = getVCS(tempRWS);
+			tempVCS.removeTag(TAG_NAME_1);
+		}
+		assertTrue(vcs.getTags().isEmpty());
+		tag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		assertTrue(vcs.getTags().contains(tag));
 	}
 	
 	@Test
@@ -508,12 +537,19 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testRemoveTag() {
+	public void testRemoveTag() throws Exception {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
 		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		assertTrue(containsTagName(vcs.getTags(), TAG_NAME_1));
-		vcs.removeTag(TAG_NAME_1);
+		// remove tag within different working copy. Need to test that objects which are removed in origin are removed also in local working copy
+		try (IVCSLockedWorkingCopy lwc = localVCSRepo.getVCSLockedWorkingCopyTemp()) {
+			IVCSWorkspace tempWS = new VCSWorkspace(lwc.getFolder().toString());
+			IVCSRepositoryWorkspace tempRWS = tempWS.getVCSRepositoryWorkspace(vcs.getRepoUrl());
+			IVCS tempVCS = getVCS(tempRWS);
+			tempVCS.removeTag(TAG_NAME_1);
+		}
+		
 		assertFalse(containsTagName(vcs.getTags(), TAG_NAME_1));
 	}
 	
