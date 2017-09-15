@@ -137,8 +137,6 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertTrue(vcs.getBranches(null).contains(NEW_BRANCH));
 		verifyMocks();
-		assertTrue(vcs.getBranches("").size() == 2); // Master + NEW_BRANCH, no Folder
-		verifyMocks();
 		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null).equals(LINE_1));
 		resetMocks();
 
@@ -147,8 +145,6 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.getBranches("").contains(NEW_BRANCH));
 		verifyMocks();
 		assertTrue(vcs.getBranches("").contains(NEW_BRANCH_2));
-		verifyMocks();
-		assertTrue(vcs.getBranches("").size() == 3);
 		verifyMocks();
 
 		try {
@@ -162,7 +158,6 @@ public abstract class VCSAbstractTest {
 		resetMocks();
 		vcs.deleteBranch(NEW_BRANCH, DELETE_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
-		assertTrue(vcs.getBranches("").size() == 2);
 		assertFalse(vcs.getBranches("").contains(NEW_BRANCH));
 	}
 
