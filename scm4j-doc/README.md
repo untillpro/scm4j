@@ -6,7 +6,7 @@
 
 
 # Tools & Components
-- [scm4j-releaser](../../../scm4j-releaser/blob/master/README.md): automate branching, version changing and dependency tracking for git and subversion
+- [scm4j-releaser](../../../scm4j-releaser/blob/master/README.md): automate branching, version changing and dependency tracking for git and subversion projects
 - [scm4j-ai](../../../scm4j-ai/blob/master/README.md): deployer (deployment management)
 
 # Links
