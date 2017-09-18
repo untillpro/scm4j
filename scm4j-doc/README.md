@@ -2,15 +2,12 @@
 
 `Configuration Management`: practice of handling changes systematically so that a system maintains its integrity over time
 
-`scm4j`: set of components and tools written in Java and aimed to automate part of Software Configuration Management tasks, in particular:
-
-- Release management
-- Deployment management
+`scm4j`: set of components and tools written in Java and aimed to automate part of Software Configuration Management tasks
 
 
 # Tools & Components
-- [scm4j-rm](../../../scm4j-releaser/blob/master/README.md): Release management
-- [scm4j-ai](../../../scm4j-ai/blob/master/README.md): Artifacts Installer (deployment management)
+- [scm4j-releaser](../../../scm4j-releaser/blob/master/README.md): automate branching, version changing and dependency tracking for git and subversion
+- [scm4j-ai](../../../scm4j-ai/blob/master/README.md): deployer (deployment management)
 
 # Links
 - [Configuration Management](https://en.wikipedia.org/wiki/Configuration_management)
