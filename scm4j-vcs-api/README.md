@@ -63,11 +63,10 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Sets proxy parameters if necessary
 - `String getRepoUrl()`
 	- Returns string url of current vcs repository
-- `String getFileContent(String branchName, String fileRelativePath, String encoding)`
-	- Returns file content as a string using `encoding` encoding.
+- `String getFileContent(String branchName, String fileRelativePath, String revision)`
+	- Returns file content as a string using UTF-8 encoding.
 	- `fileRelativePath` is a path to file within `branchName` branch 
-	- The Head file state is used
-	- Use `String getFileContent(String branchName, String fileRelativePath)` overload to use UTF-8 encoding by default
+	- File state at `revision` revision is used. If `revision` is null then Head state is used
 - `VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
@@ -86,6 +85,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Returns ordered list of all commits located between commits specified by `firstCommitId` and `untilCommitId` inclusively within branch `branchName` 
 	- If `firstCommitId` is null then all commits until commit specified by `untilCommitId` inclusively are fetched 
 	- If `untilCommitId` is null then all commits starting from commit specified by `firstCommitId` are fetched
+	- If `firstCommitId` and `untilCommitId` are null then all commits are fetched
 - `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit)`
     - Returns ordered list of `limit` commits (0 is unlimited) starting from commit specified by `firstCommitId` in direction specified by `direction`
     - If `firstCommitId` is null then commits are starting at branch `branchName` first commit (for ASC direction) or at head of branch (for DESC direction)
