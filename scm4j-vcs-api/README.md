@@ -139,6 +139,18 @@ LWC usage scenario:
 	- OBSOLETE
 		- `IVCSLockedWorkingCopy.close()` method has been called. Corresponding folder is unlocked and could be used by other `IVCSLockedWorkingCopy` instances. `IVCSLockedWorkingCopy` instance with this state should not be used anymore.
 - If a Working copy can not be reused due of VCS system data damage (e.g. .git, .svn folders) or due of vcs Working Copy can not be cleaned, reverted, switched, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
+- Code snippet
+```java
+public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
+public static main(String[] args) {
+    IVCSWorkspace workspace = new VCSWorkspace(WORKSPACE_DIR);
+    String repoUrl = "https://github.com/scm4j/scm4j-vcs-api";
+    IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
+    try (IVCSLockedWorkingCopy wc = repoWorkspace.getVCSLockedWorkingCopy()) {
+        // wc.getFolder() is locked folder
+    }
+}
+```
 
 # Folder structure
 - Workspace Home folder (e.g. c:\temp\scm4j-vcs-workspces\)
