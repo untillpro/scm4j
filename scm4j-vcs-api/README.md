@@ -142,7 +142,7 @@ LWC usage scenario:
 - Code snippet
 ```java
 public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
-public static main(String[] args) {
+public static void main(String[] args) {
     IVCSWorkspace workspace = new VCSWorkspace(WORKSPACE_DIR);
     String repoUrl = "https://github.com/scm4j/scm4j-vcs-api";
     IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
