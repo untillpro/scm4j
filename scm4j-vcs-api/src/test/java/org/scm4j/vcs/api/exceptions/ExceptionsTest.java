@@ -1,9 +1,10 @@
 package org.scm4j.vcs.api.exceptions;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 public class ExceptionsTest {
 
@@ -28,11 +29,8 @@ public class ExceptionsTest {
 
 	@Test
 	public void testEVCSFileNotFound() {
-		EVCSFileNotFound e = new EVCSFileNotFound(TEST_MESSAGE);
-		assertTrue(e.getMessage().contains(TEST_MESSAGE));
-		EVCSFileNotFound e1 = new EVCSFileNotFound(e);
-		assertTrue(e1.getMessage().contains(TEST_MESSAGE));
-		assertEquals(e1.getCause(), e);
+		EVCSFileNotFound e = new EVCSFileNotFound("test repo", "test branch", "test file", "test revision");
+		assertFalse(e.getMessage().isEmpty());
 	}
 	
 	@Test
