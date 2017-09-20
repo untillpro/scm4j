@@ -8,24 +8,28 @@ apply plugin: 'maven'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-sourceCompatibility = JavaVersion.VERSION_1_7
-targetCompatibility = JavaVersion.VERSION_1_7
+repositories {
+	maven { url "https://jitpack.io" }
+	mavenCentral()
+}
 
-group = ''
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+group = 'org.scm4j'
 version = new File('version').text
 
 dependencies {
-	testCompile 'junit:junit:4.12'
+
+	compileOnly 'org.projectlombok:lombok:1.16.18'
 	compile 'org.apache.commons:commons-lang3:3.5'
+
+	testCompile 'junit:junit:4.12'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
 	classifier = 'sources'
 	from sourceSets.main.allSource
-}
-
-repositories {
-    jcenter()
 }
 
 jacocoTestReport {
