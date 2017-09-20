@@ -31,7 +31,7 @@ dependencies {
 	def s = '[ \t]*', w = '[^:#@]+?'
 	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
 			match, group, name, version, classifier, ext, configuration ->
-		add(configuration ?: name.contains('test') ? 'testCompile' : 'compile', "$group:$name:${version?:''}${classifier?:''}${ext?:''}", { changing = true })
+		add(configuration ?: 'compile', "$group:$name:${version?:''}${classifier?:''}${ext?:''}", { changing = true })
 	}
 
 	testCompile 'junit:junit:4.12'
