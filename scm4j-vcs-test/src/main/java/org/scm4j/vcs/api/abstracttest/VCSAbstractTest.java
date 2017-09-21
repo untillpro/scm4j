@@ -77,6 +77,8 @@ public abstract class VCSAbstractTest {
 	protected IVCSRepositoryWorkspace mockedVCSRepo;
 	protected IVCSLockedWorkingCopy mockedLWC;
 	protected IVCS vcs;
+	
+	// TODO: make test repositories be accessed through login\pwd
 
 	public IVCS getVcs() {
 		return vcs;
