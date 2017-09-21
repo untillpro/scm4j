@@ -1,4 +1,4 @@
-package org.scm4j.ai.api;
+package org.scm4j.deployer.api;
 
 import java.net.URL;
 import java.util.List;

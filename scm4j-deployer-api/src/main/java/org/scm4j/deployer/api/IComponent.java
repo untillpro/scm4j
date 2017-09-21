@@ -1,4 +1,4 @@
-package org.scm4j.ai.api;
+package org.scm4j.deployer.api;
 
 public interface IComponent {
     String getArtifactCoords();
