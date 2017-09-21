@@ -1,14 +1,14 @@
 package org.scm4j.vcs.api.exceptions;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class ExceptionsTest {
 
 	public static final String TEST_MESSAGE = "test message";
+	public static final String TEST_REPO_URL = "test repo url";
+	public static final String TEST_BRANCH_NAME = "test branchName";
 
 	@Test
 	public void testEVCSException() {
@@ -39,5 +39,12 @@ public class ExceptionsTest {
 		EVCSTagExists e1 = new EVCSTagExists(e);
 		assertTrue(e1.getMessage().contains(TEST_MESSAGE));
 		assertEquals(e1.getCause(), e);
+	}
+
+	@Test
+	public void testEVCSBranchNotFound() {
+		EVCSBranchNotFound e = new EVCSBranchNotFound(TEST_REPO_URL, TEST_BRANCH_NAME);
+		assertTrue(e.getMessage().contains(TEST_REPO_URL));
+		assertTrue(e.getMessage().contains(TEST_BRANCH_NAME));
 	}
 }
