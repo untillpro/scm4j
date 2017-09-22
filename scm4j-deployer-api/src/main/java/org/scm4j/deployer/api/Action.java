@@ -7,7 +7,7 @@ import java.util.Map;
 @Data
 public class Action implements IAction {
 
-    final private String installerClass;
+    final private Class installerClass;
     Map<String, Object> params;
 
     @Override
@@ -16,7 +16,7 @@ public class Action implements IAction {
         return this;
     }
 
-    public Action(String installerClass) {
+    public Action(Class installerClass) {
         this.installerClass = installerClass;
     }
 
