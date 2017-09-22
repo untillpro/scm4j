@@ -11,7 +11,6 @@ import java.util.Map;
 public class DeploymentContext implements IDeploymentContext {
 
     private Map<String, File> artifacts;
-    private String mainArtifact;
     private List<String> deps;
     private URL deploymentURL;
     private Map<String,Object> params;

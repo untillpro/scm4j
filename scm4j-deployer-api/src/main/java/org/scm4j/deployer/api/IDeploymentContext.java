@@ -8,9 +8,12 @@ import java.util.Map;
 public interface IDeploymentContext {
 
     Map<String, File> getArtifacts();
-    String getMainArtifact();
     List<String> getDeps();
     URL getDeploymentURL();
     Map<String, Object> getParams();
+    void setArtifacts(Map<String, File> artifacts);
+    void setDeps(List<String> deps);
+    void setDeploymentURL(URL deploymentURL);
+    void setParams(Map<String,Object> params);
 
 }
