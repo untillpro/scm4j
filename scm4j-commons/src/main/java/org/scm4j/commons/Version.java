@@ -212,4 +212,11 @@ public class Version {
 		return new Version(prefix + minor + (patch.isEmpty() ? "" : "." + patch) + snapshot);
 		
 	}
+
+	public Version setPatch(String patch) {
+		if (!isSemantic) {
+			throw new IllegalStateException("can not set patch for non-semantic version");
+		}
+		return new Version(prefix + minor + (patch.isEmpty() ? "" : "." + patch) + snapshot);
+	}
 }

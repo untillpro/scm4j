@@ -205,4 +205,25 @@ public class VersionTest {
 		}
 		assertEquals(new Version("14-SNAPSHOT"), new Version("12-SNAPSHOT").setMinor("14"));
 	}
+
+	@Test
+	public void testSetPatch() {
+		assertEquals("12.13.14.0-SNAPSHOT", new Version("12.13.14.15-SNAPSHOT").setPatch("0").toString());
+		assertEquals("12.13.14.0", new Version("12.13.14.15").setPatch("0").toString());
+		assertEquals("12.13.0", new Version("12.13.14").setPatch("0").toString());
+		assertEquals("12.0", new Version("12.13").setPatch("0").toString());
+		assertEquals("12.0", new Version("12").setPatch("0").toString());
+		try {
+			new Version("").setPatch("0");
+			fail();
+		} catch (IllegalStateException e) {
+		}
+		try {
+			new Version("non semantic").setPatch("0");
+			fail();
+		} catch (IllegalStateException e) {
+		}
+
+
+	}
 }
