@@ -31,12 +31,12 @@ public class VersionTest {
 	
 	@Test
 	public void testToReleaseString() {
-		assertEquals(new Version("11.21.31.41-SNAPSHOT").toReleaseString(), "11.21.31.41");
-		assertEquals(new Version("11.21.31.41").toReleaseString(), "11.21.31.41");
-		assertEquals(new Version("11.21.31").toReleaseString(), "11.21.31");
-		assertEquals(new Version("11.21").toReleaseString(), "11.21");
-		assertEquals(new Version("11-SNAPSHOT").toReleaseString(), "11");
-		assertEquals(new Version("-SNAPSHOT").toReleaseString(), "-SNAPSHOT");
+		assertEquals("11.21.31.0", new Version("11.21.31.41-SNAPSHOT").toReleaseString());
+		assertEquals("11.21.31.0", new Version("11.21.31.41").toReleaseString());
+		assertEquals("11.21.0", new Version("11.21.31").toReleaseString());
+		assertEquals("11.0", new Version("11.21").toReleaseString());
+		assertEquals("11", new Version("11-SNAPSHOT").toReleaseString());
+		assertEquals("-SNAPSHOT", new Version("-SNAPSHOT").toReleaseString());
 		
 	}
 	
@@ -50,12 +50,12 @@ public class VersionTest {
 	
 	@Test
 	public void testMinorBumping() {
-		assertEquals(new Version("11.21.31.41").toPreviousMinor().toReleaseString(), "11.21.30.41");
-		assertEquals(new Version("11.21.31.41-SNAPSHOT").toPreviousMinor().toReleaseString(), "11.21.30.41");
-		assertEquals(new Version("11.21.31.41").toNextMinor().toReleaseString(), "11.21.32.41");
-		assertEquals(new Version("11.21.31.41-SNAPSHOT").toNextMinor().toReleaseString(), "11.21.32.41");
-		assertEquals(new Version("11.21.31.41").toNextMinor().toReleaseString(), "11.21.32.41");
-		assertEquals(new Version("11.21.31.41-SNAPSHOT").toNextMinor().toString(), "11.21.32.41-SNAPSHOT");
+		assertEquals("11.21.30.0", new Version("11.21.31.41").toPreviousMinor().toReleaseString());
+		assertEquals("11.21.30.0", new Version("11.21.31.41-SNAPSHOT").toPreviousMinor().toReleaseString());
+		assertEquals("11.21.32.0", new Version("11.21.31.41").toNextMinor().toReleaseString());
+		assertEquals("11.21.32.0", new Version("11.21.31.41-SNAPSHOT").toNextMinor().toReleaseString());
+		assertEquals("11.21.32.0", new Version("11.21.31.41").toNextMinor().toReleaseString());
+		assertEquals("11.21.32.41-SNAPSHOT", new Version("11.21.31.41-SNAPSHOT").toNextMinor().toString());
 		Version version = new Version("");
 		try {
 			version.toNextMinor();
@@ -151,10 +151,10 @@ public class VersionTest {
 	
 	@Test
 	public void testToRelease() {
-		assertEquals(new Version("11.21.31.41"), new Version("11.21.31.41-SNAPSHOT").toRelease());
-		assertEquals(new Version("11.21.31.41"), new Version("11.21.31.41").toRelease());
-		assertEquals(new Version("11.21.31"),  new Version("11.21.31").toRelease());
-		assertEquals(new Version("11.21"), new Version("11.21").toRelease());
+		assertEquals(new Version("11.21.31.0"), new Version("11.21.31.41-SNAPSHOT").toRelease());
+		assertEquals(new Version("11.21.31.0"), new Version("11.21.31.41").toRelease());
+		assertEquals(new Version("11.21.0"),  new Version("11.21.31").toRelease());
+		assertEquals(new Version("11.0"), new Version("11.21").toRelease());
 		assertEquals(new Version("11"), new Version("11-SNAPSHOT").toRelease());
 		assertEquals(new Version("-SNAPSHOT"), new Version("-SNAPSHOT").toRelease());
 	}

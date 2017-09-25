@@ -10,16 +10,14 @@ public class Coords {
 	private final String groupId;
 	private final String classifier;
 	private final Version version;
-	private final String coordsString;
+	private final String coordsStringNoComment;
 
 	public String getComment() {
 		return commentStr;
 	}
 	
 	public Coords(String coordsString) {
-		this.coordsString = coordsString;
 		String str = coordsString;
-
 		// Comment
 		{
 			Integer pos = coordsString.indexOf("#");
@@ -28,8 +26,10 @@ public class Coords {
 				// add spaces between valuable chars and # to comment
 				commentStr = StringUtils.difference(str.substring(0, pos).trim(), str.substring(0, pos)) + str.substring(pos); 
 				str = str.substring(0, pos).trim();
+				this.coordsStringNoComment = str;
 			} else {
 				commentStr = "";
+				this.coordsStringNoComment = coordsString;
 			}
 		}
 
@@ -61,7 +61,7 @@ public class Coords {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((coordsString == null) ? 0 : coordsString.hashCode());
+		result = prime * result + ((coordsStringNoComment == null) ? 0 : coordsStringNoComment.hashCode());
 		return result;
 	}
 
@@ -74,10 +74,10 @@ public class Coords {
 		if (getClass() != obj.getClass())
 			return false;
 		Coords other = (Coords) obj;
-		if (coordsString == null) {
-			if (other.coordsString != null)
+		if (coordsStringNoComment == null) {
+			if (other.coordsStringNoComment != null)
 				return false;
-		} else if (!coordsString.equals(other.coordsString))
+		} else if (!coordsStringNoComment.equals(other.coordsStringNoComment))
 			return false;
 		return true;
 	}

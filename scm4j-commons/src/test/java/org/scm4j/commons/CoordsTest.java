@@ -80,7 +80,7 @@ public class CoordsTest {
 	public void testEqualsAndHashCode() {
 		EqualsVerifier
 				.forClass(Coords.class)
-				.withOnlyTheseFields("coordsString")
+				.withOnlyTheseFields("coordsStringNoComment")
 				.usingGetClass()
 				.verify();
 	}

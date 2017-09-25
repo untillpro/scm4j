@@ -151,12 +151,16 @@ public class Version {
 	public Version toSnapshot() {
 		return new Version(toSnapshotString());
 	}
+	
+	public Version toRelease() {
+		if (!isSemantic) {
+			return this;
+		}
+		return new Version(prefix + minor + (patch.isEmpty() ? "" : ".0"));
+	}
 
 	public String toReleaseString() {
-		if (!StringUtils.isNumeric(minor)) {
-			return verStr;
-		}
-		return prefix + minor + (patch.isEmpty() ? "" : "." + patch);
+		return toRelease().toString();
 	}
 
 	public Boolean isGreaterThan(Version other) {
@@ -196,13 +200,6 @@ public class Version {
 
 	public String getReleaseNoPatchString() {
 		return prefix + minor;
-	}
-
-	public Version toRelease() {
-		if (!isSemantic) {
-			return this;
-		}
-		return new Version(prefix + minor + (patch.isEmpty() ? "" : "." + patch));
 	}
 
 	public Version setMinor(String minor) {
