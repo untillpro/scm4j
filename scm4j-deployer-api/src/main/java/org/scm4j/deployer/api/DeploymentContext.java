@@ -1,6 +1,7 @@
 package org.scm4j.deployer.api;
 
 import lombok.Data;
+import org.scm4j.commons.Coords;
 
 import java.io.File;
 import java.net.URL;
@@ -10,8 +11,8 @@ import java.util.Map;
 @Data
 public class DeploymentContext implements IDeploymentContext {
 
-    private Map<String, File> artifacts;
-    private List<String> deps;
+    private Map<Coords, File> artifacts;
+    private List<Coords> deps;
     private URL deploymentURL;
     private Map<String,Object> params;
 
