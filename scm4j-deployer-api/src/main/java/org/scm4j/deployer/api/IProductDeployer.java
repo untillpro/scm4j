@@ -1,5 +1,7 @@
 package org.scm4j.deployer.api;
 
+import java.util.List;
+
 public interface IProductDeployer {
 
 	void deploy(String productCoords);
@@ -7,5 +9,11 @@ public interface IProductDeployer {
 	void undeploy(String productCoors);
 
 	void upgrade(String newProductCoords);
+
+	List<String> listAvailableProducts();
+
+	List<String> listAvailableProductVersions();
+
+	List<String> listInstalledProducts();
 
 }
