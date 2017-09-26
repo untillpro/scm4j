@@ -12,7 +12,7 @@ public interface IProductDeployer {
 
 	List<String> listAvailableProducts();
 
-	List<String> listAvailableProductVersions();
+	List<String> listAvailableProductVersions(String artifactId);
 
 	List<String> listInstalledProducts();
 
