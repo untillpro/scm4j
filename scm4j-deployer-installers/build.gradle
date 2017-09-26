@@ -23,6 +23,8 @@ dependencies {
 
 	compileOnly 'org.projectlombok:lombok:1.16.18'
 	compile 'org.apache.commons:commons-lang3:3.5'
+	compile 'com.github.scm4j:scm4j-commons:master-SNAPSHOT'
+	compile 'com.github.scm4j:scm4j-deployer-api:dev-SNAPSHOT'
 
 	testCompile 'junit:junit:4.12'
 }

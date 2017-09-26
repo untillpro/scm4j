@@ -1,18 +1,19 @@
 package org.scm4j.deployer.installers;
 
+import lombok.Data;
+import org.scm4j.deployer.api.IComponentDeployer;
 
 import java.io.File;
 
-public class ExeRunner implements IDeployer {
+@Data
+public class Executor implements IComponentDeployer {
 	
 	private File product;
-
-	public ExeRunner(File product) {
-		this.product = product;
-	}
+	private File outputDir;
 
 	@Override
 	public void deploy() {
+		Utils.unzip(outputDir, product);
 		try {
 			Process p = Runtime.getRuntime().exec(product.getPath());
 			p.waitFor();
@@ -22,17 +23,12 @@ public class ExeRunner implements IDeployer {
 	}
 
 	@Override
-	public void unDeploy() {
+	public void undeploy() {
 
 	}
 
 	@Override
-	public boolean canDeploy() {
-		return false;
-	}
-
-	@Override
-	public boolean checkIntegrity() {
+	public boolean validate() {
 		return false;
 	}
 }
