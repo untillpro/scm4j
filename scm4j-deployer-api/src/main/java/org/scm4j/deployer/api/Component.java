@@ -1,44 +1,33 @@
 package org.scm4j.deployer.api;
 
-import lombok.Data;
+import lombok.Getter;
 import org.scm4j.commons.Coords;
 
-@Data
+import java.util.ArrayList;
+
 public class Component implements IComponent {
 
-    final private Coords artifactCoords;
-    private IInstallationProcedure installationProcedure;
+    @Getter final private Coords artifactCoords;
+    @Getter private IInstallationProcedure installationProcedure;
+    private final ProductStructure ps;
 
-    private Component(ComponentBuilder builder) {
-        this.artifactCoords = builder.artifactCoords;
-        this.installationProcedure = builder.installationProcedure;
+    public Component(String coords, ProductStructure productStructure) {
+        this.artifactCoords = new Coords(coords);
+        this.ps = productStructure;
     }
 
-    public static ComponentBuilder componentBuilder(String coords) {
-        return new ComponentBuilder(coords);
-    }
-
-    public static final class ComponentBuilder {
-
-        private final Coords artifactCoords;
-        private InstallationProcedure installationProcedure;
-
-        private ComponentBuilder(String coords) {
-            this.artifactCoords = new Coords(coords);
-        }
-
-        public ComponentBuilder addAction(Action action) {
+    public Action addAction(Class clazz) {
+        Action action = new Action(clazz, this);
             if (this.installationProcedure == null) {
-                this.installationProcedure = new InstallationProcedure();
+                this.installationProcedure = new InstallationProcedure(new ArrayList<>());
                 this.installationProcedure.getActions().add(action);
             } else {
                 this.installationProcedure.getActions().add(action);
             }
-            return this;
-        }
+            return action;
+    }
 
-        public Component build() {
-            return new Component(this);
-        }
+    public ProductStructure parent() {
+        return ps;
     }
 }

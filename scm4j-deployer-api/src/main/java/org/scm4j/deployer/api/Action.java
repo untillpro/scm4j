@@ -1,37 +1,22 @@
 package org.scm4j.deployer.api;
 
-import lombok.Data;
+import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Executor;
 
-@Data
 public class Action implements IAction {
 
-    final private Class installerClass;
-    private Map<String, Object> params;
+    @Getter final private Class installerClass;
+    @Getter private Map<String, Object> params;
+    private final Component comp;
 
-    private Action(ActionBuilder builder) {
-        this.installerClass = builder.installerClass;
-        this.params = builder.params;
+    public Action(Class installerClass, Component comp) {
+        this.installerClass = installerClass;
+        this.comp = comp;
     }
 
-    public static ActionBuilder actionBuilder(Class clazz) {
-        return new ActionBuilder(clazz);
-    }
-
-    public static final class ActionBuilder {
-
-        final private Class installerClass;
-        private Map<String, Object> params;
-
-        private ActionBuilder (Class installerClass) {
-            this.installerClass = installerClass;
-        }
-
-        public ActionBuilder addParam(String key, Object value) {
+    public Action addParam(String key, Object value) {
             if(this.params == null) {
                 params = new HashMap<>();
                 params.put(key, value);
@@ -41,8 +26,7 @@ public class Action implements IAction {
             return this;
         }
 
-        public Action build() {
-            return new Action(this);
-        }
+    public Component parent() {
+        return comp;
     }
 }

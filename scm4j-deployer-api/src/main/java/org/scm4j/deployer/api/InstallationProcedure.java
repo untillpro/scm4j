@@ -9,6 +9,6 @@ import java.util.List;
 @Data
 public class InstallationProcedure implements IInstallationProcedure {
 
-    private List<IAction> actions = new ArrayList<>();
+    final private List<IAction> actions;
 
 }
