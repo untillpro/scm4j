@@ -152,13 +152,6 @@ public class Version {
 		return new Version(toSnapshotString());
 	}
 	
-	public Version toRelease() {
-		if (!isSemantic) {
-			return this;
-		}
-		return new Version(prefix + minor + (patch.isEmpty() ? "" : ".0"));
-	}
-
 	public String toReleaseString() {
 		return toRelease().toString();
 	}
@@ -200,6 +193,10 @@ public class Version {
 
 	public String getReleaseNoPatchString() {
 		return prefix + minor;
+	}
+
+	public String toReleaseString() {
+		return toRelease().toString();
 	}
 
 	public Version setMinor(String minor) {
