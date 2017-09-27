@@ -13,6 +13,10 @@ repositories {
 	mavenCentral()
 }
 
+configurations.compile {
+	resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
@@ -23,7 +27,7 @@ dependencies {
 
 	compileOnly 'org.projectlombok:lombok:1.16.18'
 	compile 'org.apache.commons:commons-lang3:3.5'
-	compile 'com.github.scm4j:scm4j-commons:master-SNAPSHOT'
+	compile group: 'com.github.scm4j', name: 'scm4j-commons', version: 'master-SNAPSHOT', changing: true
 
 	testCompile 'junit:junit:4.12'
 }
