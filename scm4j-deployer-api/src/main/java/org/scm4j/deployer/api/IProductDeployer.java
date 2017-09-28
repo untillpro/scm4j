@@ -1,5 +1,7 @@
 package org.scm4j.deployer.api;
 
+import org.scm4j.commons.Version;
+
 import java.util.List;
 
 public interface IProductDeployer {
@@ -10,10 +12,14 @@ public interface IProductDeployer {
 
 	void upgrade(String newProductCoords);
 
-	List<String> listAvailableProducts();
+	List<String> listProducts();
 
-	List<String> listAvailableProductVersions(String artifactId);
+	List<String> refreshProducts();
 
-	List<String> listInstalledProducts();
+	List<Version> listProductVersions(String artifactId);
+
+	List<Version> refreshProductVersions(String artifactId);
+
+	List<String> listDeployedProducts();
 
 }
