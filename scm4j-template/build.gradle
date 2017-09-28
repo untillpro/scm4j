@@ -10,11 +10,30 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-group = ''
+group = 'org.scm4j'
 version = new File('version').text
 
+repositories {
+	jcenter()
+}
+
+dependencies {
+	// load managed dependencies
+	def s = '[ \t]*', w = '[^:#@]+?'
+	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
+			match, group, name, version, classifier, ext, configuration ->
+		add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}")
+	}
+
+	compile 'org.apache.commons:commons-lang3:3.6'
+	testCompile 'junit:junit:4.12'
+}
+
 configurations.all {
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+	resolutionStrategy {
+		cacheDynamicVersionsFor 0, 'seconds'
+		cacheChangingModulesFor 0, 'seconds'
+	}
 }
 
 test {
@@ -24,33 +43,25 @@ test {
 	}
 }
 
-
-dependencies {
-	// load managed dependencies
-	def s = '[ \t]*', w = '[^:#@]+?'
-	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
-			match, group, name, version, classifier, ext, configuration ->
-		add(configuration ?: 'compile', "$group:$name:${version?:''}${classifier?:''}${ext?:''}", { changing = true })
+jacocoTestReport {
+	reports {
+		xml.enabled = true // coveralls plugin depends on xml format report
+		html.enabled = true
 	}
+}
 
-	testCompile 'junit:junit:4.12'
-	compile 'org.apache.commons:commons-lang3:3.5'
+jar {
+	manifest.attributes (
+		'Specification-Title': project.name,
+		'Specification-Version': version,
+		'Implementation-Title': project.name,
+		'Implementation-Version': "$version (${new Date().format('yyyy-MM-dd')})",
+	)
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
 	classifier = 'sources'
 	from sourceSets.main.allSource
-}
-
-repositories {
-    jcenter()
-}
-
-jacocoTestReport {
-    reports {
-        xml.enabled = true // coveralls plugin depends on xml format report
-        html.enabled = true
-    }
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
