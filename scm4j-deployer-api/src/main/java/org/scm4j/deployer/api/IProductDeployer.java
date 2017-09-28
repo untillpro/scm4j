@@ -1,7 +1,5 @@
 package org.scm4j.deployer.api;
 
-import org.scm4j.commons.Version;
-
 import java.util.List;
 
 public interface IProductDeployer {
@@ -16,9 +14,9 @@ public interface IProductDeployer {
 
 	List<String> refreshProducts();
 
-	List<Version> listProductVersions(String artifactId);
+	List<String> listProductVersions(String artifactId);
 
-	List<Version> refreshProductVersions(String artifactId);
+	List<String> refreshProductVersions(String artifactId);
 
 	List<String> listDeployedProducts();
 
