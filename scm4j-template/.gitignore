@@ -14,3 +14,6 @@ hs_err_pid*
 /bin
 /build
 /*.iml
+
+!.gitignore
+!.travis.yml
