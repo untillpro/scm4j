@@ -30,6 +30,7 @@ import org.scm4j.vcs.api.VCSMergeResult;
 import org.scm4j.vcs.api.VCSTag;
 import org.scm4j.vcs.api.WalkDirection;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
+import org.scm4j.vcs.api.exceptions.EVCSBranchNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSTagExists;
 import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
@@ -192,8 +193,14 @@ public abstract class VCSAbstractTest {
 
 		try {
 			vcs.getFileContent(null, "sdfsdf1.txt", null);
-			fail("EVCSFileNotFound is not thrown");
+			fail(EVCSFileNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSFileNotFound e) {
+		}
+		
+		try {
+			vcs.getFileContent("wrong-branch", FILE3_IN_FOLDER_NAME, null) ;
+			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
+		} catch (EVCSBranchNotFound e) {
 		}
 	}
 
@@ -581,7 +588,9 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testGetTagsOnRevision() {
-		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_ADDED_COMMIT_MESSAGE);
+		assertTrue(vcs.getTagsOnRevision(c1.getRevision()).isEmpty());
+		c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		VCSCommit c3 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
