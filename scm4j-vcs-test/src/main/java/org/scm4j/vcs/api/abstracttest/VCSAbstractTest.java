@@ -1,20 +1,5 @@
 package org.scm4j.vcs.api.abstracttest;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
@@ -22,13 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
-import org.scm4j.vcs.api.IVCS;
-import org.scm4j.vcs.api.VCSChangeType;
-import org.scm4j.vcs.api.VCSCommit;
-import org.scm4j.vcs.api.VCSDiffEntry;
-import org.scm4j.vcs.api.VCSMergeResult;
-import org.scm4j.vcs.api.VCSTag;
-import org.scm4j.vcs.api.WalkDirection;
+import org.scm4j.vcs.api.*;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSBranchNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
@@ -37,6 +16,16 @@ import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
 import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
 
 public abstract class VCSAbstractTest {
 	protected static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
