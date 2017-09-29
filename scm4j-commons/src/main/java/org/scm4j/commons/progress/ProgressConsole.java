@@ -71,7 +71,7 @@ public class ProgressConsole implements IProgress {
 	@Override
 	public void reportStatus(String status) {
 		indent(level + 1);
-		print(status);
+		print(status.replace("\r\n", "\r\n" + Strings.repeat("\t", level + 2)));
 	}
 
 	@Override

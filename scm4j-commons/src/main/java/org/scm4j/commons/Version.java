@@ -162,7 +162,7 @@ public class Version {
 	public String toReleaseString() {
 		return toRelease().toString();
 	}
-
+	
 	public Boolean isGreaterThan(Version other) {
 		if (other.isEmpty()) {
 			return !isEmpty();
@@ -215,5 +215,9 @@ public class Version {
 			throw new IllegalStateException("can not set patch for non-semantic version");
 		}
 		return new Version(prefix + minor + (patch.isEmpty() ? "" : "." + patch) + snapshot);
+	}
+
+	public Version toReleaseZeroPatch() {
+		return toRelease().setPatch("0");
 	}
 }

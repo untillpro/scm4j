@@ -6,7 +6,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class VersionTest {
-	
+
 	@Test
 	public void testMinor() {
 		assertEquals(new Version("11.21.31.41").getMinor(), "31");
@@ -17,7 +17,7 @@ public class VersionTest {
 		assertEquals(new Version("").getMinor(), "");
 		assertEquals(new Version("-SNAPSHOT").getMinor(), "");
 	}
-	
+
 	@Test
 	public void testToString() {
 		assertEquals(new Version("11.21.31.41").toString(), "11.21.31.41");
@@ -28,7 +28,7 @@ public class VersionTest {
 		assertEquals(new Version("").toString(), "");
 		assertEquals(new Version("1..1").toString(), "1..1");
 	}
-	
+
 	@Test
 	public void testToReleaseString() {
 		assertEquals(new Version("11.21.31.41-SNAPSHOT").toReleaseString(), "11.21.31.41");
@@ -37,9 +37,9 @@ public class VersionTest {
 		assertEquals(new Version("11.21").toReleaseString(), "11.21");
 		assertEquals(new Version("11-SNAPSHOT").toReleaseString(), "11");
 		assertEquals(new Version("-SNAPSHOT").toReleaseString(), "-SNAPSHOT");
-		
+
 	}
-	
+
 	@Test
 	public void testSnapshot() {
 		assertEquals(new Version("11.21.31.41").getSnapshot(), "");
@@ -47,7 +47,7 @@ public class VersionTest {
 		assertEquals(new Version("11.21.31.41-jkhkjhk").getSnapshot(), "");
 		assertEquals(new Version("-SNAPSHOT").getSnapshot(), "-SNAPSHOT");
 	}
-	
+
 	@Test
 	public void testMinorBumping() {
 		assertEquals(new Version("11.21.31.41").toPreviousMinor().toReleaseString(), "11.21.30.41");
@@ -73,22 +73,18 @@ public class VersionTest {
 		} catch (IllegalArgumentException e) {
 		}
 	}
-	
+
 	@Test
 	public void testEmpty() {
 		assertTrue(new Version("").isEmpty());
 		assertFalse(new Version("11.21.31.41").isEmpty());
 	}
-	
+
 	@Test
 	public void testEqualsAndHashcode() {
-		EqualsVerifier
-				.forClass(Version.class)
-				.withOnlyTheseFields("verStr")
-				.usingGetClass()
-				.verify();
+		EqualsVerifier.forClass(Version.class).withOnlyTheseFields("verStr").usingGetClass().verify();
 	}
-	
+
 	@Test
 	public void testIsSnapshot() {
 		assertTrue(new Version("11.12.13-SNAPSHOT").isSnapshot());
@@ -111,7 +107,7 @@ public class VersionTest {
 		assertEquals("11.12.14fgdfg-SNAPSHOT", new Version("11.12.14fgdfg-SNAPSHOT").toNextPatch().toString());
 		assertEquals("13.1", new Version("13").toNextPatch().toString());
 	}
-	
+
 	@Test
 	public void testToPreviousPatch() {
 		assertEquals("11.12.12-SNAPSHOT", new Version("11.12.13-SNAPSHOT").toPreviousPatch().toString());
@@ -130,17 +126,17 @@ public class VersionTest {
 		assertTrue(new Version("11.12.14-SNAPSHOT").isGreaterThan(new Version("11.12.13-SNAPSHOT")));
 		assertTrue(new Version("11.12-SNAPSHOT").isGreaterThan(new Version("11.11-SNAPSHOT")));
 		assertTrue(new Version("11-SNAPSHOT").isGreaterThan(new Version("10-SNAPSHOT")));
-		
+
 		assertFalse(new Version("").isGreaterThan(new Version("")));
 		assertFalse(new Version("").isGreaterThan(new Version("11.12.13")));
 		assertTrue(new Version("11.12.13").isGreaterThan(new Version("")));
 		assertTrue(new Version("11.12.13").isGreaterThan(new Version("not semantic")));
-		
+
 		assertFalse(new Version("11.12.13-SNAPSHOT").isGreaterThan(new Version("11.12.14-SNAPSHOT")));
 		assertFalse(new Version("11.12-SNAPSHOT").isGreaterThan(new Version("11.13-SNAPSHOT")));
 		assertFalse(new Version("11-SNAPSHOT").isGreaterThan(new Version("12-SNAPSHOT")));
 	}
-	
+
 	@Test
 	public void testGetReleaseNoPatchString() {
 		assertEquals("11.12.13", new Version("11.12.13.14-SNAPSHOT").getReleaseNoPatchString());
@@ -148,17 +144,17 @@ public class VersionTest {
 		assertEquals("11", new Version("11.12-SNAPSHOT").getReleaseNoPatchString());
 		assertEquals("11", new Version("11-SNAPSHOT").getReleaseNoPatchString());
 	}
-	
+
 	@Test
 	public void testToRelease() {
 		assertEquals(new Version("11.21.31.41"), new Version("11.21.31.41-SNAPSHOT").toRelease());
 		assertEquals(new Version("11.21.31.41"), new Version("11.21.31.41").toRelease());
-		assertEquals(new Version("11.21.31"),  new Version("11.21.31").toRelease());
+		assertEquals(new Version("11.21.31"), new Version("11.21.31").toRelease());
 		assertEquals(new Version("11.21"), new Version("11.21").toRelease());
 		assertEquals(new Version("11"), new Version("11-SNAPSHOT").toRelease());
 		assertEquals(new Version("-SNAPSHOT"), new Version("-SNAPSHOT").toRelease());
 	}
-	
+
 	@Test
 	public void toSnapshotString() {
 		assertEquals("11.21.31.41-SNAPSHOT", new Version("11.21.31.41").toSnapshotString());
@@ -176,7 +172,7 @@ public class VersionTest {
 		assertEquals(new Version("11-SNAPSHOT"), new Version("11").toSnapshot());
 		assertEquals(new Version("asd-SNAPSHOT"), new Version("asd").toSnapshot());
 	}
-	
+
 	@Test
 	public void testIsExact() {
 		assertFalse(new Version("11.23.31.41-SNAPSHOT").isExact());
@@ -185,7 +181,7 @@ public class VersionTest {
 		assertFalse(new Version("").isExact());
 		assertFalse(new Version("dfgdfg-SNAPSHOT").isExact());
 	}
-	
+
 	@Test
 	public void testSetMinor() {
 		assertEquals(new Version("12.13.14.15-SNAPSHOT"), new Version("12.13.13.15-SNAPSHOT").setMinor("14"));
@@ -195,13 +191,13 @@ public class VersionTest {
 			new Version("-SNAPSHOT").setMinor("14");
 			fail();
 		} catch (IllegalStateException e) {
-			
+
 		}
 		try {
 			new Version("").setMinor("14");
 			fail();
 		} catch (IllegalStateException e) {
-			
+
 		}
 		assertEquals(new Version("14-SNAPSHOT"), new Version("12-SNAPSHOT").setMinor("14"));
 	}
@@ -223,7 +219,20 @@ public class VersionTest {
 			fail();
 		} catch (IllegalStateException e) {
 		}
+	}
 
+	@Test
+	public void testToReleaseZeroPatch() {
+		assertEquals(new Version("11.21.31.0"), new Version("11.21.31.41-SNAPSHOT").toReleaseZeroPatch());
+		assertEquals(new Version("11.21.31.0"), new Version("11.21.31.41").toReleaseZeroPatch());
+		assertEquals(new Version("11.21.0"), new Version("11.21.31").toReleaseZeroPatch());
+		assertEquals(new Version("11.0"), new Version("11.21").toReleaseZeroPatch());
+		assertEquals(new Version("11.0"), new Version("11-SNAPSHOT").toReleaseZeroPatch());
+		try {
+			assertEquals(new Version("-SNAPSHOT"), new Version("-SNAPSHOT").toReleaseZeroPatch());
+			fail();
+		} catch (IllegalStateException e) {
 
+		}
 	}
 }
