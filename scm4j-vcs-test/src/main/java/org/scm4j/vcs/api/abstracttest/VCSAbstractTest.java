@@ -1,20 +1,5 @@
 package org.scm4j.vcs.api.abstracttest;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
@@ -22,13 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
-import org.scm4j.vcs.api.IVCS;
-import org.scm4j.vcs.api.VCSChangeType;
-import org.scm4j.vcs.api.VCSCommit;
-import org.scm4j.vcs.api.VCSDiffEntry;
-import org.scm4j.vcs.api.VCSMergeResult;
-import org.scm4j.vcs.api.VCSTag;
-import org.scm4j.vcs.api.WalkDirection;
+import org.scm4j.vcs.api.*;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSBranchNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
@@ -37,6 +16,16 @@ import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
 import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
 
 public abstract class VCSAbstractTest {
 	protected static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
@@ -131,7 +120,7 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testBranchCreateAndDelete() throws Exception {
+	public void testBranches() throws Exception {
 		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
@@ -156,12 +145,15 @@ public abstract class VCSAbstractTest {
 		} catch (EVCSBranchExists e) {
 		}
 
-		// make the branch to delete be checked out
+		// Check out the branch which will be deleted
 		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		vcs.deleteBranch(NEW_BRANCH, DELETE_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
 		assertFalse(vcs.getBranches("").contains(NEW_BRANCH));
+
+		// check branch prefixing
+		assertTrue(vcs.getBranches(NEW_BRANCH.substring(0, 5)).contains(NEW_BRANCH_2));
 	}
 
 	private void verifyMocks() throws Exception {
