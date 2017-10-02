@@ -13,7 +13,6 @@ public class DeploymentContext implements IDeploymentContext {
 
     private String mainArtifact;
     private Map<Coords, File> artifacts;
-    private List<Coords> deps;
     private URL deploymentURL;
     private Map<String,Object> params;
 
