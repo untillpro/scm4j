@@ -1,5 +1,6 @@
 package org.scm4j.deployer.api;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -11,7 +12,7 @@ public interface IProductDeployer {
 
 	void upgrade(String newProductCoords);
 
-	void download(String productCoords);
+	File download(String productCoords);
 
 	List<String> listProducts();
 
