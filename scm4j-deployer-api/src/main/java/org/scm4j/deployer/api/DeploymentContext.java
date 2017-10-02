@@ -11,9 +11,13 @@ import java.util.Map;
 @Data
 public class DeploymentContext implements IDeploymentContext {
 
+    private String mainArtifact;
     private Map<Coords, File> artifacts;
     private List<Coords> deps;
     private URL deploymentURL;
     private Map<String,Object> params;
 
+    public DeploymentContext(String mainArtifact) {
+        this.mainArtifact = mainArtifact;
+    }
 }

@@ -9,6 +9,7 @@ import java.util.Map;
 
 public interface IDeploymentContext {
 
+    String getMainArtifact();
     Map<Coords, File> getArtifacts();
     List<Coords> getDeps();
     URL getDeploymentURL();
