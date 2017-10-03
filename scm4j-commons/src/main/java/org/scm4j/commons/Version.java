@@ -15,6 +15,7 @@ public class Version {
 	private final boolean isSemantic;
 
 	public Version(String verStr) {
+		verStr = verStr.trim();
 		this.verStr = verStr;
 		if (verStr.isEmpty()) {
 			snapshot = "";

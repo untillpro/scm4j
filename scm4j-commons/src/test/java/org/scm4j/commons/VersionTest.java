@@ -235,4 +235,9 @@ public class VersionTest {
 
 		}
 	}
+	
+	@Test
+	public void testInitialStringFormat() {
+		assertEquals("11.12.13.14", new Version("\t\r\n11.12.13.14\t\r\n\t").toString());
+	}
 }
