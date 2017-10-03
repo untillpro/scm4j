@@ -85,4 +85,5 @@ public class CoordsTest {
 				.usingGetClass()
 				.verify();
 	}
+	
 }
