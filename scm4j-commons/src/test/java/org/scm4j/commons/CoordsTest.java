@@ -25,6 +25,7 @@ public class CoordsTest {
 	public void testComment() {
 		assertEquals("", dc("com.myproject:c1").getComment());
 		assertEquals("#", dc("com.myproject:c1#").getComment());
+		assertEquals(" # ", dc("     com.myproject:c1 # ").getComment());
 		assertEquals("#...$ #", dc("com.myproject:c1#...$ #").getComment());
 	}
 
