@@ -7,12 +7,12 @@ import java.util.ArrayList;
 
 public class Component implements IComponent {
 
-    @Getter final private Coords artifactCoords;
+    @Getter final private String artifactCoords;
     @Getter private IInstallationProcedure installationProcedure;
     private final ProductStructure ps;
 
     public Component(String coords, ProductStructure productStructure) {
-        this.artifactCoords = new Coords(coords);
+        this.artifactCoords = coords;
         this.ps = productStructure;
     }
 
