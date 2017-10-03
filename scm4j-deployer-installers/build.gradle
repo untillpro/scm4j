@@ -1,12 +1,11 @@
 plugins {
 	id 'jacoco'
 	id 'com.github.kt3k.coveralls' version '2.8.1'
+	id 'java'
+	id 'maven'
+	id 'eclipse'
+	id 'idea'
 }
-
-apply plugin: 'java'
-apply plugin: 'maven'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
 
 repositories {
 	maven { url "https://jitpack.io" }
