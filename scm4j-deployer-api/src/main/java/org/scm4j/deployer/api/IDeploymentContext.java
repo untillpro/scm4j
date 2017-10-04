@@ -9,6 +9,6 @@ public interface IDeploymentContext {
     String getMainArtifact();
     Map<String, File> getArtifacts();
     URL getDeploymentURL();
-    Map<String, Object> getParams();
+    Map<Class, Map<String, Object>> getParams();
 
 }
