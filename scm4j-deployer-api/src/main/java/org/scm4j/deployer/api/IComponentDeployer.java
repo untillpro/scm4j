@@ -6,6 +6,6 @@ public interface IComponentDeployer {
 
 	void undeploy();
 
-	boolean validate();
+	void init(IDeploymentContext depCtx);
 
 }
