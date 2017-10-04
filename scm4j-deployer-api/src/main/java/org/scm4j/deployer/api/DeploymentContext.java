@@ -12,7 +12,7 @@ import java.util.Map;
 public class DeploymentContext implements IDeploymentContext {
 
     private String mainArtifact;
-    private Map<Coords, File> artifacts;
+    private Map<String, File> artifacts;
     private URL deploymentURL;
     private Map<String,Object> params;
 
