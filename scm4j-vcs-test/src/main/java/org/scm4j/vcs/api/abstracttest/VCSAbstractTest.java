@@ -1,7 +1,6 @@
 package org.scm4j.vcs.api.abstracttest;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 public abstract class VCSAbstractTest {
-	protected static final String WORKSPACE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-workspaces").getPath();
+	protected static final String TEST_BASE_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-vcs-test").getPath();
+	protected static final String REPO_DIR = new File(TEST_BASE_DIR, "base-repo").getPath();
+	protected static final String WORKSPACE_DIR = new File(TEST_BASE_DIR, "workspaces").getPath();
+	protected static final String TEST_DATA_GEN_WORKSAPCE_DIR = new File(TEST_BASE_DIR, "test-data-gen").getPath();
 	protected static final String NEW_BRANCH = "new-branch";
 	protected static final String NEW_BRANCH_2 = "new-branch-2";
 	protected static final String CREATED_DST_BRANCH_COMMIT_MESSAGE = "created dst branch";
@@ -67,7 +69,8 @@ public abstract class VCSAbstractTest {
 	protected IVCSRepositoryWorkspace mockedVCSRepo;
 	protected IVCSLockedWorkingCopy mockedLWC;
 	protected IVCS vcs;
-	
+	protected IVCS vcsTestDataGen;
+
 	// TODO: make test repositories be accessed through login\pwd
 
 	public IVCS getVcs() {
@@ -81,14 +84,14 @@ public abstract class VCSAbstractTest {
 	@After
 	public void setUpAndTearDown() throws Exception {
 		mockedLWC.close();
-		FileUtils.deleteDirectory(new File(WORKSPACE_DIR));
+		FileUtils.deleteDirectory(new File(TEST_BASE_DIR));
 	}
 
 	@Before
 	public void setUp() throws Exception {
-		File workspaceDir = new File(WORKSPACE_DIR);
-		if (workspaceDir.exists()) {
-			FileUtils.deleteDirectory(new File(WORKSPACE_DIR));
+		File testBaseDir = new File(TEST_BASE_DIR);
+		if (testBaseDir.exists()) {
+			FileUtils.deleteDirectory(testBaseDir);
 		}
 		
 		repoName = "scm4j-vcs-" + getVCSTypeString() + "-testrepo";
@@ -97,12 +100,16 @@ public abstract class VCSAbstractTest {
 		repoName = (repoName + "_" + uuid);
 		
 		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
+		IVCSWorkspace localVCSGenWorkspace = new VCSWorkspace(TEST_DATA_GEN_WORKSAPCE_DIR);
 
-		repoUrl = StringUtils.appendIfMissing(getTestRepoUrl(), "/") + repoName;
+		repoUrl = new File(REPO_DIR, repoName).toURI().toString().replace("file:/", "file:///");
 
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
-		
+
+		IVCSRepositoryWorkspace localVCSGenRepo = localVCSGenWorkspace.getVCSRepositoryWorkspace(repoUrl);
+		vcsTestDataGen = getVCS(localVCSGenRepo);
+
 		vcs = getVCS(mockedVCSRepo);
 		
 		resetMocks();
@@ -121,9 +128,9 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testBranches() throws Exception {
-		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		resetMocks();
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(vcs.getBranches("").contains(NEW_BRANCH));
 		verifyMocks();
@@ -132,7 +139,7 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null).equals(LINE_1));
 		resetMocks();
 
-		vcs.createBranch(NEW_BRANCH, NEW_BRANCH_2, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(NEW_BRANCH, NEW_BRANCH_2, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(vcs.getBranches("").contains(NEW_BRANCH));
 		verifyMocks();
@@ -140,15 +147,15 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 
 		try {
-			vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+			vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 			fail("\"Branch exists\" situation not detected");
 		} catch (EVCSBranchExists e) {
 		}
 
 		// Check out the branch which will be deleted
-		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		resetMocks();
-		vcs.deleteBranch(NEW_BRANCH, DELETE_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.deleteBranch(NEW_BRANCH, DELETE_BRANCH_COMMIT_MESSAGE);
 		verifyMocks();
 		assertFalse(vcs.getBranches("").contains(NEW_BRANCH));
 
@@ -169,14 +176,14 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testFileGetSetContent() throws Exception {
-		VCSCommit commit = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		VCSCommit commit = vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		verifyMocks();
 		assertTrue(logContainsMessage(null, FILE3_ADDED_COMMIT_MESSAGE));
 		verifyMocks();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_1);
 		verifyMocks();
 
-		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_2);
 
 		resetMocks();
@@ -198,9 +205,9 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testMerge() throws Exception {
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 
 		VCSMergeResult res = vcs.merge(NEW_BRANCH, null, MERGE_COMMIT_MESSAGE);
@@ -218,9 +225,9 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testMergeConflict() {
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
 		VCSMergeResult res = vcs.merge(NEW_BRANCH, null, MERGE_COMMIT_MESSAGE);
 		assertFalse(res.getSuccess());
 		assertFalse(mockedLWC.getCorrupted());
@@ -230,9 +237,9 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testMergeConflictWCCorruption() throws Exception {
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		setMakeFailureOnVCSReset(true);
 		VCSMergeResult res = vcs.merge(NEW_BRANCH, null, MERGE_COMMIT_MESSAGE);
@@ -264,29 +271,29 @@ public abstract class VCSAbstractTest {
 		 *  Result should be: f3+, f1+, f2-, mfm.
 		 *  But: Result of merge operation for f1 is missing file even by TortouiseSVN 
 		 */
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
-		
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
-		
-		vcs.setFileContent(null, "trunk file.txt", "dfdfsdf", "trunk file added");
-		
-		vcs.setFileContent(null, MOD_FILE_NAME, MOD_LINE_1, MOD_FILE_ADDED_COMMIT_MESSAGE);
-		
-		vcs.merge(null, NEW_BRANCH, MERGE_COMMIT_MESSAGE);
-		
-		vcs.setFileContent(NEW_BRANCH, MOD_FILE_NAME, MOD_LINE_2, MOD_FILE_CONTENT_CHANGED_COMMIT_MESSAGE);
-		
-		vcs.merge(null, NEW_BRANCH, "merged from trunk");
-		
-		vcs.removeFile(NEW_BRANCH, FILE2_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
-		
-		vcs.removeFile(null,  FILE1_NAME, "file1 removed");
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+
+		vcsTestDataGen.setFileContent(null, "trunk file.txt", "dfdfsdf", "trunk file added");
+
+		vcsTestDataGen.setFileContent(null, MOD_FILE_NAME, MOD_LINE_1, MOD_FILE_ADDED_COMMIT_MESSAGE);
+
+		vcsTestDataGen.merge(null, NEW_BRANCH, MERGE_COMMIT_MESSAGE);
+
+		vcsTestDataGen.setFileContent(NEW_BRANCH, MOD_FILE_NAME, MOD_LINE_2, MOD_FILE_CONTENT_CHANGED_COMMIT_MESSAGE);
+
+		vcsTestDataGen.merge(null, NEW_BRANCH, "merged from trunk");
+
+		vcsTestDataGen.removeFile(NEW_BRANCH, FILE2_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
+
+		vcsTestDataGen.removeFile(null,  FILE1_NAME, "file1 removed");
 		
 		//vcs.setFileContent(null, "folder/file 2 in folder.txt", "file 2 in folder line", "conflicting folder added");
-		vcs.setFileContent(null, "moved file trunk.txt", "file 2 in folder line", "moved file added");
+		vcsTestDataGen.setFileContent(null, "moved file trunk.txt", "file 2 in folder line", "moved file added");
 		//vcs.merge(null, NEW_BRANCH, "merged moved file trunk.txt from trunk");
 		
 		
@@ -329,7 +336,7 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testFileRemove() throws Exception {
-		vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		vcs.removeFile(null, FILE3_IN_FOLDER_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
 		verifyMocks();
@@ -344,10 +351,10 @@ public abstract class VCSAbstractTest {
 	
 	@Test
 	public void testLog() throws Exception {
-		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSCommit c2 = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		VCSCommit c3 = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		VCSCommit c1 = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit c2 = vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit c3 = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
 		resetMocks();
 		List<VCSCommit> log = vcs.log(null, DEFAULT_COMMITS_LIMIT);
 		verifyMocks();
@@ -375,13 +382,13 @@ public abstract class VCSAbstractTest {
 		 *  f3+       	
 		 *  f1+ 
 		 */
-		String c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE).getRevision();
-		String c3 = vcs.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE).getRevision();
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		String c4 = vcs.setFileContent(null, "file 4.txt", "dfdfsdf", "File 4 master added").getRevision();
-		String c5 = vcs.setFileContent(null, "file 5.txt", "dfdfsdf", "File 5 master added").getRevision();
-		String c2 = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE).getRevision();
-		String c11 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, "file 1 branch added").getRevision();
+		String c1 = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE).getRevision();
+		String c3 = vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE).getRevision();
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		String c4 = vcsTestDataGen.setFileContent(null, "file 4.txt", "dfdfsdf", "File 4 master added").getRevision();
+		String c5 = vcsTestDataGen.setFileContent(null, "file 5.txt", "dfdfsdf", "File 5 master added").getRevision();
+		String c2 = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE).getRevision();
+		String c11 = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, "file 1 branch added").getRevision();
 
 		resetMocks();
 		List<VCSCommit> commits = vcs.getCommitsRange(null, c1, null);
@@ -434,53 +441,50 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testCommitGetHead() {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSCommit commit2 = vcs.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		VCSCommit commit3 = vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+	public void testCommitGetHead() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit commit2 = vcsTestDataGen.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit commit3 = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+		resetMocks();
 		assertTrue(vcs.getHeadCommit(null).equals(commit2));
+		verifyMocks();
 		assertTrue(vcs.getHeadCommit(NEW_BRANCH).equals(commit3));
 	}
 	
 	@Test
-	public void testFileExists() {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+	public void testFileExists() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+		resetMocks();
 		assertTrue(vcs.fileExists(null, FILE1_NAME));
+		verifyMocks();
 		assertTrue(vcs.fileExists(NEW_BRANCH, FILE3_IN_FOLDER_NAME));
 		assertFalse(vcs.fileExists(null, "no file"));
 	}
 	
 	@Test
 	public void testTagCreate() throws Exception {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSCommit initialCommit = vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
-		// create tag within different working copy
-		VCSTag ethalonTag;
-		try (IVCSLockedWorkingCopy lwc = localVCSRepo.getVCSLockedWorkingCopyTemp()) {
-			IVCSWorkspace tempWS = new VCSWorkspace(lwc.getFolder().toString());
-			IVCSRepositoryWorkspace tempRWS = tempWS.getVCSRepositoryWorkspace(vcs.getRepoUrl());
-			IVCS tempVCS = getVCS(tempRWS);
-			ethalonTag = tempVCS.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
-		}
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit initialCommit = vcsTestDataGen.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		resetMocks();
+		VCSTag ethalonTag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		verifyMocks();
 		assertEquals(ethalonTag.getRelatedCommit(), initialCommit);
 		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_1);
 		assertEquals(ethalonTag.getTagName(), TAG_NAME_1);
 		assertEquals(ethalonTag.getAuthor(), initialCommit.getAuthor());
-		Thread.sleep(1000);
+		Thread.sleep(1000); // FIXME: testTagCreate() fails with no sleep(500) on Git
 		try {
 			vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 			fail();
 		} catch (EVCSTagExists e) {
 			
 		}
-		
-		
-		
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		initialCommit = vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		initialCommit = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
 		ethalonTag = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2, null);
 		assertEquals(ethalonTag.getRelatedCommit(), initialCommit);
 		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_2);
@@ -497,27 +501,24 @@ public abstract class VCSAbstractTest {
 	
 	@Test
 	public void testTagListAfterDelete() throws Exception {
-		VCSTag tag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
-		// remove tag within different working copy. Need to test that objects which are removed in origin are removed also in local working copy
-		try (IVCSLockedWorkingCopy lwc = localVCSRepo.getVCSLockedWorkingCopyTemp()) {
-			IVCSWorkspace tempWS = new VCSWorkspace(lwc.getFolder().toString());
-			IVCSRepositoryWorkspace tempRWS = tempWS.getVCSRepositoryWorkspace(vcs.getRepoUrl());
-			IVCS tempVCS = getVCS(tempRWS);
-			tempVCS.removeTag(TAG_NAME_1);
-		}
+		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		vcs.removeTag(TAG_NAME_1);
 		assertTrue(vcs.getTags().isEmpty());
-		tag = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		assertTrue(vcsTestDataGen.getTags().isEmpty());
+		VCSTag tag = vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		assertTrue(vcs.getTags().contains(tag));
 	}
 	
 	@Test
-	public void testTagsList() {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		vcs.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
-		VCSTag ethalonTag2 = vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2, null);
+	public void testTagsList() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSTag ethalonTag1 = vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
+		VCSTag ethalonTag2 = vcsTestDataGen.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2, null);
+		resetMocks();
 		List<VCSTag> tags = vcs.getTags();
+		verifyMocks();
 		assertTrue(tags.size() == 2);
 		
 		VCSTag actualTag1 = tags.get(0);
@@ -538,29 +539,24 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testRemoveTag() throws Exception {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
-		vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
-		assertTrue(containsTagName(vcs.getTags(), TAG_NAME_1));
-		// remove tag within different working copy. Need to test that objects which are removed in origin are removed also in local working copy
-		try (IVCSLockedWorkingCopy lwc = localVCSRepo.getVCSLockedWorkingCopyTemp()) {
-			IVCSWorkspace tempWS = new VCSWorkspace(lwc.getFolder().toString());
-			IVCSRepositoryWorkspace tempRWS = tempWS.getVCSRepositoryWorkspace(vcs.getRepoUrl());
-			IVCS tempVCS = getVCS(tempRWS);
-			tempVCS.removeTag(TAG_NAME_1);
-		}
-		
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		resetMocks();
+		vcs.removeTag(TAG_NAME_1);
+		verifyMocks();
 		assertFalse(containsTagName(vcs.getTags(), TAG_NAME_1));
 	}
 	
 	@Test
 	public void testCheckoutHead() throws Exception {
-		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		IVCSRepositoryWorkspace rw = localVCSWorkspace.getVCSRepositoryWorkspace("test_checkout_place");
-		
 		try (IVCSLockedWorkingCopy lwc = rw.getVCSLockedWorkingCopy()) {
 			lwc.setCorrupted(true);
+			resetMocks();
 			vcs.checkout(null, lwc.getFolder().getPath(), null);
+			verifyMocks();
 			File testFile = new File(lwc.getFolder(), FILE1_NAME);
 			assertTrue(testFile.exists());
 			assertEquals(FileUtils.readFileToString(testFile, StandardCharsets.UTF_8), LINE_1);
@@ -569,8 +565,8 @@ public abstract class VCSAbstractTest {
 	
 	@Test
 	public void testCheckoutRevision() throws Exception {
-		VCSCommit first = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		VCSCommit first = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
 		IVCSRepositoryWorkspace rw = localVCSWorkspace.getVCSRepositoryWorkspace("test_checkout_place");
 		
 		try (IVCSLockedWorkingCopy lwc = rw.getVCSLockedWorkingCopy()) {
@@ -583,20 +579,22 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testGetTagsOnRevision() {
-		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_ADDED_COMMIT_MESSAGE);
+	public void testGetTagsOnRevision() throws Exception {
+		VCSCommit c1 = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_2, FILE1_ADDED_COMMIT_MESSAGE);
 		assertTrue(vcs.getTagsOnRevision(c1.getRevision()).isEmpty());
-		c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
-		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
-		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		VCSCommit c3 = vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
+		c1 = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		VCSCommit c2 = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit c3 = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_3);
 
-		VCSTag tag1 = vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, c1.getRevision());
-		VCSTag tag2 = vcs.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, c1.getRevision());
-		VCSTag tag3 = vcs.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3, c3.getRevision());
+		VCSTag tag1 = vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, c1.getRevision());
+		VCSTag tag2 = vcsTestDataGen.createTag(null, TAG_NAME_2, TAG_MESSAGE_2, c1.getRevision());
+		VCSTag tag3 = vcsTestDataGen.createTag(NEW_BRANCH, TAG_NAME_3, TAG_MESSAGE_3, c3.getRevision());
 
+		resetMocks();
 		assertTrue(vcs.getTagsOnRevision(c1.getRevision()).containsAll(Arrays.asList(
 				tag1, tag2)));
+		verifyMocks();
 		assertTrue(vcs.getTagsOnRevision(c2.getRevision()).isEmpty());
 		assertTrue(vcs.getTagsOnRevision(c3.getRevision()).containsAll(Arrays.asList(
 				tag3)));
@@ -676,8 +674,6 @@ public abstract class VCSAbstractTest {
 		}
 		return false;
 	}
-	
-	protected abstract String getTestRepoUrl();
 	
 	protected abstract IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo);
 
