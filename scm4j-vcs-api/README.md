@@ -6,7 +6,6 @@
 scm4j-vcs-api is set of base classes and interfaces to build VCS support (Git, SVN, etc) libraries which exposes basic vcs-related operations: merge, branch create etc.
 scm4j-vcs-api provides:
 - A simple interface to implement basic VCS-related operations
-- Set of functional tests wchich are common to each VCS implementation. Functional tests for a certain VCS implementation are done by implementing few abstract methods of base test class. Implemented in [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test)
 - Working copies management for operations which must be executed on a local file system
 
 # Terms
@@ -45,7 +44,7 @@ scm4j-vcs-api provides:
 IVCS interface consists of few basic vcs functions.
 Note: null passed as a branch name is considered as Master Branch. Any non-null branch name is considered as user-created branch within conventional place for branches: any branch except "master" for Git, any branch within "Branches" branch for SVN etc. For SVN do not use "Branches\my-branch" as branch name, use "my-branch" instead.
 - `void createBranch(String srcBranchName, String dstBranchName, String commitMessage)`
-	- Creates a new branch with name `dstBranchName` from the Head of `srcBranchName`. 
+	- Creates a new branch named `dstBranchName` from the Head of `srcBranchName`.
 	- commitMessage is a log message which will be attached to branch create operation if it possible (e.g. Git does not posts branch create operation as a separate commit)
 - `VCSMergeResult merge(String srcBranchName, String dstBranchName, String commitMessage);`
 	- Merge all commits from `srcBranchName` to `dstBranchName` with `commitMessage` attached
@@ -75,6 +74,33 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Note: result could be considered as a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
 - `Set<String> getBranches(String path)`
 	- Returns list of names of all branches which are started from `path`. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
+    - `path` processing
+        - Git
+            - prefix of branch names to browse
+            - Assume we have following branches:
+                - branch_1
+                - branch_2
+                - new-branch
+            - then `getBranches("br")` will return [branch_1, branch_2]
+        - SVN
+            - Assume we have following folders structure:
+                - branches/branch_1/folder
+                - branches/branch_2/folder
+                - branches/release/v1/folder
+                - branches/release/v2/folder
+                - branches/release/a2/folder
+                - branches/new-branch/folder
+                - branch_3/folder
+                - tags/
+                - trunk/
+                - new-branch
+            - `path` is empty - result is all first-level subdirst within `branches/` folder
+                - `getBranches("")` -> [branch_1, branch_2, release, new-branch]
+            - `path` ends with "/" or empty - result is all first-level subdirs within `branches/path` dir
+                - `getBranches("release/")` -> [v1, v2, a2]
+            - `path` does not ends with "/" - result is first-level subdirs within `branches/path` dir up to the last slash which names starts with `path` dir from the last slash till end substring
+                 - `getBranches("new-")` -> [new-branch]
+                 - `getBranches("release/v")` -> [v1, v2]
 - `List<VCSCommit> log(Sting branchName, Integer limit)`
 	- Returns list of commits of branch `branchName` limited by `limit` in descending order
 - `String getVCSTypeString`
