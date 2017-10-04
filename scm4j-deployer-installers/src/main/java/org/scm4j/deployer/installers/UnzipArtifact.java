@@ -2,6 +2,7 @@ package org.scm4j.deployer.installers;
 
 import lombok.Data;
 import org.scm4j.deployer.api.IComponentDeployer;
+import org.scm4j.deployer.api.IDeploymentContext;
 
 import java.io.File;
 
@@ -28,7 +29,7 @@ public class UnzipArtifact implements IComponentDeployer {
     }
 
     @Override
-    public boolean validate() {
-        return false;
+    public void init(IDeploymentContext depCtx) {
+
     }
 }

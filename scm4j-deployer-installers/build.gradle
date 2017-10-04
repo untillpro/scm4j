@@ -20,10 +20,14 @@ version = new File('version').text
 
 dependencies {
 
+	def s = '[ \t]*', w = '[^:#@\\s]+?'
+	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
+		match, group, name, version, classifier, ext, configuration ->
+			add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}")
+	}
+
 	compileOnly 'org.projectlombok:lombok:1.16.18'
 	compile 'org.apache.commons:commons-lang3:3.5'
-	compile 'com.github.scm4j:scm4j-commons:master-SNAPSHOT'
-	compile 'com.github.scm4j:scm4j-deployer-api:dev-SNAPSHOT'
 
 	testCompile 'junit:junit:4.12'
 }
