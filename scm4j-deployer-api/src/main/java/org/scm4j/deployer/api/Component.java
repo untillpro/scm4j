@@ -1,18 +1,19 @@
 package org.scm4j.deployer.api;
 
 import lombok.Getter;
-import org.scm4j.commons.Coords;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 
 import java.util.ArrayList;
 
 public class Component implements IComponent {
 
-    @Getter final private String artifactCoords;
+    @Getter final private Artifact artifactCoords;
     @Getter private IInstallationProcedure installationProcedure;
     private final ProductStructure ps;
 
     public Component(String coords, ProductStructure productStructure) {
-        this.artifactCoords = coords;
+        this.artifactCoords = new DefaultArtifact(coords);
         this.ps = productStructure;
     }
 

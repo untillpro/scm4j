@@ -1,11 +1,9 @@
 package org.scm4j.deployer.api;
 
 import lombok.Data;
-import org.scm4j.commons.Coords;
 
 import java.io.File;
 import java.net.URL;
-import java.util.List;
 import java.util.Map;
 
 @Data
