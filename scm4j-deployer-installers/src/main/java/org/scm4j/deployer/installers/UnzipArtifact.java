@@ -13,11 +13,6 @@ public class UnzipArtifact implements IComponentDeployer {
     private File outputFile;
     private File zipFile;
 
-    public UnzipArtifact(File outputFile, File zipFile) {
-        this.outputFile = outputFile;
-        this.zipFile = zipFile;
-    }
-
     @Override
     public void deploy() {
         Utils.unzip(outputFile,zipFile);
@@ -30,6 +25,7 @@ public class UnzipArtifact implements IComponentDeployer {
 
     @Override
     public void init(IDeploymentContext depCtx) {
-
+        outputFile = new File(depCtx.getDeploymentURL().getFile());
+        zipFile = depCtx.getArtifacts().get(depCtx.getMainArtifact());
     }
 }

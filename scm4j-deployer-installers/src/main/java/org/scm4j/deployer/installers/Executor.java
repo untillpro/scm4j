@@ -27,9 +27,11 @@ public class Executor implements IComponentDeployer {
 	private ProcessBuilder createCmd() {
 		ProcessBuilder builder = new ProcessBuilder();
 		Set<Map.Entry<String, Object>> set = params.entrySet();
-		builder.directory(new File(TMP_DIR.getPath()));
+		builder.directory(TMP_DIR);
 		List<String> cmds = new ArrayList<>();
-		cmds.add(product.getName() + ".exe");
+		cmds.add("cmd");
+		cmds.add("/c");
+		cmds.add(product.getName());
 		set.forEach(entry -> {
 			if(entry.getValue()!= null)
 				cmds.add(entry.toString());
