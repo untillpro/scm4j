@@ -29,8 +29,6 @@ public class Executor implements IComponentDeployer {
 		Set<Map.Entry<String, Object>> set = params.entrySet();
 		builder.directory(TMP_DIR);
 		List<String> cmds = new ArrayList<>();
-		cmds.add("cmd");
-		cmds.add("/c");
 		cmds.add(product.getName());
 		set.forEach(entry -> {
 			if(entry.getValue()!= null)
@@ -67,6 +65,13 @@ public class Executor implements IComponentDeployer {
 		outputDir = new File(depCtx.getDeploymentURL().getFile());
 		params = depCtx.getParams().get(this.getClass());
 		product = depCtx.getArtifacts().get(depCtx.getMainArtifact());
+	}
+
+	@Override
+	public String toString() {
+		return "Executor{" +
+				"product=" + product.getName() +
+				'}';
 	}
 
 	private static class StreamGobbler implements Runnable {

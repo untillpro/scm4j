@@ -27,6 +27,8 @@ public class ExecutorTest {
         depCtx.setDeploymentURL(new URL("file://C:/unTill"));
         Map<String, Object> params = new HashMap<>();
         Map<Class,Map<String,Object>> mainParams = new HashMap<>();
+        params.put("/cmd", null);
+        params.put("/c", null);
         params.put("/Dir", depCtx.getDeploymentURL().getFile());
         params.put("/restart", "1");
         params.put("/verysilent", null);
@@ -34,8 +36,11 @@ public class ExecutorTest {
         mainParams.put(Executor.class, params);
         depCtx.setParams(mainParams);
         Map<String, File> artifacts = new HashMap<>();
+        File productJar = new File(TMP_FOLDER, MAIN_ARTIFACT + ".jar");
+        productJar.createNewFile();
         File mainArtifactFolder = new File(TMP_FOLDER, MAIN_ARTIFACT + ".exe");
         mainArtifactFolder.createNewFile();
+        artifacts.put(MAIN_ARTIFACT, productJar);
         artifacts.put(MAIN_ARTIFACT, mainArtifactFolder);
         depCtx.setArtifacts(artifacts);
     }
