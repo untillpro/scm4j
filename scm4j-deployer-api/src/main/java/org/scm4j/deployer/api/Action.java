@@ -29,4 +29,11 @@ public class Action implements IAction {
     public Component parent() {
         return comp;
     }
+
+    @Override
+    public String toString() {
+        return "Action{" +
+                "installerClass=" + installerClass +
+                '}';
+    }
 }

@@ -17,4 +17,11 @@ public class DeploymentContext implements IDeploymentContext {
     public DeploymentContext(String mainArtifact) {
         this.mainArtifact = mainArtifact;
     }
+
+    @Override
+    public String toString() {
+        return "DeploymentContext{" +
+                "mainArtifact='" + mainArtifact + '\'' +
+                '}';
+    }
 }

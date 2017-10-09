@@ -26,6 +26,7 @@ public class ProductStructure implements IProductStructure {
     public static ProductStructure create() {
         return new ProductStructure();
     }
+
 }
 
 

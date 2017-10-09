@@ -31,4 +31,11 @@ public class Component implements IComponent {
     public ProductStructure parent() {
         return ps;
     }
+
+    @Override
+    public String toString() {
+        return "Component{" +
+                "artifactCoords=" + artifactCoords +
+                '}';
+    }
 }
