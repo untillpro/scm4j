@@ -3,6 +3,7 @@ package org.scm4j.deployer.installers;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.installers.exception.EInstallationException;
@@ -46,7 +47,7 @@ public class ExecutorTest {
         FileUtils.deleteDirectory(TMP_FOLDER);
     }
 
-    @Test
+    @Ignore
     public void testDeploy() throws Exception {
         Executor executor = new Executor();
         executor.init(depCtx);
