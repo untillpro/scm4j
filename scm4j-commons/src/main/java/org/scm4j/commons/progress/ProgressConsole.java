@@ -1,13 +1,12 @@
 package org.scm4j.commons.progress;
 
 import java.io.PrintStream;
-
 import com.google.common.base.Strings;
 
-public class ProgressConsole implements IProgress {
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 
-	public static final String ANSI_RED = "\u001B[31m";
-	public static final String ANSI_RESET = "\u001B[0m";
+public class ProgressConsole implements IProgress {
 
 	private int level;
 	private String name;
@@ -88,6 +87,6 @@ public class ProgressConsole implements IProgress {
 	@Override
 	public void error(String message) {
 		indent(level + 1);
-		print(ANSI_RED + message + ANSI_RESET);
+		print(ansi().fg(RED).a(message).reset());
 	}
 }

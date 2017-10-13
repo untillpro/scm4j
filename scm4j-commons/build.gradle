@@ -21,6 +21,7 @@ dependencies {
 	
 	compile 'com.google.guava:guava:20.0'
 	compile 'org.apache.commons:commons-lang3:3.5'
+	compile 'org.fusesource.jansi:jansi:1.16'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
