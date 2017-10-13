@@ -12,12 +12,6 @@ import junit.framework.TestCase;
 
 public class ProgressConsoleTest extends TestCase {
 	
-	@Override
-	public void setUp() {
-//		Ansi.setEnabled(true);
-//		AnsiConsole.
-	}
-	
 	public void testMultiline() throws Exception{
 		System.out.println("***Multiline:");
 		ProgressConsole rpc1 = new ProgressConsole("Progress 1");
