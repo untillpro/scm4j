@@ -2,6 +2,7 @@ package org.scm4j.deployer.installers;
 
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 import org.scm4j.deployer.installers.exception.EInstallationException;
@@ -35,7 +36,8 @@ public class Executor implements IComponentDeployer {
             case DEPLOY:
             case UPGRADE:
                 builder.directory(TMP_DIR);
-                cmds.add(product.getName());
+                cmds.add(new File(TMP_DIR ,
+                        StringUtils.replace(product.getName(), "zip", "exe")).getName());
                 break;
             case UNDEPLOY:
                 cmds.add(UNINSTALLER_NAME);
