@@ -3,9 +3,9 @@ package org.scm4j.deployer.installers;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.scm4j.deployer.api.DeploymentContext;
+import org.scm4j.deployer.installers.exception.EInstallationException;
 
 import java.io.File;
 import java.net.URL;
@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 
 public class ExecutorTest {
 
-    private static final File TMP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "scm4j-deployer-installers");
+    private static final File TMP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "scm4j-tmp-executor");
     private static final String MAIN_ARTIFACT = "unTill";
     private DeploymentContext depCtx;
 
@@ -27,20 +27,15 @@ public class ExecutorTest {
         depCtx.setDeploymentURL(new URL("file://C:/unTill"));
         Map<String, Object> params = new HashMap<>();
         Map<Class,Map<String,Object>> mainParams = new HashMap<>();
-        params.put("/cmd", null);
-        params.put("/c", null);
-        params.put("/Dir", depCtx.getDeploymentURL().getFile());
-        params.put("/restart", "1");
-        params.put("/verysilent", null);
-        params.put("/Log", new File(TMP_FOLDER, "silentsetup.txt"));
+        StringBuilder sb = new StringBuilder();
+        sb.append("/Dir=").append(depCtx.getDeploymentURL().getFile()).append(" /restart=1 ")
+                .append("/verysilent ").append("/Log=").append(new File(TMP_FOLDER,"silentsetup.txt").getPath());
+        params.put("deploy", sb.toString());
         mainParams.put(Executor.class, params);
         depCtx.setParams(mainParams);
         Map<String, File> artifacts = new HashMap<>();
-        File productJar = new File(TMP_FOLDER, MAIN_ARTIFACT + ".jar");
-        productJar.createNewFile();
         File mainArtifactFolder = new File(TMP_FOLDER, MAIN_ARTIFACT + ".exe");
         mainArtifactFolder.createNewFile();
-        artifacts.put(MAIN_ARTIFACT, productJar);
         artifacts.put(MAIN_ARTIFACT, mainArtifactFolder);
         depCtx.setArtifacts(artifacts);
     }
@@ -51,11 +46,15 @@ public class ExecutorTest {
         FileUtils.deleteDirectory(TMP_FOLDER);
     }
 
-    @Ignore
+    @Test
     public void testDeploy() throws Exception {
         Executor executor = new Executor();
         executor.init(depCtx);
-        executor.deploy();
+        try {
+            executor.deploy();
+            fail();
+        } catch (EInstallationException e) {
+        }
     }
 
     @Test

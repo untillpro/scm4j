@@ -20,7 +20,6 @@ public class UnzipArtifactTest {
 
     private static final File ZIP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "test-zip");
     private static final File ZIP_FILE = new File(ZIP_FOLDER, "file.zip");
-    private static ZipEntry entry;
     private DeploymentContext depCtx;
 
     @Before
@@ -34,7 +33,7 @@ public class UnzipArtifactTest {
         depCtx.setArtifacts(artifacts);
         String str = "Test String";
         ZipOutputStream out = new ZipOutputStream(new FileOutputStream(ZIP_FILE));
-        entry = new ZipEntry("mytext.txt");
+        ZipEntry entry = new ZipEntry("mytext.txt");
         out.putNextEntry(entry);
         byte[] data = str.getBytes();
         out.write(data, 0, data.length);
