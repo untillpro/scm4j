@@ -6,13 +6,13 @@ import java.util.Map;
 
 public interface IProductDeployer {
 
-	void deploy(String productCoords);
+	void deploy(String artifactId, String version);
 
-	void undeploy(String productCoors);
+	void undeploy(String artifactId, String version);
 
-	void upgrade(String newProductCoords);
+	void upgrade(String artifactId, String version);
 
-	File download(String productCoords);
+	File download(String artifactId, String version);
 
 	List<String> listProducts();
 
