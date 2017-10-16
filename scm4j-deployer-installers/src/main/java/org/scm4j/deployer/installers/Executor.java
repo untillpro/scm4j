@@ -35,9 +35,8 @@ public class Executor implements IComponentDeployer {
         switch (command) {
             case DEPLOY:
             case UPGRADE:
-                builder.directory(product);
-                cmds.add(new File(product ,
-                        StringUtils.replace(product.getName(), "zip", "exe")).getName());
+                builder.directory(product.getParentFile());
+                cmds.add(product.getName());
                 break;
             case UNDEPLOY:
                 cmds.add(UNINSTALLER_NAME);
