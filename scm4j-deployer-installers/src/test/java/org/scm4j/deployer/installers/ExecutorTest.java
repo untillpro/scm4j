@@ -28,10 +28,8 @@ public class ExecutorTest {
         depCtx.setDeploymentURL(new URL("file://C:/unTill"));
         Map<String, Object> params = new HashMap<>();
         Map<Class,Map<String,Object>> mainParams = new HashMap<>();
-        StringBuilder sb = new StringBuilder();
-        sb.append("/Dir=").append(depCtx.getDeploymentURL().getFile()).append(" /restart=1 ")
-                .append("/verysilent ").append("/Log=").append(new File(TMP_FOLDER,"silentsetup.txt").getPath());
-        params.put("deploy", sb.toString());
+        String param = " /silent /prepare_restart=1 /dir=\"C:/unTill\" /log=\"C:/unTill/silentsetup.txt\"";
+        params.put("deploy", param);
         mainParams.put(Executor.class, params);
         depCtx.setParams(mainParams);
         Map<String, File> artifacts = new HashMap<>();
@@ -47,7 +45,7 @@ public class ExecutorTest {
         FileUtils.deleteDirectory(TMP_FOLDER);
     }
 
-    @Ignore
+    @Test
     public void testDeploy() throws Exception {
         Executor executor = new Executor();
         executor.init(depCtx);

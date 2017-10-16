@@ -11,9 +11,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
@@ -42,7 +40,9 @@ public class Executor implements IComponentDeployer {
                 cmds.add(UNINSTALLER_NAME);
                 break;
         }
-        cmds.add(params.get(command.name().toLowerCase()).toString());
+        Arrays.stream(params.get(command.name().toLowerCase()).toString().split("\\s(?=/)"))
+                .filter(str -> !str.equals(""))
+                .forEach(cmds::add);
         builder.command(cmds);
         return builder;
     }
