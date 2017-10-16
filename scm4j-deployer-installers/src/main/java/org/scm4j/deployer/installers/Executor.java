@@ -35,8 +35,8 @@ public class Executor implements IComponentDeployer {
         switch (command) {
             case DEPLOY:
             case UPGRADE:
-                builder.directory(TMP_DIR);
-                cmds.add(new File(TMP_DIR ,
+                builder.directory(product);
+                cmds.add(new File(product ,
                         StringUtils.replace(product.getName(), "zip", "exe")).getName());
                 break;
             case UNDEPLOY:
@@ -51,7 +51,7 @@ public class Executor implements IComponentDeployer {
     @Override
     @SneakyThrows
     public void deploy() {
-        Utils.unzip(TMP_DIR, product);
+//        Utils.unzip(TMP_DIR, product);
         Process p = createCmd(Command.DEPLOY).start();
         StreamGobbler streamGobbler = new StreamGobbler(p.getInputStream(), System.out::println);
         Executors.newSingleThreadExecutor().submit(streamGobbler);
