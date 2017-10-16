@@ -45,7 +45,7 @@ public class ExecutorTest {
         FileUtils.deleteDirectory(TMP_FOLDER);
     }
 
-    @Test
+    @Ignore
     public void testDeploy() throws Exception {
         Executor executor = new Executor();
         executor.init(depCtx);
