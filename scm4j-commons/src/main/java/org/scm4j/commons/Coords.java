@@ -10,6 +10,8 @@ public class Coords {
 	private final String groupId;
 	private final String classifier;
 	private final Version version;
+	private final String verPrefix;
+	private final String verSuffix;
 	private final String coordsStringNoComment;
 
 	public String getComment() {
@@ -69,7 +71,11 @@ public class Coords {
 		groupId = strs[0];
 		artifactId = strs[1];
 
-		classifier = strs.length > 3 ? ":" + strs[3].trim() : "";
+		verPrefix = strs.length > 2 ? ":" : "";
+
+		verSuffix = strs.length > 3 ? ":" : "";
+
+		classifier = strs.length > 3 ? strs[3].trim() : "";
 
 		version = new Version(strs.length > 2 ? strs[2] : "");
 	}
@@ -109,8 +115,9 @@ public class Coords {
 	}
 
 	public String toString(String versionStr) {
-		String str = versionStr + classifier + extension;
-		return getName() +  (str.isEmpty() ? "" : ":" + str) + commentStr;
+		String str = verPrefix.isEmpty() && !versionStr.isEmpty() ? ":" : verPrefix;
+		str += versionStr + verSuffix + classifier + extension;
+		return getName() + str + commentStr;
 	}
 
 	public String getName() {

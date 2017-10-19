@@ -1,10 +1,9 @@
 package org.scm4j.commons;
 
-import static org.junit.Assert.*;
-
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
+import static org.junit.Assert.*;
 
 public class CoordsTest {
 
@@ -40,8 +39,8 @@ public class CoordsTest {
 	@Test
 	public void testClassifier() {
 		assertEquals("", dc("com.myproject:c1").getClassifier());
-		assertEquals(":", dc("com.myproject:c1::").getClassifier());
-		assertEquals(":class", dc("com.myproject:c1::class:").getClassifier());
+		assertEquals("", dc("com.myproject:c1::").getClassifier());
+		assertEquals("class", dc("com.myproject:c1::class:").getClassifier());
 	}
 
 	@Test
@@ -50,8 +49,8 @@ public class CoordsTest {
 		assertEquals("com.myproject:  c1:1.0.0", dc("com.myproject:  c1:1.0.0").toString());
 		assertEquals("   com.myproject:  c1:1.0.0", dc("   com.myproject:  c1:1.0.0").toString());
 		assertEquals("com.myproject:c1:1.0.0#comment", dc("com.myproject:c1:1.0.0#comment").toString());
-		assertEquals("com.myproject:c1:1.0.0@ext #comment", dc("com.myproject:c1:1.0.0@ext #comment").toString());
-		assertEquals("com.myproject:c1::dfgd@ext #comment", dc("com.myproject:c1::dfgd@ext #comment").toString());
+		assertEquals("com.myproject:c1:1.0.0@ext # comment", dc("com.myproject:c1:1.0.0@ext # comment").toString());
+		assertEquals("com.myproject:c1::dfgd@ext # comment", dc("com.myproject:c1::dfgd@ext # comment").toString());
 	}
 	
 	@Test
@@ -85,5 +84,15 @@ public class CoordsTest {
 				.usingGetClass()
 				.verify();
 	}
-	
+
+	@Test
+	public void testVersionChange() {
+		assertEquals("eu.untill:JTerminal:12.13  # comment", new Coords("eu.untill:JTerminal:  # comment").toString("12.13"));
+		assertEquals("eu.untill:JTerminal:12.13:abc@efg # comment", new Coords("eu.untill:JTerminal::abc@efg # comment").toString("12.13"));
+		assertEquals("eu.untill:JTerminal::abc@efg # comment", new Coords("eu.untill:JTerminal:12.13:abc@efg # comment").toString(""));
+		assertEquals("eu.untill:JTerminal::# comment", new Coords("eu.untill:JTerminal:12.13:# comment").toString(""));
+		assertEquals("eu.untill:JTerminal:  # comment", new Coords("eu.untill:JTerminal:12.13  # comment").toString(""));
+		assertEquals("eu.untill:JTerminal  # comment", new Coords("eu.untill:JTerminal  # comment").toString(""));
+		assertEquals("eu.untill:JTerminal:12.13  # comment", new Coords("eu.untill:JTerminal  # comment").toString("12.13"));
+	}
 }
