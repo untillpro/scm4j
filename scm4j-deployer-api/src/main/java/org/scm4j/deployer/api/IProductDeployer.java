@@ -1,8 +1,8 @@
 package org.scm4j.deployer.api;
 
 import java.io.File;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface IProductDeployer {
 
@@ -14,13 +14,13 @@ public interface IProductDeployer {
 
 	File download(String artifactId, String version);
 
-	List<String> listProducts();
+	Set<String> listProducts();
 
-	List<String> refreshProducts();
+	Set<String> refreshProducts();
 
 	Map<String, Boolean> listProductVersions(String artifactId);
 
 	Map<String, Boolean> refreshProductVersions(String artifactId);
 
-	List<String> listDeployedProducts();
+	Set<String> listDeployedProducts();
 }
