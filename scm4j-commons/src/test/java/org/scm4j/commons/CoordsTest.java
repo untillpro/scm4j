@@ -51,6 +51,7 @@ public class CoordsTest {
 		assertEquals("com.myproject:c1:1.0.0#comment", dc("com.myproject:c1:1.0.0#comment").toString());
 		assertEquals("com.myproject:c1:1.0.0@ext # comment", dc("com.myproject:c1:1.0.0@ext # comment").toString());
 		assertEquals("com.myproject:c1::dfgd@ext # comment", dc("com.myproject:c1::dfgd@ext # comment").toString());
+		assertEquals("com.myproject:c1: # comment", dc("com.myproject:c1: # comment").toString());
 	}
 	
 	@Test
