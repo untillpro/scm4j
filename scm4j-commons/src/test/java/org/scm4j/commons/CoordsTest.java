@@ -92,7 +92,7 @@ public class CoordsTest {
 		assertEquals("eu.untill:JTerminal:12.13:abc@efg # comment", new Coords("eu.untill:JTerminal::abc@efg # comment").toString("12.13"));
 		assertEquals("eu.untill:JTerminal::abc@efg # comment", new Coords("eu.untill:JTerminal:12.13:abc@efg # comment").toString(""));
 		assertEquals("eu.untill:JTerminal::# comment", new Coords("eu.untill:JTerminal:12.13:# comment").toString(""));
-		assertEquals("eu.untill:JTerminal:  # comment", new Coords("eu.untill:JTerminal:12.13  # comment").toString(""));
+		assertEquals("eu.untill:JTerminal  # comment", new Coords("eu.untill:JTerminal:12.13  # comment").toString(""));
 		assertEquals("eu.untill:JTerminal  # comment", new Coords("eu.untill:JTerminal  # comment").toString(""));
 		assertEquals("eu.untill:JTerminal:12.13  # comment", new Coords("eu.untill:JTerminal  # comment").toString("12.13"));
 	}

@@ -111,11 +111,11 @@ public class Coords {
 
 	@Override
 	public String toString() {
-		return toString(version.toString());
+		return getName() + verPrefix + version.toString() + verSuffix + classifier + extension + commentStr;
 	}
 
 	public String toString(String versionStr) {
-		String str = verPrefix.isEmpty() && !versionStr.isEmpty() ? ":" : verPrefix;
+		String str = verPrefix.isEmpty() && !versionStr.isEmpty() ? ":" : verSuffix.isEmpty() && versionStr.isEmpty() ? "" : verPrefix;
 		str += versionStr + verSuffix + classifier + extension;
 		return getName() + str + commentStr;
 	}
