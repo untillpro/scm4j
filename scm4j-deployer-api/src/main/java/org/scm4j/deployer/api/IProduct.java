@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface IProduct {
     IProductStructure getProductStructure();
-    default List<IProduct> getDependentProducts() {
+    default List<String> getDependentProducts() {
         return Collections.emptyList();
     }
 }
