@@ -3,6 +3,7 @@ package org.scm4j.deployer.api;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface IProductDeployer {
 
@@ -22,5 +23,5 @@ public interface IProductDeployer {
 
 	Map<String, Boolean> refreshProductVersions(String artifactId);
 
-	List<String> listDeployedProducts();
+	Map<String, Set<String>> listDeployedProducts();
 }
