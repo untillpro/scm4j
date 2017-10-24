@@ -139,4 +139,8 @@ public class Coords {
 	public String getClassifier() {
 		return classifier;
 	}
+
+	public String toStringNoComment() {
+		return coordsStringNoComment;
+	}
 }

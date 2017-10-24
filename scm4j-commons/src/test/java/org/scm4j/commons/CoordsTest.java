@@ -96,4 +96,12 @@ public class CoordsTest {
 		assertEquals("eu.untill:JTerminal  # comment", new Coords("eu.untill:JTerminal  # comment").toString(""));
 		assertEquals("eu.untill:JTerminal:12.13  # comment", new Coords("eu.untill:JTerminal  # comment").toString("12.13"));
 	}
+	
+	@Test
+	public void testToStringNoComment() {
+		assertEquals("com.myproject:c1:1.0.0", dc("com.myproject:c1:1.0.0#comment").toStringNoComment());
+		assertEquals("com.myproject:c1:1.0.0@ext", dc("com.myproject:c1:1.0.0@ext # comment").toStringNoComment());
+		assertEquals("com.myproject:c1::dfgd@ext", dc("com.myproject:c1::dfgd@ext # comment").toStringNoComment());
+		assertEquals("com.myproject:c1:", dc("com.myproject:c1: # comment").toStringNoComment());
+	}
 }

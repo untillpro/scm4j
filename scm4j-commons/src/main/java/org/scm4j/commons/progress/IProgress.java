@@ -5,7 +5,7 @@ public interface IProgress extends AutoCloseable {
 
 	void reportStatus(String status);
 
-	void trace(String message);
-
 	void error(String message);
+	
+	IProgress startTrace(String startMessage, String endMessage);
 }

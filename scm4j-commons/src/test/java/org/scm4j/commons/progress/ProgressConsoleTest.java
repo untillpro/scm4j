@@ -12,6 +12,10 @@ import junit.framework.TestCase;
 
 public class ProgressConsoleTest extends TestCase {
 	
+	private static final String TRACE = "trace";
+	private static final String END_MESSAGE = "endMessage";
+	private static final String START_MESSAGE = "start message";
+
 	public void testMultiline() throws Exception{
 		System.out.println("***Multiline:");
 		ProgressConsole rpc1 = new ProgressConsole("Progress 1");
@@ -38,34 +42,29 @@ public class ProgressConsoleTest extends TestCase {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
 		try (IProgress pc = new ProgressConsole(mockedOut, 0, "Progress 1", ">>> ", "<<< ")) {
 			Mockito.verify(mockedOut).print("");
-			Mockito.verify(mockedOut).print(">>> Progress 1");
-			Mockito.verify(mockedOut).println();
+			Mockito.verify(mockedOut).println(">>> Progress 1");
 			Mockito.reset(mockedOut);
 			try (IProgress nestedPc = pc.createNestedProgress("Progress 2")) {
 				Mockito.verify(mockedOut).print("\t");
-				Mockito.verify(mockedOut).print(">>> Progress 2");
-				Mockito.verify(mockedOut).println();
+				Mockito.verify(mockedOut).println(">>> Progress 2");
 				Mockito.reset(mockedOut);
 			}
 			Mockito.verify(mockedOut).print("\t");
-			Mockito.verify(mockedOut).print("<<< Progress 2");
-			Mockito.verify(mockedOut).println();
+			Mockito.verify(mockedOut).println("<<< Progress 2");
 			Mockito.reset(mockedOut);
 		}
 		Mockito.verify(mockedOut).print("");
-		Mockito.verify(mockedOut).print("<<< Progress 1");
-		Mockito.verify(mockedOut).println();
+		Mockito.verify(mockedOut).println("<<< Progress 1");
 	}
 	
-	public void testColoring() throws Exception {
+	public void testError() throws Exception {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
 		Ansi.setEnabled(true);
 		try (IProgress pc = new ProgressConsole(mockedOut, 0, "Progress 1", ">>> ", "<<< ")) {
 			pc.error("error");
 			Mockito.verify(mockedOut).print("\t");
 			String test = ansi().fg(RED).a("error").reset().toString();
-			Mockito.verify(mockedOut).print(test);
-			Mockito.verify(mockedOut, Mockito.times(2)).println();
+			Mockito.verify(mockedOut).println(test);
 		}
 	}
 	
@@ -80,7 +79,40 @@ public class ProgressConsoleTest extends TestCase {
 	
 	public void testTrace() {
 		ProgressConsole pc = new ProgressConsole("Progress 1", ">>> ", "<<< ");
-		pc.trace("trace");
+		pc.trace(TRACE);
+		pc.close();
+	}
+	
+	public void testStartTrace() throws Exception {
+		PrintStream mockedOut = Mockito.mock(PrintStream.class);
+		ProgressConsole pc = new ProgressConsole(mockedOut, 0, "Progress 1", ">>> ", "<<< ");
+		try (IProgress pcTrace = pc.startTrace(START_MESSAGE, END_MESSAGE)) {
+			pcTrace.reportStatus(TRACE);
+			
+			Mockito.verify(mockedOut).print("");
+			Mockito.verify(mockedOut).print("\t");
+			Mockito.verify(mockedOut).print(START_MESSAGE);
+			Mockito.verify(mockedOut).print(TRACE);
+			assertTrue(pcTrace instanceof SingleLineProgressConsole);
+		}
+		Mockito.verify(mockedOut).println(END_MESSAGE);
+		pc.close();
+	}
+	
+	public void testEmpty() throws Exception {
+		PrintStream mockedOut = Mockito.mock(PrintStream.class);
+		try (IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "")) {
+			Mockito.verify(mockedOut).print("");
+			
+		}
+		Mockito.verifyNoMoreInteractions(mockedOut);
+		
+		ProgressConsole pc = new ProgressConsole();
+		assertEquals("", pc.getIndent());
+		assertEquals(0, pc.getLevel());
+		assertEquals("", pc.getName());
+		assertEquals(System.out, pc.getOut());
+		assertEquals("", pc.getOutdent());
 		pc.close();
 	}
 }

@@ -11,6 +11,8 @@ public class ProgressConsole implements IProgress {
 	private int level;
 	private String name;
 	private String indent;
+	private String outdent;
+	private PrintStream out;
 
 	public int getLevel() {
 		return level;
@@ -28,9 +30,6 @@ public class ProgressConsole implements IProgress {
 		return outdent;
 	}
 
-	private String outdent;
-	private PrintStream out;
-
 	public PrintStream getOut() {
 		return out;
 	}
@@ -42,6 +41,10 @@ public class ProgressConsole implements IProgress {
 	public ProgressConsole(String name) {
 		this(System.out, 0, name, "", "");
 	}
+	
+	public ProgressConsole() {
+		this(System.out, 0, "", "", "");
+	}
 
 	public ProgressConsole(PrintStream out, int level, String name, String indent, String outdent) {
 		this.out = out;
@@ -50,12 +53,9 @@ public class ProgressConsole implements IProgress {
 		this.indent = indent;
 		this.outdent = outdent;
 		indent(level);
-		print(indent + name);
-	}
-
-	protected void print(Object s) {
-		out.print(s.toString());
-		out.println();
+		if (!(indent + name).isEmpty()) {
+			out.println(indent + name);
+		}
 	}
 
 	protected void indent(int level) {
@@ -66,27 +66,32 @@ public class ProgressConsole implements IProgress {
 	public IProgress createNestedProgress(String name) {
 		return new ProgressConsole(out, level + 1, name, indent, outdent);
 	}
-
+	
 	@Override
 	public void reportStatus(String status) {
 		indent(level + 1);
-		print(status.replace("\r\n", "\r\n" + Strings.repeat("\t", level + 2)));
+		out.println(status);
 	}
 
 	@Override
 	public void close() {
 		level--;
-		reportStatus(outdent + name);
+		if (!(outdent + name).isEmpty()) {
+			reportStatus(outdent + name);
+		}
 	}
 
-	@Override
 	public void trace(String message) {
-
+		
 	}
 
 	@Override
 	public void error(String message) {
-		indent(level + 1);
-		print(ansi().fg(RED).a(message).reset());
+		reportStatus(ansi().fg(RED).a(message).reset().toString());
+	}
+
+	@Override
+	public IProgress startTrace(String startMessage, String endMessage) {
+		return new SingleLineProgressConsole(level + 1, out, startMessage, endMessage);
 	}
 }
