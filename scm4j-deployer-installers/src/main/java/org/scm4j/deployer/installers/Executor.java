@@ -80,7 +80,7 @@ public class Executor implements IComponentDeployer {
     @Override
     public void init(IDeploymentContext depCtx) {
         outputDir = new File(depCtx.getDeploymentURL().getFile());
-        params = depCtx.getParams().get(this.getClass().getName());
+        params = depCtx.getParams().get(this.getClass().getSimpleName());
         product = depCtx.getArtifacts().get(depCtx.getMainArtifact());
         mainArtifact = depCtx.getMainArtifact();
     }
