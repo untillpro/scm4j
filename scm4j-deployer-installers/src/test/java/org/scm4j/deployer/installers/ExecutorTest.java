@@ -27,7 +27,7 @@ public class ExecutorTest {
         depCtx = new DeploymentContext(MAIN_ARTIFACT);
         depCtx.setDeploymentURL(new URL("file://C:/unTill"));
         Map<String, Object> params = new HashMap<>();
-        Map<String,Map<String,Object>> mainParams = new HashMap<>();
+        Map<String, Map<String, Object>> mainParams = new HashMap<>();
         String param = " /silent /prepare_restart=1 /dir=\"C:/unTill\" /log=\"C:/unTill/silentsetup.txt\"";
         params.put("deploy", param);
         mainParams.put("Executor", params);

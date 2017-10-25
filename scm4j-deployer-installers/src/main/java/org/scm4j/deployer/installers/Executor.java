@@ -2,7 +2,6 @@ package org.scm4j.deployer.installers;
 
 import lombok.Data;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 import org.scm4j.deployer.installers.exception.EInstallationException;
