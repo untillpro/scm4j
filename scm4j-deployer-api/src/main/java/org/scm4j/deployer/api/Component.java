@@ -17,7 +17,7 @@ public class Component implements IComponent {
         this.ps = productStructure;
     }
 
-    public Action addAction(Class clazz) {
+    public Action addAction(String clazz) {
         Action action = new Action(clazz, this);
             if (this.installationProcedure == null) {
                 this.installationProcedure = new InstallationProcedure(new ArrayList<>());

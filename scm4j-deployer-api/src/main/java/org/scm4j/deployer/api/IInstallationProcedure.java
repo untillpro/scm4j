@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 public interface IInstallationProcedure {
     List<IAction> getActions();
-    default Map<Class, Map<String, Object>> getActionsParams() {
-        return getActions().stream().collect(Collectors.toMap(IAction::getInstallerClass, IAction::getParams));
+    default Map<String, Map<String, Object>> getActionsParams() {
+        return getActions().stream().collect(Collectors.toMap(IAction::getInstallerClassName, IAction::getParams));
     }
 }
