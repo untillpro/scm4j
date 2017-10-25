@@ -42,20 +42,20 @@ public class ProgressConsole implements IProgress {
 		this(System.out, 0, name, "", "");
 	}
 	
-	public ProgressConsole() {
-		this(System.out, 0, "", "", "");
-	}
-
 	public ProgressConsole(PrintStream out, int level, String name, String indent, String outdent) {
 		this.out = out;
 		this.name = name;
 		this.level = level;
 		this.indent = indent;
 		this.outdent = outdent;
-		indent(level);
 		if (!(indent + name).isEmpty()) {
+			indent(level);
 			out.println(indent + name);
 		}
+	}
+
+	public ProgressConsole() {
+		this("");
 	}
 
 	protected void indent(int level) {
@@ -81,17 +81,25 @@ public class ProgressConsole implements IProgress {
 		}
 	}
 
+	@Override
 	public void trace(String message) {
-		
+		out.print(message);
+		out.flush();
 	}
 
 	@Override
 	public void error(String message) {
 		reportStatus(ansi().fg(RED).a(message).reset().toString());
 	}
-
+	
 	@Override
-	public IProgress startTrace(String startMessage, String endMessage) {
-		return new SingleLineProgressConsole(level + 1, out, startMessage, endMessage);
+	public void startTrace(String message) {
+		indent(level + 1);
+		trace(message);
+	}
+	
+	@Override
+	public void endTrace(String message) {
+		out.println(message);
 	}
 }

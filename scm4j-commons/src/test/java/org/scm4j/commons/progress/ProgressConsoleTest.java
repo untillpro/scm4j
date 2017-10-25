@@ -78,23 +78,16 @@ public class ProgressConsoleTest extends TestCase {
 	}
 	
 	public void testTrace() {
-		ProgressConsole pc = new ProgressConsole("Progress 1", ">>> ", "<<< ");
-		pc.trace(TRACE);
-		pc.close();
-	}
-	
-	public void testStartTrace() throws Exception {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
 		ProgressConsole pc = new ProgressConsole(mockedOut, 0, "Progress 1", ">>> ", "<<< ");
-		try (IProgress pcTrace = pc.startTrace(START_MESSAGE, END_MESSAGE)) {
-			pcTrace.reportStatus(TRACE);
-			
-			Mockito.verify(mockedOut).print("");
-			Mockito.verify(mockedOut).print("\t");
-			Mockito.verify(mockedOut).print(START_MESSAGE);
-			Mockito.verify(mockedOut).print(TRACE);
-			assertTrue(pcTrace instanceof SingleLineProgressConsole);
-		}
+		pc.startTrace(START_MESSAGE);
+		pc.trace(TRACE);
+		pc.endTrace(END_MESSAGE);
+		Mockito.verify(mockedOut).print("");
+		Mockito.verify(mockedOut).println(">>> Progress 1");
+		Mockito.verify(mockedOut).print("\t");
+		Mockito.verify(mockedOut).print(START_MESSAGE);
+		Mockito.verify(mockedOut).print(TRACE);
 		Mockito.verify(mockedOut).println(END_MESSAGE);
 		pc.close();
 	}
@@ -102,8 +95,6 @@ public class ProgressConsoleTest extends TestCase {
 	public void testEmpty() throws Exception {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
 		try (IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "")) {
-			Mockito.verify(mockedOut).print("");
-			
 		}
 		Mockito.verifyNoMoreInteractions(mockedOut);
 		
