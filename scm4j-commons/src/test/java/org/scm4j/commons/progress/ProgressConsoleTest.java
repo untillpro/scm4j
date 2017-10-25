@@ -106,4 +106,19 @@ public class ProgressConsoleTest extends TestCase {
 		assertEquals("", pc.getOutdent());
 		pc.close();
 	}
+	
+	public void testNestedTraceFromEmpty() throws Exception {
+		PrintStream mockedOut = Mockito.mock(PrintStream.class);
+		IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "");
+		try (IProgress pcNested = pc.createNestedProgress("")) {
+			pcNested.startTrace(START_MESSAGE);
+			pcNested.trace(TRACE);
+			pcNested.endTrace(END_MESSAGE);
+		}
+		Mockito.verify(mockedOut).print("\t");
+		Mockito.verify(mockedOut).print(START_MESSAGE);
+		Mockito.verify(mockedOut).print(TRACE);
+		Mockito.verify(mockedOut).println(END_MESSAGE);
+		pc.close();
+	}
 }

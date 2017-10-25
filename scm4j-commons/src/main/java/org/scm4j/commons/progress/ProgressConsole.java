@@ -94,7 +94,7 @@ public class ProgressConsole implements IProgress {
 	
 	@Override
 	public void startTrace(String message) {
-		indent(level + 1);
+		indent(level + ((indent + name).isEmpty() ? 0 : 1));
 		trace(message);
 	}
 	
