@@ -27,10 +27,10 @@ public class ExecutorTest {
         depCtx = new DeploymentContext(MAIN_ARTIFACT);
         depCtx.setDeploymentURL(new URL("file://C:/unTill"));
         Map<String, Object> params = new HashMap<>();
-        Map<Class,Map<String,Object>> mainParams = new HashMap<>();
+        Map<String,Map<String,Object>> mainParams = new HashMap<>();
         String param = " /silent /prepare_restart=1 /dir=\"C:/unTill\" /log=\"C:/unTill/silentsetup.txt\"";
         params.put("deploy", param);
-        mainParams.put(Executor.class, params);
+        mainParams.put("Executor", params);
         depCtx.setParams(mainParams);
         Map<String, File> artifacts = new HashMap<>();
         File mainArtifactFolder = new File(TMP_FOLDER, MAIN_ARTIFACT + ".exe");
@@ -60,7 +60,7 @@ public class ExecutorTest {
     public void testInit() throws Exception {
         Executor exec = new Executor();
         exec.init(depCtx);
-        assertEquals(exec.getParams(), depCtx.getParams().get(exec.getClass()));
+        assertEquals(exec.getParams(), depCtx.getParams().get(exec.getClass().getName()));
         assertEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
         assertTrue(FileUtils.contentEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));
         assertEquals(exec.getOutputDir(), new File(depCtx.getDeploymentURL().getFile()));
