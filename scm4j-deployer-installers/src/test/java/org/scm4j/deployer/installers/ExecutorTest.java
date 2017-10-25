@@ -60,7 +60,7 @@ public class ExecutorTest {
     public void testInit() throws Exception {
         Executor exec = new Executor();
         exec.init(depCtx);
-        assertEquals(exec.getParams(), depCtx.getParams().get(exec.getClass().getName()));
+        assertEquals(exec.getParams(), depCtx.getParams().get(exec.getClass().getSimpleName()));
         assertEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
         assertTrue(FileUtils.contentEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));
         assertEquals(exec.getOutputDir(), new File(depCtx.getDeploymentURL().getFile()));
