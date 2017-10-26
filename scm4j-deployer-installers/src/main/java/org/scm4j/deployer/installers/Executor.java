@@ -2,6 +2,7 @@ package org.scm4j.deployer.installers;
 
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.scm4j.deployer.api.Command;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 import org.scm4j.deployer.installers.exception.EInstallationException;
@@ -49,7 +50,6 @@ public class Executor implements IComponentDeployer {
     @Override
     @SneakyThrows
     public void deploy() {
-//        Utils.unzip(TMP_DIR, product);
         Process p = createCmd(Command.DEPLOY).start();
         StreamGobbler streamGobbler = new StreamGobbler(p.getInputStream(), System.out::println);
         Executors.newSingleThreadExecutor().submit(streamGobbler);
