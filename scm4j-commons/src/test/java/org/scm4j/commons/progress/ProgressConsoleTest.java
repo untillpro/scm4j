@@ -121,4 +121,15 @@ public class ProgressConsoleTest extends TestCase {
 		Mockito.verify(mockedOut).println(END_MESSAGE);
 		pc.close();
 	}
+	
+	public void testCRLFEndent() throws Exception {
+		PrintStream mockedOut = Mockito.mock(PrintStream.class);
+		try (IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "")) {
+			try (IProgress pcNested = pc.createNestedProgress("")) {
+				pcNested.reportStatus("\r\ntest");
+				Mockito.verify(mockedOut).print("\t\t");
+				Mockito.verify(mockedOut).println("\r\n\t\t\ttest");
+			}
+		}
+	}
 }
