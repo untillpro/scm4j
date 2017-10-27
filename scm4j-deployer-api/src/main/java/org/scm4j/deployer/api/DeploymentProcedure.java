@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class InstallationProcedure implements IInstallationProcedure {
+public class DeploymentProcedure implements IDeploymentProcedure {
 
     final private List<IAction> actions;
 

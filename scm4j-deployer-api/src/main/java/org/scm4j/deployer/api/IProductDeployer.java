@@ -23,5 +23,5 @@ public interface IProductDeployer {
 
 	Map<String, Boolean> refreshProductVersions(String artifactId);
 
-	Map<String, Set<String>> listDeployedProducts();
+	Map listDeployedProducts();
 }

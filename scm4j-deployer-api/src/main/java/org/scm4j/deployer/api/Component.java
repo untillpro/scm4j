@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class Component implements IComponent {
 
     @Getter final private Artifact artifactCoords;
-    @Getter private IInstallationProcedure installationProcedure;
+    @Getter private IDeploymentProcedure installationProcedure;
     private final ProductStructure ps;
 
     public Component(String coords, ProductStructure productStructure) {
@@ -20,7 +20,7 @@ public class Component implements IComponent {
     public Action addAction(String clazz) {
         Action action = new Action(clazz, this);
             if (this.installationProcedure == null) {
-                this.installationProcedure = new InstallationProcedure(new ArrayList<>());
+                this.installationProcedure = new DeploymentProcedure(new ArrayList<>());
                 this.installationProcedure.getActions().add(action);
             } else {
                 this.installationProcedure.getActions().add(action);
