@@ -4,5 +4,5 @@ import org.eclipse.aether.artifact.Artifact;
 
 public interface IComponent {
     Artifact getArtifactCoords();
-    IDeploymentProcedure getInstallationProcedure();
+    IDeploymentProcedure getDeploymentProcedure();
 }
