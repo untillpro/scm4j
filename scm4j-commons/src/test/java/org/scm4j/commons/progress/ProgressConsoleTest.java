@@ -1,14 +1,13 @@
 package org.scm4j.commons.progress;
 
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.Color.RED;
-
-import java.io.PrintStream;
-
+import junit.framework.TestCase;
 import org.fusesource.jansi.Ansi;
 import org.mockito.Mockito;
 
-import junit.framework.TestCase;
+import java.io.PrintStream;
+
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
 
 public class ProgressConsoleTest extends TestCase {
 	
@@ -122,7 +121,7 @@ public class ProgressConsoleTest extends TestCase {
 		pc.close();
 	}
 	
-	public void testCRLFEndent() throws Exception {
+	public void testCRLFIndent() throws Exception {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
 		try (IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "")) {
 			try (IProgress pcNested = pc.createNestedProgress("")) {

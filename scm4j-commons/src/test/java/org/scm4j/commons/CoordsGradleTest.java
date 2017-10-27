@@ -5,19 +5,24 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class CoordsTest {
+public class CoordsGradleTest {
 
 	@Test
 	public void testCoords() {
 		try {
-			new Coords("");
+			new CoordsGradle("");
+			fail();
+		} catch (IllegalArgumentException e) {
+		}
+		try {
+			new CoordsGradle("no-artifactId");
 			fail();
 		} catch (IllegalArgumentException e) {
 		}
 	}
 
-	Coords dc(String coords) {
-		return new Coords(coords);
+	CoordsGradle dc(String coords) {
+		return new CoordsGradle(coords);
 	}
 
 	@Test
@@ -31,9 +36,9 @@ public class CoordsTest {
 	@Test
 	public void testExtension() {
 		assertEquals("", dc("com.myproject:c1").getExtension());
-		assertEquals("@", dc("com.myproject:c1@").getExtension());
-		assertEquals("@ext", dc("com.myproject:c1@ext#qw").getExtension());
-		assertEquals("@ext@", dc("com.myproject:c1@ext@#qw").getExtension());
+		assertEquals("", dc("com.myproject:c1@").getExtension());
+		assertEquals("ext", dc("com.myproject:c1@ext#qw").getExtension());
+		assertEquals("ext@", dc("com.myproject:c1@ext@#qw").getExtension());
 	}
 
 	@Test
@@ -45,13 +50,7 @@ public class CoordsTest {
 
 	@Test
 	public void testToSting() {
-		assertEquals("com.myproject:c1:1.0.0", dc("com.myproject:c1:1.0.0").toString());
-		assertEquals("com.myproject:  c1:1.0.0", dc("com.myproject:  c1:1.0.0").toString());
-		assertEquals("   com.myproject:  c1:1.0.0", dc("   com.myproject:  c1:1.0.0").toString());
-		assertEquals("com.myproject:c1:1.0.0#comment", dc("com.myproject:c1:1.0.0#comment").toString());
-		assertEquals("com.myproject:c1:1.0.0@ext # comment", dc("com.myproject:c1:1.0.0@ext # comment").toString());
 		assertEquals("com.myproject:c1::dfgd@ext # comment", dc("com.myproject:c1::dfgd@ext # comment").toString());
-		assertEquals("com.myproject:c1: # comment", dc("com.myproject:c1: # comment").toString());
 	}
 	
 	@Test
@@ -80,7 +79,7 @@ public class CoordsTest {
 	@Test
 	public void testEqualsAndHashCode() {
 		EqualsVerifier
-				.forClass(Coords.class)
+				.forClass(CoordsGradle.class)
 				.withOnlyTheseFields("coordsStringNoComment")
 				.usingGetClass()
 				.verify();
@@ -88,13 +87,13 @@ public class CoordsTest {
 
 	@Test
 	public void testVersionChange() {
-		assertEquals("eu.untill:JTerminal:12.13  # comment", new Coords("eu.untill:JTerminal:  # comment").toString("12.13"));
-		assertEquals("eu.untill:JTerminal:12.13:abc@efg # comment", new Coords("eu.untill:JTerminal::abc@efg # comment").toString("12.13"));
-		assertEquals("eu.untill:JTerminal::abc@efg # comment", new Coords("eu.untill:JTerminal:12.13:abc@efg # comment").toString(""));
-		assertEquals("eu.untill:JTerminal::# comment", new Coords("eu.untill:JTerminal:12.13:# comment").toString(""));
-		assertEquals("eu.untill:JTerminal  # comment", new Coords("eu.untill:JTerminal:12.13  # comment").toString(""));
-		assertEquals("eu.untill:JTerminal  # comment", new Coords("eu.untill:JTerminal  # comment").toString(""));
-		assertEquals("eu.untill:JTerminal:12.13  # comment", new Coords("eu.untill:JTerminal  # comment").toString("12.13"));
+		assertEquals("eu.untill:JTerminal:12.13  # comment", new CoordsGradle("eu.untill:JTerminal:  # comment").toString("12.13"));
+		assertEquals("eu.untill:JTerminal:12.13:abc@efg # comment", new CoordsGradle("eu.untill:JTerminal::abc@efg # comment").toString("12.13"));
+		assertEquals("eu.untill:JTerminal::abc@efg # comment", new CoordsGradle("eu.untill:JTerminal:12.13:abc@efg # comment").toString(""));
+		assertEquals("eu.untill:JTerminal::# comment", new CoordsGradle("eu.untill:JTerminal:12.13:# comment").toString(""));
+		assertEquals("eu.untill:JTerminal  # comment", new CoordsGradle("eu.untill:JTerminal:12.13  # comment").toString(""));
+		assertEquals("eu.untill:JTerminal  # comment", new CoordsGradle("eu.untill:JTerminal  # comment").toString(""));
+		assertEquals("eu.untill:JTerminal:12.13  # comment", new CoordsGradle("eu.untill:JTerminal  # comment").toString("12.13"));
 	}
 	
 	@Test
