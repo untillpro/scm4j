@@ -2,6 +2,7 @@ package org.scm4j.commons;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
+import org.scm4j.commons.coords.CoordsGradle;
 
 import static org.junit.Assert.*;
 

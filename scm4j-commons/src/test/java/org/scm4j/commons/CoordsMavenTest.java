@@ -2,6 +2,8 @@ package org.scm4j.commons;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
+import org.scm4j.commons.coords.CoordsGradle;
+import org.scm4j.commons.coords.CoordsMaven;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

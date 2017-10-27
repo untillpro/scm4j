@@ -1,6 +1,8 @@
-package org.scm4j.commons;
+package org.scm4j.commons.coords;
 
 import org.apache.commons.lang3.StringUtils;
+import org.scm4j.commons.CommentedString;
+import org.scm4j.commons.Version;
 
 public class CoordsMaven implements ICoords {
 
@@ -68,7 +70,7 @@ public class CoordsMaven implements ICoords {
 		if (!versionStr.isEmpty()) {
 			versionStr = ":" + versionStr;
 		}
-		return groupId + artifactId + extension + classifier + versionStr +  commentStr;
+		return getName() + extension + classifier + versionStr +  commentStr;
 	}
 
 	@Override
@@ -84,5 +86,10 @@ public class CoordsMaven implements ICoords {
 	@Override
 	public Version getVersion() {
 		return version;
+	}
+
+	@Override
+	public String getName() {
+		return groupId + artifactId;
 	}
 }

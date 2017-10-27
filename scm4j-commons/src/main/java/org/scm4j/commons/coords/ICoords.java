@@ -1,4 +1,6 @@
-package org.scm4j.commons;
+package org.scm4j.commons.coords;
+
+import org.scm4j.commons.Version;
 
 public interface ICoords {
 
@@ -17,4 +19,6 @@ public interface ICoords {
 	String getComment();
 
 	Version getVersion();
+
+	String getName();
 }

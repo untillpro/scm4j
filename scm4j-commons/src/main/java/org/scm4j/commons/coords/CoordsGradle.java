@@ -1,6 +1,8 @@
-package org.scm4j.commons;
+package org.scm4j.commons.coords;
 
 import org.apache.commons.lang3.StringUtils;
+import org.scm4j.commons.CommentedString;
+import org.scm4j.commons.Version;
 
 public class CoordsGradle implements ICoords {
 
@@ -78,6 +80,11 @@ public class CoordsGradle implements ICoords {
 	}
 
 	@Override
+	public String getName() {
+		return groupId + artifactId;
+	}
+
+	@Override
 	public String toString() {
 		return sourceStr;
 	}
@@ -88,7 +95,7 @@ public class CoordsGradle implements ICoords {
 		if (!versionStr.isEmpty() || ((!name.isEmpty() && !(classifier + extension).isEmpty()))) {
 			versionStr = ":" + versionStr;
 		}
-		return groupId + artifactId + versionStr + classifier + extension + commentStr;
+		return getName() + versionStr + classifier + extension + commentStr;
 	}
 
 	@Override
