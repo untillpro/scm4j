@@ -348,7 +348,7 @@ public abstract class VCSAbstractTest {
 		
 		assertTrue(logContainsMessage(null, FILE2_REMOVED_COMMIT_MESSAGE));
 	}
-	
+
 	@Test
 	public void testLog() throws Exception {
 		VCSCommit c1 = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
@@ -477,7 +477,7 @@ public abstract class VCSAbstractTest {
 		assertEquals(ethalonTag.getTagMessage(), TAG_MESSAGE_1);
 		assertEquals(ethalonTag.getTagName(), TAG_NAME_1);
 		assertEquals(ethalonTag.getAuthor(), initialCommit.getAuthor());
-		Thread.sleep(1000); // FIXME: testTagCreate() fails with no sleep(500) on Git
+		Thread.sleep(1000); // FIXME: testTagCreate() fails with no sleep(1000) on Git
 		try {
 			vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 			fail();
