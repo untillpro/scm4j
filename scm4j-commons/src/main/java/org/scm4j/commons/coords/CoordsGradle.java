@@ -2,9 +2,10 @@ package org.scm4j.commons.coords;
 
 import org.apache.commons.lang3.StringUtils;
 import org.scm4j.commons.CommentedString;
+import org.scm4j.commons.Coords;
 import org.scm4j.commons.Version;
 
-public class CoordsGradle implements ICoords {
+public class CoordsGradle implements Coords {
 
 	private final String sourceStr;
 	private final String artifactId;
@@ -17,7 +18,6 @@ public class CoordsGradle implements ICoords {
 
 	public CoordsGradle(String coordsString) {
 		sourceStr = coordsString;
-
 		CommentedString cs = new CommentedString(coordsString);
 		commentStr = cs.getComment();
 		coordsStringNoComment = cs.getStrNoComment();

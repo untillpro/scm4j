@@ -1,8 +1,6 @@
-package org.scm4j.commons.coords;
+package org.scm4j.commons;
 
-import org.scm4j.commons.Version;
-
-public interface ICoords {
+public interface Coords {
 
 	String getGroupId();
 
