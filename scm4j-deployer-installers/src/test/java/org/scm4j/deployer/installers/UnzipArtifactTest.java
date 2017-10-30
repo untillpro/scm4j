@@ -21,6 +21,7 @@ public class UnzipArtifactTest {
     private static final File ZIP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "test-zip");
     private static final File ZIP_FILE = new File(ZIP_FOLDER, "file.zip");
     private DeploymentContext depCtx;
+    private Map<String, Object> params;
 
     @Before
     public void setUp() throws Exception {
@@ -49,7 +50,7 @@ public class UnzipArtifactTest {
     @Test
     public void testDeploy() throws Exception {
         UnzipArtifact unzipArtifact = new UnzipArtifact();
-        unzipArtifact.init(depCtx);
+        unzipArtifact.init(depCtx, params);
         unzipArtifact.deploy();
         assertEquals(FileUtils.readFileToString(new File(ZIP_FOLDER, "mytext.txt"),"UTF-8"), "Test String");
     }
@@ -57,7 +58,7 @@ public class UnzipArtifactTest {
     @Test
     public void testInit() throws Exception {
         UnzipArtifact unzipArtifact = new UnzipArtifact();
-        unzipArtifact.init(depCtx);
+        unzipArtifact.init(depCtx, params);
         assertEquals(unzipArtifact.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName()));
         assertTrue(FileUtils.contentEquals(unzipArtifact.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName())));
         assertEquals(unzipArtifact.getOutputFile(), new File(depCtx.getDeploymentURL().getFile()));

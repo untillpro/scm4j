@@ -20,13 +20,14 @@ public class ExecutorTest {
     private static final File TMP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "scm4j-tmp-executor");
     private static final String MAIN_ARTIFACT = "unTill";
     private DeploymentContext depCtx;
+    private Map<String, Object> params;
 
     @Before
     public void setUp() throws Exception {
         TMP_FOLDER.mkdirs();
         depCtx = new DeploymentContext(MAIN_ARTIFACT);
         depCtx.setDeploymentURL(new URL("file://C:/unTill"));
-        Map<String, Object> params = new HashMap<>();
+        params = new HashMap<>();
         Map<String, Map<String, Object>> mainParams = new HashMap<>();
         String param = " /silent /prepare_restart=1 /dir=\"C:/unTill\" /log=\"C:/unTill/silentsetup.txt\"";
         params.put("deploy", param);
@@ -48,7 +49,7 @@ public class ExecutorTest {
     @Ignore
     public void testDeploy() throws Exception {
         Executor executor = new Executor();
-        executor.init(depCtx);
+        executor.init(depCtx, params);
         try {
             executor.deploy();
             fail();
@@ -59,7 +60,7 @@ public class ExecutorTest {
     @Test
     public void testInit() throws Exception {
         Executor exec = new Executor();
-        exec.init(depCtx);
+        exec.init(depCtx, params);
         assertEquals(exec.getParams(), depCtx.getParams().get(exec.getClass().getSimpleName()));
         assertEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
         assertTrue(FileUtils.contentEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));

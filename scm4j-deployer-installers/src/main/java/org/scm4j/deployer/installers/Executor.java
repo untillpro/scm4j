@@ -63,24 +63,10 @@ public class Executor implements IComponentDeployer {
 
     }
 
-    @SneakyThrows
-    private static boolean isProcessRunning(String mainArtifact) {
-        Process p = Runtime.getRuntime().exec("tasklist");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-                p.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            if (line.contains(mainArtifact)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
-    public void init(IDeploymentContext depCtx) {
+    public void init(IDeploymentContext depCtx, Map<String,Object> params) {
+        this.params = params;
         outputDir = new File(depCtx.getDeploymentURL().getFile());
-        params = depCtx.getParams().get(this.getClass().getSimpleName());
         product = depCtx.getArtifacts().get(depCtx.getMainArtifact());
         mainArtifact = depCtx.getMainArtifact();
     }
