@@ -2,7 +2,6 @@ package org.scm4j.commons.coords;
 
 import org.apache.commons.lang3.StringUtils;
 import org.scm4j.commons.CommentedString;
-import org.scm4j.commons.Coords;
 import org.scm4j.commons.Version;
 
 public class CoordsMaven implements Coords {
@@ -92,5 +91,30 @@ public class CoordsMaven implements Coords {
 	@Override
 	public String getName() {
 		return groupId + artifactId;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((coordsStringNoComment == null) ? 0 : coordsStringNoComment.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		CoordsMaven other = (CoordsMaven) obj;
+		if (coordsStringNoComment == null) {
+			if (other.coordsStringNoComment != null)
+				return false;
+		} else if (!coordsStringNoComment.equals(other.coordsStringNoComment))
+			return false;
+		return true;
 	}
 }

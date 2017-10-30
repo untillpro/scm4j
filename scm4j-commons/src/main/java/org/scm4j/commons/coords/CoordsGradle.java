@@ -2,7 +2,6 @@ package org.scm4j.commons.coords;
 
 import org.apache.commons.lang3.StringUtils;
 import org.scm4j.commons.CommentedString;
-import org.scm4j.commons.Coords;
 import org.scm4j.commons.Version;
 
 public class CoordsGradle implements Coords {

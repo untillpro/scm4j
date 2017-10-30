@@ -1,4 +1,6 @@
-package org.scm4j.commons;
+package org.scm4j.commons.coords;
+
+import org.scm4j.commons.Version;
 
 public interface Coords {
 
