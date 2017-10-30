@@ -12,7 +12,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 @Data
@@ -51,8 +53,6 @@ public class Executor implements IComponentDeployer {
     @SneakyThrows
     public void deploy() {
         Process p = createCmd(Command.DEPLOY).start();
-        StreamGobbler streamGobbler = new StreamGobbler(p.getInputStream(), System.out::println);
-        Executors.newSingleThreadExecutor().submit(streamGobbler);
         int exitCode = p.waitFor();
         if (exitCode != 0)
             throw new EInstallationException("Can't install " + product.getName());
@@ -76,21 +76,5 @@ public class Executor implements IComponentDeployer {
         return "Executor{" +
                 "product=" + product.getName() +
                 '}';
-    }
-
-    private static class StreamGobbler implements Runnable {
-        private InputStream inputStream;
-        private Consumer<String> consumer;
-
-        public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
-            this.inputStream = inputStream;
-            this.consumer = consumer;
-        }
-
-        @Override
-        public void run() {
-            new BufferedReader(new InputStreamReader(inputStream)).lines()
-                    .forEach(consumer);
-        }
     }
 }
