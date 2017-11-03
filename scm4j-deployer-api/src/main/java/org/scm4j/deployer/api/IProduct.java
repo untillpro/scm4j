@@ -13,6 +13,7 @@ public interface IProduct {
     int removeLegacyProduct();
 
     boolean isInstalled();
+
     default List<String> getDependentProducts() {
         return Collections.emptyList();
     }
