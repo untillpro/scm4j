@@ -9,9 +9,15 @@ import java.util.List;
 
 public interface IProduct {
     IProductStructure getProductStructure();
+
+    int removeLegacyProduct();
+
+    boolean isInstalled();
     default List<String> getDependentProducts() {
         return Collections.emptyList();
     }
+
+    @Deprecated
     @SneakyThrows
     default boolean isInstalled(String productServiceName) {
         Process p = Runtime.getRuntime().exec("sc queryex type=service");

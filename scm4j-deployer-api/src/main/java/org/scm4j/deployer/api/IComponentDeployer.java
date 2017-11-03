@@ -4,9 +4,9 @@ import java.util.Map;
 
 public interface IComponentDeployer {
 
-	void deploy();
+	int deploy();
 
-	void undeploy();
+	int undeploy();
 
 	void init(IDeploymentContext depCtx, Map<String,Object> params);
 

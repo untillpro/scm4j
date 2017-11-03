@@ -6,11 +6,11 @@ import java.util.Map;
 
 public interface IProductDeployer {
 
-	void deploy(String artifactId, String version);
+	int deploy(String artifactId, String version);
 
-	void undeploy(String artifactId, String version);
+	int undeploy(String artifactId, String version);
 
-	void upgrade(String artifactId, String version);
+	int upgrade(String artifactId, String version);
 
 	File download(String artifactId, String version);
 
@@ -22,5 +22,6 @@ public interface IProductDeployer {
 
 	Map<String, Boolean> refreshProductVersions(String artifactId);
 
-	Map listDeployedProducts();
+	Map<String, Object> listDeployedProducts();
+
 }
