@@ -75,7 +75,7 @@ public class ProgressConsoleTest extends TestCase {
 		assertEquals(pc.getOutdent(), "<<< ");
 		assertEquals(pc.getLevel(), 0);
 	}
-	
+
 	public void testTrace() {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
 		ProgressConsole pc = new ProgressConsole(mockedOut, 0, "Progress 1", ">>> ", "<<< ");
@@ -99,7 +99,7 @@ public class ProgressConsoleTest extends TestCase {
 		
 		ProgressConsole pc = new ProgressConsole();
 		assertEquals("", pc.getIndent());
-		assertEquals(0, pc.getLevel());
+		assertEquals(-1, pc.getLevel());
 		assertEquals("", pc.getName());
 		assertEquals(System.out, pc.getOut());
 		assertEquals("", pc.getOutdent());

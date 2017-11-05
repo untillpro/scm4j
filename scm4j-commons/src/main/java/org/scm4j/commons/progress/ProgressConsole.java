@@ -1,10 +1,11 @@
 package org.scm4j.commons.progress;
 
-import java.io.PrintStream;
 import com.google.common.base.Strings;
 
-import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import java.io.PrintStream;
+
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
 
 public class ProgressConsole implements IProgress {
 
@@ -55,7 +56,7 @@ public class ProgressConsole implements IProgress {
 	}
 
 	public ProgressConsole() {
-		this("");
+		this(System.out, -1, "", "", "");
 	}
 
 	protected void indent(int level) {
