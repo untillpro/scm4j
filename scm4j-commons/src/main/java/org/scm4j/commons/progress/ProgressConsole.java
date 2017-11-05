@@ -4,9 +4,6 @@ import com.google.common.base.Strings;
 
 import java.io.PrintStream;
 
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
-
 public class ProgressConsole implements IProgress {
 
 	private int level;
@@ -90,7 +87,7 @@ public class ProgressConsole implements IProgress {
 
 	@Override
 	public void error(String message) {
-		reportStatus(ansi().fg(RED).a(message).reset().toString());
+		reportStatus(message);
 	}
 	
 	@Override

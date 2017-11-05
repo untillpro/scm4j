@@ -1,13 +1,9 @@
 package org.scm4j.commons.progress;
 
 import junit.framework.TestCase;
-import org.fusesource.jansi.Ansi;
 import org.mockito.Mockito;
 
 import java.io.PrintStream;
-
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
 
 public class ProgressConsoleTest extends TestCase {
 	
@@ -58,12 +54,10 @@ public class ProgressConsoleTest extends TestCase {
 	
 	public void testError() throws Exception {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
-		Ansi.setEnabled(true);
 		try (IProgress pc = new ProgressConsole(mockedOut, 0, "Progress 1", ">>> ", "<<< ")) {
 			pc.error("error");
 			Mockito.verify(mockedOut).print("\t");
-			String test = ansi().fg(RED).a("error").reset().toString();
-			Mockito.verify(mockedOut).println(test);
+			Mockito.verify(mockedOut).println("error");
 		}
 	}
 	
