@@ -8,11 +8,8 @@ import java.util.Collections;
 import java.util.List;
 
 public interface IProduct {
+
     IProductStructure getProductStructure();
-
-    int removeLegacyProduct();
-
-    boolean queryLegacyProduct();
 
     default List<String> getDependentProducts() {
         return Collections.emptyList();
