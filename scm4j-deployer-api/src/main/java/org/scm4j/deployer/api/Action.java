@@ -7,12 +7,13 @@ import java.util.Map;
 
 public class Action implements IAction {
 
-    @Getter final private String installerClassName;
+    @Getter
+    final private Class<? extends IComponentDeployer> installerClass;
     @Getter private Map<String, Object> params;
     private final Component comp;
 
-    public Action(String installerClassName, Component comp) {
-        this.installerClassName = installerClassName;
+    public Action(Class<? extends IComponentDeployer> installerClass, Component comp) {
+        this.installerClass = installerClass;
         this.comp = comp;
     }
 
@@ -33,7 +34,7 @@ public class Action implements IAction {
     @Override
     public String toString() {
         return "Action{" +
-                "installerClass=" + installerClassName +
+                "installerClass=" + installerClass.getName() +
                 '}';
     }
 }
