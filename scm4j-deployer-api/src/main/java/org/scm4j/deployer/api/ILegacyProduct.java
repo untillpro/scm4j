@@ -6,7 +6,7 @@ import java.io.File;
 
 public interface ILegacyProduct {
 
-    Version getLegaceVersion();
+    Version getLegacyVersion();
 
     File getLegacyFile();
 
