@@ -9,6 +9,8 @@ public class VersionTest {
 
 	@Test
 	public void testMinor() {
+		assertEquals(new Version("11.21.31.41.-SNAPSHOT").getMinor(), "41");
+		assertEquals(new Version("11.21.31.41-SNAPSHOT").getMinor(), "31");
 		assertEquals(new Version("11.21.31.41").getMinor(), "31");
 		assertEquals(new Version("11.21.31").getMinor(), "21");
 		assertEquals(new Version("11.21").getMinor(), "11");
@@ -37,6 +39,7 @@ public class VersionTest {
 		assertEquals(new Version("11.21").toReleaseString(), "11.21");
 		assertEquals(new Version("11-SNAPSHOT").toReleaseString(), "11");
 		assertEquals(new Version("-SNAPSHOT").toReleaseString(), "-SNAPSHOT");
+		assertEquals(new Version("").toReleaseString(), "");
 
 	}
 
@@ -46,6 +49,7 @@ public class VersionTest {
 		assertEquals(new Version("11.21.31.41-SNAPSHOT").getSnapshot(), "-SNAPSHOT");
 		assertEquals(new Version("11.21.31.41-jkhkjhk").getSnapshot(), "");
 		assertEquals(new Version("-SNAPSHOT").getSnapshot(), "-SNAPSHOT");
+		assertEquals(new Version("").getSnapshot(), "");
 	}
 
 	@Test
