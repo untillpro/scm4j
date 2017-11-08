@@ -3,12 +3,12 @@ package org.scm4j.deployer.installers;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.scm4j.deployer.api.Command;
 import org.scm4j.deployer.api.DeploymentContext;
-import org.scm4j.deployer.installers.exception.EInstallationException;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +21,7 @@ public class ExecutorTest {
     private static final String MAIN_ARTIFACT = "unTill";
     private DeploymentContext depCtx;
     private Map<String, Object> params;
+    private Executor executor;
 
     @Before
     public void setUp() throws Exception {
@@ -29,42 +30,47 @@ public class ExecutorTest {
         depCtx.setDeploymentURL(new URL("file://C:/unTill"));
         params = new HashMap<>();
         Map<String, Map<String, Object>> mainParams = new HashMap<>();
-        String param = " /silent /prepare_restart=1 /dir=\"C:/unTill\" /log=\"C:/unTill/silentsetup.txt\"";
+        String param = " /silent /prepare_restart=1 /dir=\"$deploymentPath\"";
         params.put("deploy", param);
-        mainParams.put("Executor", params);
+        mainParams.put("org.scm4j.deployer.installers.Executor", params);
         depCtx.setParams(mainParams);
         Map<String, File> artifacts = new HashMap<>();
         File mainArtifactFolder = new File(TMP_FOLDER, MAIN_ARTIFACT + ".exe");
         mainArtifactFolder.createNewFile();
         artifacts.put(MAIN_ARTIFACT, mainArtifactFolder);
         depCtx.setArtifacts(artifacts);
+        executor = new Executor();
+        executor.init(depCtx, params);
     }
 
     @After
     public void tearDown() throws Exception {
-        depCtx = null;
         FileUtils.deleteDirectory(TMP_FOLDER);
     }
 
-    @Ignore
-    public void testDeploy() throws Exception {
-        Executor executor = new Executor();
-        executor.init(depCtx, params);
-        try {
-            executor.deploy();
-            fail();
-        } catch (EInstallationException e) {
+    @Test
+    public void testFailDeploy() throws Exception {
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            int x = executor.deploy();
+            assertNotEquals(0, x);
         }
     }
 
     @Test
-    public void testInit() throws Exception {
-        Executor exec = new Executor();
-        exec.init(depCtx, params);
-        assertEquals(exec.getParams(), depCtx.getParams().get(exec.getClass().getSimpleName()));
-        assertEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
-        assertTrue(FileUtils.contentEquals(exec.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));
-        assertEquals(exec.getOutputDir(), new File(depCtx.getDeploymentURL().getFile()));
+    public void testCreateCmd() throws Exception {
+        Method method = Executor.class.getDeclaredMethod("createCmd", Command.class);
+        method.setAccessible(true);
+        ProcessBuilder expected = (ProcessBuilder) method.invoke(executor, Command.DEPLOY);
+        ProcessBuilder actual = new ProcessBuilder("cmd", "/c", MAIN_ARTIFACT + ".exe", "/silent",
+                "/prepare_restart=1", "/dir=\"/unTill\"");
+        assertEquals(expected.command(), actual.command());
     }
 
+    @Test
+    public void testInit() throws Exception {
+        assertEquals(executor.getParams(), params);
+        assertEquals(executor.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
+        assertTrue(FileUtils.contentEquals(executor.getProduct(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));
+        assertEquals(executor.getOutputDir(), new File(depCtx.getDeploymentURL().getFile()));
+    }
 }

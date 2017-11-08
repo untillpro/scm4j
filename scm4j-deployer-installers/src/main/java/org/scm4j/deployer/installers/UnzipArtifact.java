@@ -21,7 +21,7 @@ public class UnzipArtifact implements IComponentDeployer {
     private File zipFile;
 
     @Override
-    public void deploy() {
+    public int deploy() {
         if (!outputFile.exists()) outputFile.mkdirs();
         byte[] buffer = new byte[1024];
         try {
@@ -44,14 +44,25 @@ public class UnzipArtifact implements IComponentDeployer {
                 ze = zis.getNextEntry();
             }
             zis.closeEntry();
+            return 0;
         } catch (IOException e) {
-            e.printStackTrace();
+            return 1;
         }
     }
 
     @Override
-    public void undeploy() {
+    public int undeploy() {
+        return 0;
+    }
 
+    @Override
+    public int stop() {
+        return 0;
+    }
+
+    @Override
+    public int start() {
+        return 0;
     }
 
     @Override

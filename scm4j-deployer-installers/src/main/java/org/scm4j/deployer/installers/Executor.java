@@ -2,25 +2,28 @@ package org.scm4j.deployer.installers;
 
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.scm4j.deployer.api.Command;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
-import org.scm4j.deployer.installers.exception.EInstallationException;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @Data
 public class Executor implements IComponentDeployer {
 
-    private static final File TMP_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-tmp-executor");
-    private static final String UNINSTALLER_NAME = "unins000.exe";
     private String mainArtifact;
     private File outputDir;
     private File product;
     private Map<String, Object> params;
 
     private ProcessBuilder createCmd(Command command) {
+        String deploymentPath = "$deploymentPath";
+        String uninstallerName = "unins000.exe";
         ProcessBuilder builder = new ProcessBuilder();
         List<String> cmds = new ArrayList<>();
         cmds.add("cmd");
@@ -32,11 +35,20 @@ public class Executor implements IComponentDeployer {
                 cmds.add(product.getName());
                 break;
             case UNDEPLOY:
-                cmds.add(UNINSTALLER_NAME);
+                cmds.add(uninstallerName);
                 break;
+            default:
+                throw new IllegalArgumentException();
         }
         Arrays.stream(params.get(command.name().toLowerCase()).toString().split("\\s(?=/)"))
                 .filter(str -> !str.equals(""))
+                .map(str -> {
+                    if (str.contains(deploymentPath)) {
+                        str = StringUtils.replace(str, deploymentPath, outputDir.toString());
+                        return StringUtils.replace(str, "\\", "/");
+                    }
+                    return str;
+                })
                 .forEach(cmds::add);
         builder.command(cmds);
         return builder;
@@ -44,20 +56,28 @@ public class Executor implements IComponentDeployer {
 
     @Override
     @SneakyThrows
-    public void deploy() {
+    public int deploy() {
         Process p = createCmd(Command.DEPLOY).start();
-        int exitCode = p.waitFor();
-        if (exitCode != 0)
-            throw new EInstallationException("Can't install " + product.getName());
+        return p.waitFor();
     }
 
     @Override
-    public void undeploy() {
-
+    public int undeploy() {
+        return 0;
     }
 
     @Override
-    public void init(IDeploymentContext depCtx, Map<String,Object> params) {
+    public int stop() {
+        return 0;
+    }
+
+    @Override
+    public int start() {
+        return 0;
+    }
+
+    @Override
+    public void init(IDeploymentContext depCtx, Map<String, Object> params) {
         this.params = params;
         outputDir = new File(depCtx.getDeploymentURL().getFile());
         product = depCtx.getArtifacts().get(depCtx.getMainArtifact());
@@ -66,7 +86,7 @@ public class Executor implements IComponentDeployer {
 
     @Override
     public String toString() {
-        return "Executor{" +
+        return "org.scm4j.deployer.installers.Executor{" +
                 "product=" + product.getName() +
                 '}';
     }

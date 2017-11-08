@@ -52,7 +52,16 @@ public class UnzipArtifactTest {
         UnzipArtifact unzipArtifact = new UnzipArtifact();
         unzipArtifact.init(depCtx, params);
         unzipArtifact.deploy();
-        assertEquals(FileUtils.readFileToString(new File(ZIP_FOLDER, "mytext.txt"),"UTF-8"), "Test String");
+        assertEquals(FileUtils.readFileToString(new File(ZIP_FOLDER, "mytext.txt"), "UTF-8"), "Test String");
+    }
+
+    @Test
+    public void testFail() throws Exception {
+        UnzipArtifact unzipArtifact = new UnzipArtifact();
+        unzipArtifact.init(depCtx, params);
+        FileUtils.forceDelete(unzipArtifact.getZipFile());
+        int res = unzipArtifact.deploy();
+        assertNotEquals(0, res);
     }
 
     @Test
