@@ -8,7 +8,7 @@ public class ApiTest {
 
     @Test
     public void testProductStructure() {
-        ProductStructure ps = ProductStructure.create()
+        ProductStructure ps = ProductStructure.create("file:/C:/smth")
                 .addComponent("123:123:123")
                 .addAction(IComponentDeployer.class)
                         .addParam("1", "2")
@@ -22,6 +22,7 @@ public class ApiTest {
                         .addParam("8", "9")
                 .parent()
                 .parent();
+        assertEquals(ps.getDefaultDeploymentURL().toString(), "file:/C:/smth");
         assertEquals(ps.getComponents().get(0).getArtifactCoords().toString(), "123:123:jar:123");
         assertEquals(ps.getComponents().get(1).getDeploymentProcedure().getActions().get(0).getInstallerClass(), IComponentDeployer.class);
         assertEquals(ps.getComponents().get(1).getDeploymentProcedure().getActions().get(0).getParams().get("8"), "9");
