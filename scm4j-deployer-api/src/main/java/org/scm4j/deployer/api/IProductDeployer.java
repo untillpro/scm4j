@@ -6,11 +6,11 @@ import java.util.Map;
 
 public interface IProductDeployer {
 
-	int deploy(String artifactId, String version);
+    DeploymentResult deploy(String artifactId, String version);
 
-	int undeploy(String artifactId, String version);
+    DeploymentResult undeploy(String artifactId, String version);
 
-	int upgrade(String artifactId, String version);
+    DeploymentResult upgrade(String artifactId, String version);
 
 	File download(String artifactId, String version);
 
