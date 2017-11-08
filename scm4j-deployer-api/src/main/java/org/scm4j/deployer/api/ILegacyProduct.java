@@ -1,6 +1,6 @@
 package org.scm4j.deployer.api;
 
-import org.eclipse.aether.version.Version;
+import org.scm4j.commons.Version;
 
 import java.io.File;
 
