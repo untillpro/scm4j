@@ -93,7 +93,7 @@ public class ProgressConsoleTest extends TestCase {
 		
 		ProgressConsole pc = new ProgressConsole();
 		assertEquals("", pc.getIndent());
-		assertEquals(-1, pc.getLevel());
+		assertEquals(0, pc.getLevel());
 		assertEquals("", pc.getName());
 		assertEquals(System.out, pc.getOut());
 		assertEquals("", pc.getOutdent());
@@ -120,9 +120,19 @@ public class ProgressConsoleTest extends TestCase {
 		try (IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "")) {
 			try (IProgress pcNested = pc.createNestedProgress("")) {
 				pcNested.reportStatus("\r\ntest");
-				Mockito.verify(mockedOut).print("\t\t");
-				Mockito.verify(mockedOut).println("\r\n\t\t\ttest");
+				Mockito.verify(mockedOut).print("\t");
+				Mockito.verify(mockedOut).println("\r\n\t\ttest");
 			}
 		}
+	}
+	
+	public void testReportStatusIfEmpty() throws Exception {
+		PrintStream mockedOut = Mockito.mock(PrintStream.class);
+		IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "");
+		pc.reportStatus(TRACE);
+		Mockito.verify(mockedOut).print(""); // 0 indent
+		Mockito.verify(mockedOut).println(TRACE);
+		Mockito.verifyNoMoreInteractions(mockedOut);
+		pc.close();
 	}
 }

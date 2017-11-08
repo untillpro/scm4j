@@ -53,7 +53,7 @@ public class ProgressConsole implements IProgress {
 	}
 
 	public ProgressConsole() {
-		this(System.out, -1, "", "", "");
+		this(System.out, 0, "", "", "");
 	}
 
 	protected void indent(int level) {
@@ -67,8 +67,8 @@ public class ProgressConsole implements IProgress {
 	
 	@Override
 	public void reportStatus(String status) {
-		indent(level + 1);
-		out.println(status.replace("\r\n", "\r\n" + Strings.repeat("\t", level + 2)));
+		indent(level + ((indent + name).isEmpty() ? 0 : 1));
+		out.println(status.replace("\r\n", "\r\n" + Strings.repeat("\t", level + ((indent + name).isEmpty() ? 1 : 2))));
 	}
 
 	@Override
