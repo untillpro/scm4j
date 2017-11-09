@@ -27,10 +27,10 @@ public class ExecutorTest {
     public void setUp() throws Exception {
         TMP_FOLDER.mkdirs();
         depCtx = new DeploymentContext(MAIN_ARTIFACT);
-        depCtx.setDeploymentURL(new URL("file://C:/unTill"));
+        depCtx.setDeploymentURL(new URL("file://C:/Program Files/unTill"));
         params = new HashMap<>();
         Map<String, Map<String, Object>> mainParams = new HashMap<>();
-        String param = " /silent /prepare_restart=1 /dir=\"$deploymentPath\"";
+        String param = " /silent /prepare_restart=1 /dir= $deploymentPath";
         params.put("deploy", param);
         mainParams.put("org.scm4j.deployer.installers.Executor", params);
         depCtx.setParams(mainParams);
@@ -62,7 +62,7 @@ public class ExecutorTest {
         method.setAccessible(true);
         ProcessBuilder expected = (ProcessBuilder) method.invoke(executor, Command.DEPLOY);
         ProcessBuilder actual = new ProcessBuilder("cmd", "/c", MAIN_ARTIFACT + ".exe", "/silent",
-                "/prepare_restart=1", "/dir=\"/unTill\"");
+                "/prepare_restart=1", "/dir=", "/Program Files/unTill");
         assertEquals(expected.command(), actual.command());
     }
 

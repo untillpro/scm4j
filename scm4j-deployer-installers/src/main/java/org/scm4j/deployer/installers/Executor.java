@@ -40,7 +40,7 @@ public class Executor implements IComponentDeployer {
             default:
                 throw new IllegalArgumentException();
         }
-        Arrays.stream(params.get(command.name().toLowerCase()).toString().split("\\s(?=/)"))
+        Arrays.stream(params.get(command.name().toLowerCase()).toString().split("\\s"))
                 .filter(str -> !str.equals(""))
                 .map(str -> {
                     if (str.contains(deploymentPath)) {
