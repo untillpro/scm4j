@@ -4,23 +4,23 @@ import java.util.Map;
 
 public interface IComponentDeployer {
 
-	int deploy();
+	DeploymentResult deploy();
 
-	int undeploy();
+	DeploymentResult undeploy();
 
 	/**
 	 * Trying to stop component, if can't then change startup type to disabled
 	 *
-	 * @return 0 if successful, other int if don't
+	 * @return DeploymentResult.OK successful, DeploymentResult.NEED_REBOOT need restart
 	 */
-	int stop();
+	DeploymentResult stop();
 
 	/**
 	 * Start component after upgrade and change startup type to automatic
 	 *
-	 * @return 0 if successful, other int if don't
+	 * @return DeploymentResult.OK successful
 	 */
-	int start();
+	DeploymentResult start();
 
 	void init(IDeploymentContext depCtx, Map<String,Object> params);
 
