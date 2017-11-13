@@ -3,7 +3,6 @@ package org.scm4j.deployer.installers;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.scm4j.deployer.api.Command;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
@@ -12,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @Data
 public class Executor implements IComponentDeployer {
@@ -20,58 +20,46 @@ public class Executor implements IComponentDeployer {
     private File outputDir;
     private File product;
     private Map<String, Object> params;
-
-    private ProcessBuilder createCmd(Command command) {
+    private Function<String, ProcessBuilder> cmdToProcessBuilder = str -> {
         String deploymentPath = "$deploymentPath";
-        String uninstallerName = "unins000.exe";
         ProcessBuilder builder = new ProcessBuilder();
         List<String> cmds = new ArrayList<>();
         cmds.add("cmd");
         cmds.add("/c");
-        switch (command) {
-            case DEPLOY:
-            case UPGRADE:
-                builder.directory(product.getParentFile());
-                cmds.add(product.getName());
-                break;
-            case UNDEPLOY:
-                cmds.add(uninstallerName);
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
-        Arrays.stream(params.get(command.name().toLowerCase()).toString().split("\\s(?=/)"))
-                .filter(str -> !str.equals(""))
-                .map(str -> {
-                    if (str.contains(deploymentPath)) {
-                        str = StringUtils.replace(str, deploymentPath, outputDir.toString());
-                        return StringUtils.replace(str, "\\", "/");
-                    }
-                    return str;
-                })
+        builder.directory(product.getParentFile());
+        cmds.add(product.getName());
+        Arrays.stream(params.get(str.toLowerCase()).toString().split("\\s(?=/)"))
+                .filter(param -> !param.equals(""))
+                .map(param -> StringUtils.replace(param, deploymentPath, outputDir.toString()))
+                .map(param -> StringUtils.replace(param, "\\", "/"))
                 .forEach(cmds::add);
         builder.command(cmds);
         return builder;
-    }
+    };
 
     @Override
     @SneakyThrows
     public int deploy() {
-        Process p = createCmd(Command.DEPLOY).start();
+        Process p = cmdToProcessBuilder.apply("deploy").start();
         return p.waitFor();
     }
 
     @Override
+    @SneakyThrows
     public int undeploy() {
-        return 0;
+        product = (File) params.get("uninstaller");
+        Process p = cmdToProcessBuilder.apply("undeploy").start();
+        return p.waitFor();
     }
 
     @Override
+    @SneakyThrows
     public int stop() {
         return 0;
     }
 
     @Override
+    @SneakyThrows
     public int start() {
         return 0;
     }
@@ -79,7 +67,7 @@ public class Executor implements IComponentDeployer {
     @Override
     public void init(IDeploymentContext depCtx, Map<String, Object> params) {
         this.params = params;
-        outputDir = new File(depCtx.getDeploymentURL().getFile());
+        outputDir = new File(depCtx.getDeploymentURL().getPath());
         product = depCtx.getArtifacts().get(depCtx.getMainArtifact());
         mainArtifact = depCtx.getMainArtifact();
     }

@@ -4,11 +4,9 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.scm4j.deployer.api.Command;
 import org.scm4j.deployer.api.DeploymentContext;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,9 +56,7 @@ public class ExecutorTest {
 
     @Test
     public void testCreateCmd() throws Exception {
-        Method method = Executor.class.getDeclaredMethod("createCmd", Command.class);
-        method.setAccessible(true);
-        ProcessBuilder expected = (ProcessBuilder) method.invoke(executor, Command.DEPLOY);
+        ProcessBuilder expected = executor.getCmdToProcessBuilder().apply("deploy");
         ProcessBuilder actual = new ProcessBuilder("cmd", "/c", MAIN_ARTIFACT + ".exe", "/silent",
                 "/prepare_restart=1", "/dir=/Program Files/unTill");
         assertEquals(expected.command(), actual.command());
