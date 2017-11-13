@@ -11,7 +11,7 @@ sourceCompatibility = JavaVersion.VERSION_1_7
 targetCompatibility = JavaVersion.VERSION_1_7
 
 group = 'org.scm4j'
-version = new File('version').text
+version = file('version').text
 
 dependencies {
 	testCompile 'junit:junit:4.12'
