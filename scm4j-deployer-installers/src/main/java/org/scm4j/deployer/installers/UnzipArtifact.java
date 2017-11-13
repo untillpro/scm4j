@@ -2,6 +2,7 @@ package org.scm4j.deployer.installers;
 
 import lombok.Cleanup;
 import lombok.Data;
+import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
@@ -21,7 +22,7 @@ public class UnzipArtifact implements IComponentDeployer {
     private File zipFile;
 
     @Override
-    public int deploy() {
+    public DeploymentResult deploy() {
         if (!outputFile.exists()) outputFile.mkdirs();
         byte[] buffer = new byte[1024];
         try {
@@ -44,25 +45,25 @@ public class UnzipArtifact implements IComponentDeployer {
                 ze = zis.getNextEntry();
             }
             zis.closeEntry();
-            return 0;
+            return DeploymentResult.OK;
         } catch (IOException e) {
-            return 1;
+            return DeploymentResult.FAILED;
         }
     }
 
     @Override
-    public int undeploy() {
-        return 0;
+    public DeploymentResult undeploy() {
+        return DeploymentResult.OK;
     }
 
     @Override
-    public int stop() {
-        return 0;
+    public DeploymentResult stop() {
+        return DeploymentResult.OK;
     }
 
     @Override
-    public int start() {
-        return 0;
+    public DeploymentResult start() {
+        return DeploymentResult.OK;
     }
 
     @Override

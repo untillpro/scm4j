@@ -11,7 +11,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ExecutorTest {
 
@@ -44,14 +45,6 @@ public class ExecutorTest {
     @After
     public void tearDown() throws Exception {
         FileUtils.deleteDirectory(TMP_FOLDER);
-    }
-
-    @Test
-    public void testFailDeploy() throws Exception {
-        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            int x = executor.deploy();
-            assertNotEquals(0, x);
-        }
     }
 
     @Test

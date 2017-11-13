@@ -3,6 +3,7 @@ package org.scm4j.deployer.installers;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
@@ -37,31 +38,36 @@ public class Executor implements IComponentDeployer {
         return builder;
     };
 
-    @Override
     @SneakyThrows
-    public int deploy() {
-        Process p = cmdToProcessBuilder.apply("deploy").start();
-        return p.waitFor();
+    private DeploymentResult executeCommand(String param) {
+        Process p = cmdToProcessBuilder.apply(param).start();
+        int code = p.waitFor();
+        return code == 0 ? DeploymentResult.OK : code == 1 || code == 777 ? DeploymentResult.NEED_REBOOT : DeploymentResult.FAILED;
     }
 
     @Override
     @SneakyThrows
-    public int undeploy() {
+    public DeploymentResult deploy() {
+        return executeCommand("deploy");
+    }
+
+    @Override
+    @SneakyThrows
+    public DeploymentResult undeploy() {
         product = (File) params.get("uninstaller");
-        Process p = cmdToProcessBuilder.apply("undeploy").start();
-        return p.waitFor();
+        return executeCommand("undeploy");
     }
 
     @Override
     @SneakyThrows
-    public int stop() {
-        return 0;
+    public DeploymentResult stop() {
+        return DeploymentResult.OK;
     }
 
     @Override
     @SneakyThrows
-    public int start() {
-        return 0;
+    public DeploymentResult start() {
+        return DeploymentResult.OK;
     }
 
     @Override

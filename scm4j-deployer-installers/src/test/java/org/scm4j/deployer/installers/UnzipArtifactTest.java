@@ -5,6 +5,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.scm4j.deployer.api.DeploymentContext;
+import org.scm4j.deployer.api.DeploymentResult;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,8 +61,8 @@ public class UnzipArtifactTest {
         UnzipArtifact unzipArtifact = new UnzipArtifact();
         unzipArtifact.init(depCtx, params);
         FileUtils.forceDelete(unzipArtifact.getZipFile());
-        int res = unzipArtifact.deploy();
-        assertNotEquals(0, res);
+        DeploymentResult res = unzipArtifact.deploy();
+        assertNotEquals(DeploymentResult.OK, res);
     }
 
     @Test
