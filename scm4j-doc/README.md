@@ -1,4 +1,4 @@
-# Software Configuration Management For Java (scm4j)
+# Software Configuration Management for Java (scm4j)
 
 `Configuration Management`: practice of handling changes systematically so that a system maintains its integrity over time
 
