@@ -5,9 +5,19 @@
 `scm4j`: set of components and tools written in Java and aimed to automate Software Configuration Management tasks
 
 
-# Tools & Components
-- [scm4j-releaser](../../../scm4j-releaser/blob/master/README.md): release automation tool. Automates such tasks as release branches creation, versions bumpings, dependency tracking, tags creation etc. for repository and all its `managable` dependencies. Both Git and Subversion VCS are supported
-- [scm4j-ai](../../../scm4j-ai/blob/master/README.md): deployer (deployment management)
+# scm4j-releaser
+
+Automates such tasks as release branches creation, versions bumpings, dependency tracking, tags creation etc. for repository and all its `managable` dependencies. Both Git and Subversion VCS are supported
+
+Components:
+- [scm4j-releaser](../../../scm4j-releaser/blob/master/README.md): 
+
+# scm4j-deployer
+
+Build and deploy products using components from maven repositories
+
+Components
+  - [scm4j-deployer-engine](../../../scm4j-deployer-engine/blob/master/README.md)
 
 # Links
 - [Configuration Management](https://en.wikipedia.org/wiki/Configuration_management)
