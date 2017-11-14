@@ -18,6 +18,8 @@ Build and deploy products using components from maven repositories
 
 Components
   - [scm4j-deployer-engine](../../../scm4j-deployer-engine/blob/master/README.md)
+  - [scm4j-deployer-api](../../../scm4j-deployer-api/blob/master/README.md)
+  - [scm4j-deployer-installers](../../../scm4j-deployer-installers/blob/master/README.md)
 
 # Links
 - [Configuration Management](https://en.wikipedia.org/wiki/Configuration_management)
