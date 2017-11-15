@@ -19,21 +19,21 @@ public class Executor implements IComponentDeployer {
 
     private String mainArtifact;
     private File outputDir;
-    private File executable;
+    private File defaultExecutable;
     private Map<String, Object> params;
     
     
     protected ProcessBuilder getBuilder(String str, File executableFile) {
     	if(null == executableFile) {
-    		executableFile = executable;
+    		executableFile = defaultExecutable;
     	}
         String deploymentPath = "$deploymentPath";
         ProcessBuilder builder = new ProcessBuilder();
         List<String> cmds = new ArrayList<>();
         cmds.add("cmd");
         cmds.add("/c");
-        builder.directory(executable.getParentFile());
-        cmds.add(executable.getName());
+        builder.directory(defaultExecutable.getParentFile());
+        cmds.add(defaultExecutable.getName());
         Arrays.stream(params.get(str.toLowerCase()).toString().split("\\s(?=/)"))
                 .filter(param -> !param.equals(""))
                 .map(param -> StringUtils.replace(param, deploymentPath, outputDir.toString()))
@@ -84,18 +84,48 @@ public class Executor implements IComponentDeployer {
         return DeploymentResult.OK;
     }
 
+    public void init(IDeploymentContext depCtx) {
+    	
+    }
+    
     @Override
     public void init(IDeploymentContext depCtx, Map<String, Object> params) {
         this.params = params;
         outputDir = new File(depCtx.getDeploymentURL().getPath());
-        executable = depCtx.getArtifacts().get(depCtx.getMainArtifact());
+        defaultExecutable = depCtx.getArtifacts().get(depCtx.getMainArtifact());
         mainArtifact = depCtx.getMainArtifact();
     }
+    
+    Executor setUndeployCmd(String cmd) {
+    	return this;
+    }
+    
+    Executor setDeployCmd(String cmd) {
+    	return this;
+    }
+    
+    
+    /**
+     * @param executable $deploymentPath can be used
+     * @return
+     */
+    Executor setDeployExecutableName(String executable) {
+    	return this;
+    }
+    
+    Executor setStopExecutableName(String executable) {
+    	return this;
+    }
+    
+    Executor setUndeployExecutableName(String executable) {
+    	return this;
+    }
+    
 
     @Override
     public String toString() {
         return "org.scm4j.deployer.installers.Executor{" +
-                "product=" + executable.getName() +
+                "product=" + defaultExecutable.getName() +
                 '}';
     }
 }

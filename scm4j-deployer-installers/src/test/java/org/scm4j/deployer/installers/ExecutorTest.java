@@ -58,8 +58,8 @@ public class ExecutorTest {
     @Test
     public void testInit() throws Exception {
         assertEquals(executor.getParams(), params);
-        assertEquals(executor.getExecutable(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
-        assertTrue(FileUtils.contentEquals(executor.getExecutable(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));
+        assertEquals(executor.getDefaultExecutable(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
+        assertTrue(FileUtils.contentEquals(executor.getDefaultExecutable(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));
         assertEquals(executor.getOutputDir(), new File(depCtx.getDeploymentURL().getFile()));
     }
 }
