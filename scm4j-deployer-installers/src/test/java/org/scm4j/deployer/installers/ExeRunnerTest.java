@@ -14,13 +14,13 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ExecutorTest {
+public class ExeRunnerTest {
 
     private static final File TMP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "scm4j-tmp-executor");
     private static final String MAIN_ARTIFACT = "unTill";
     private DeploymentContext depCtx;
     private Map<String, Object> params;
-    private Executor executor;
+    private ExeRunner executor;
 
     @Before
     public void setUp() throws Exception {
@@ -31,14 +31,14 @@ public class ExecutorTest {
         Map<String, Map<String, Object>> mainParams = new HashMap<>();
         String param = " /silent /prepare_restart=1 /dir=$deploymentPath";
         params.put("deploy", param);
-        mainParams.put("org.scm4j.deployer.installers.Executor", params);
+        mainParams.put("org.scm4j.deployer.installers.ExeRunner", params);
         depCtx.setParams(mainParams);
         Map<String, File> artifacts = new HashMap<>();
         File mainArtifactFolder = new File(TMP_FOLDER, MAIN_ARTIFACT + ".exe");
         mainArtifactFolder.createNewFile();
         artifacts.put(MAIN_ARTIFACT, mainArtifactFolder);
         depCtx.setArtifacts(artifacts);
-        executor = new Executor();
+        executor = new ExeRunner();
         executor.init(depCtx, params);
     }
 

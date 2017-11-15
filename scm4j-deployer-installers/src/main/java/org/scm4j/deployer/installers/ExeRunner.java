@@ -1,31 +1,30 @@
 package org.scm4j.deployer.installers;
 
+import lombok.Data;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
+import org.scm4j.deployer.api.DeploymentResult;
+import org.scm4j.deployer.api.IComponentDeployer;
+import org.scm4j.deployer.api.IDeploymentContext;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-import org.scm4j.deployer.api.DeploymentResult;
-import org.scm4j.deployer.api.IComponentDeployer;
-import org.scm4j.deployer.api.IDeploymentContext;
-
-import lombok.Data;
-import lombok.SneakyThrows;
-
 @Data
-public class Executor implements IComponentDeployer {
+public class ExeRunner implements IComponentDeployer {
 
     private String mainArtifact;
     private File outputDir;
     private File defaultExecutable;
     private Map<String, Object> params;
-    
-    
-    protected ProcessBuilder getBuilder(String str, File executableFile) {
-    	if(null == executableFile) {
-    		executableFile = defaultExecutable;
+
+
+    private ProcessBuilder getBuilder(String str, File executableFile) {
+        if (null == executableFile) {
+            executableFile = defaultExecutable;
     	}
         String deploymentPath = "$deploymentPath";
         ProcessBuilder builder = new ProcessBuilder();
@@ -42,10 +41,10 @@ public class Executor implements IComponentDeployer {
         builder.command(cmds);
         return builder;    	
     }
-    
-    protected ProcessBuilder getBuilder(String str) {
-    	return getBuilder(str, null);
-    };
+
+    ProcessBuilder getBuilder(String str) {
+        return getBuilder(str, null);
+    }
 
     @SneakyThrows
     private DeploymentResult executeCommand(String param, File executableFile) {
@@ -95,36 +94,36 @@ public class Executor implements IComponentDeployer {
         defaultExecutable = depCtx.getArtifacts().get(depCtx.getMainArtifact());
         mainArtifact = depCtx.getMainArtifact();
     }
-    
-    Executor setUndeployCmd(String cmd) {
-    	return this;
+
+    ExeRunner setUndeployCmd(String cmd) {
+        return this;
     }
-    
-    Executor setDeployCmd(String cmd) {
-    	return this;
+
+    ExeRunner setDeployCmd(String cmd) {
+        return this;
     }
     
     
     /**
      * @param executable $deploymentPath can be used
-     * @return
+     * @return ExeRunner with specified param
      */
-    Executor setDeployExecutableName(String executable) {
-    	return this;
+    ExeRunner setDeployExecutableName(String executable) {
+        return this;
     }
-    
-    Executor setStopExecutableName(String executable) {
-    	return this;
+
+    ExeRunner setStopExecutableName(String executable) {
+        return this;
     }
-    
-    Executor setUndeployExecutableName(String executable) {
-    	return this;
+
+    ExeRunner setUndeployExecutableName(String executable) {
+        return this;
     }
     
 
     @Override
     public String toString() {
-        return "org.scm4j.deployer.installers.Executor{" +
+        return "org.scm4j.deployer.installers.ExeRunner{" +
                 "product=" + defaultExecutable.getName() +
                 '}';
     }
