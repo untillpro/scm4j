@@ -9,7 +9,7 @@ public interface IComponentDeployer {
 	DeploymentResult undeploy();
 
 	/**
-	 * Trying to stop component, if can't then change startup type to disabled
+	 * All running services should be stopped and removed, if not possible - disabled (this is a must)
 	 *
 	 * @return DeploymentResult.OK successful, DeploymentResult.NEED_REBOOT need restart
 	 */
