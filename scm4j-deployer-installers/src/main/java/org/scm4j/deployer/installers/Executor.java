@@ -1,18 +1,18 @@
 package org.scm4j.deployer.installers;
 
-import lombok.Data;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
-import org.scm4j.deployer.api.DeploymentResult;
-import org.scm4j.deployer.api.IComponentDeployer;
-import org.scm4j.deployer.api.IDeploymentContext;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+
+import org.apache.commons.lang3.StringUtils;
+import org.scm4j.deployer.api.DeploymentResult;
+import org.scm4j.deployer.api.IComponentDeployer;
+import org.scm4j.deployer.api.IDeploymentContext;
+
+import lombok.Data;
+import lombok.SneakyThrows;
 
 @Data
 public class Executor implements IComponentDeployer {
@@ -21,7 +21,9 @@ public class Executor implements IComponentDeployer {
     private File outputDir;
     private File product;
     private Map<String, Object> params;
-    private Function<String, ProcessBuilder> cmdToProcessBuilder = str -> {
+    
+    
+    protected ProcessBuilder getBuilder(String str) {
         String deploymentPath = "$deploymentPath";
         ProcessBuilder builder = new ProcessBuilder();
         List<String> cmds = new ArrayList<>();
@@ -40,7 +42,7 @@ public class Executor implements IComponentDeployer {
 
     @SneakyThrows
     private DeploymentResult executeCommand(String param) {
-        Process p = cmdToProcessBuilder.apply(param).start();
+        Process p = getBuilder(param).start();
         int code = p.waitFor();
         return code == 0 ? DeploymentResult.OK : code == 1 || code == 777 ? DeploymentResult.NEED_REBOOT : DeploymentResult.FAILED;
     }

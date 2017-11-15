@@ -49,7 +49,7 @@ public class ExecutorTest {
 
     @Test
     public void testCreateCmd() throws Exception {
-        ProcessBuilder expected = executor.getCmdToProcessBuilder().apply("deploy");
+        ProcessBuilder expected = executor.getBuilder("deploy");
         ProcessBuilder actual = new ProcessBuilder("cmd", "/c", MAIN_ARTIFACT + ".exe", "/silent",
                 "/prepare_restart=1", "/dir=/Program Files/unTill");
         assertEquals(expected.command(), actual.command());
