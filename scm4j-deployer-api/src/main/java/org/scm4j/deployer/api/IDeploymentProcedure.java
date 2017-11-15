@@ -4,4 +4,5 @@ import java.util.List;
 
 public interface IDeploymentProcedure {
     List<IAction> getActions();
+//    List<IComponentDeployer> getComponentDeployers();
 }
