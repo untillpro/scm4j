@@ -100,6 +100,7 @@ public class ExeRunner implements IComponentDeployer {
         return DeploymentResult.OK;
     }
 
+    @Override
     public void init(IDeploymentContext depCtx) {
         mainArtifact = depCtx.getMainArtifact();
         outputDir = new File(depCtx.getDeploymentURL().getPath());
