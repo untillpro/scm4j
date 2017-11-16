@@ -115,22 +115,22 @@ public class ExeRunner implements IComponentDeployer {
         mainArtifact = depCtx.getMainArtifact();
     }
 
-    ExeRunner setUndeployCmd(String cmd) {
+    public ExeRunner setUndeployCmd(String cmd) {
         this.undeployCmd = cmd;
         return this;
     }
 
-    ExeRunner setDeployCmd(String cmd) {
+    public ExeRunner setDeployCmd(String cmd) {
         this.deployCmd = cmd;
         return this;
     }
 
-    ExeRunner setStopExecutableName(String executable) {
+    public ExeRunner setStopExecutableName(String executable) {
         this.stopExecutable = new File(outputDir, executable);
         return this;
     }
 
-    ExeRunner setUndeployExecutableName(String executable) {
+    public ExeRunner setUndeployExecutableName(String executable) {
         this.undeployExecutable = new File(outputDir, executable);
         return this;
     }
