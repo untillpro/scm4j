@@ -2,7 +2,10 @@ package org.scm4j.deployer.api;
 
 import org.junit.Test;
 
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ApiTest {
 
@@ -10,6 +13,32 @@ public class ApiTest {
     public void testProductStructure() {
         ProductStructure ps = ProductStructure.create("file:/C:/smth")
                 .addComponent("123:123:123")
+                .addComponentDeployer(new IComponentDeployer() {
+                    @Override
+                    public DeploymentResult deploy() {
+                        return null;
+                    }
+
+                    @Override
+                    public DeploymentResult undeploy() {
+                        return null;
+                    }
+
+                    @Override
+                    public DeploymentResult stop() {
+                        return null;
+                    }
+
+                    @Override
+                    public DeploymentResult start() {
+                        return null;
+                    }
+
+                    @Override
+                    public void init(IDeploymentContext depCtx, Map<String, Object> params) {
+
+                    }
+                })
                 .addAction(IComponentDeployer.class)
                         .addParam("1", "2")
                         .addParam("3", "4")
@@ -29,5 +58,6 @@ public class ApiTest {
         assertEquals(ps.getComponents().get(1).getArtifactCoords().toString(), "345:345:jar:345");
         assertEquals(ps.getComponents().get(0).getDeploymentProcedure().getActions().get(0).getParams().get("3"), "4");
         assertEquals(ps.getComponents().get(0).getDeploymentProcedure().getActions().get(1).getInstallerClass(), IComponentDeployer.class);
+        assertNotNull(ps.getComponents().get(0).getDeploymentProcedure().getComponentDeployers().get(0));
     }
 }
