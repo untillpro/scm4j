@@ -8,5 +8,6 @@ import java.util.List;
 public class DeploymentProcedure implements IDeploymentProcedure {
 
     final private List<IAction> actions;
+    final private List<IComponentDeployer> componentDeployers;
 
 }
