@@ -12,7 +12,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class ExeRunner implements IComponentDeployer {
 
@@ -30,8 +29,6 @@ public class ExeRunner implements IComponentDeployer {
     private String undeployCmd;
     @Getter
     private String deployCmd;
-    @Deprecated
-    private Map<String, Object> params;
 
     ProcessBuilder getBuilder(String str, File executableFile) {
         if (null == executableFile) {
@@ -105,15 +102,6 @@ public class ExeRunner implements IComponentDeployer {
         mainArtifact = depCtx.getMainArtifact();
         outputDir = new File(depCtx.getDeploymentURL().getPath());
         defaultExecutable = depCtx.getArtifacts().get(mainArtifact);
-    }
-
-    @Override
-    @Deprecated
-    public void init(IDeploymentContext depCtx, Map<String, Object> params) {
-        this.params = params;
-        outputDir = new File(depCtx.getDeploymentURL().getPath());
-        defaultExecutable = depCtx.getArtifacts().get(depCtx.getMainArtifact());
-        mainArtifact = depCtx.getMainArtifact();
     }
 
     public ExeRunner setUndeployCmd(String cmd) {

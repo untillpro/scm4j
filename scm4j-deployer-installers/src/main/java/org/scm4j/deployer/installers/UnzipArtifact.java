@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -67,7 +66,7 @@ public class UnzipArtifact implements IComponentDeployer {
     }
 
     @Override
-    public void init(IDeploymentContext depCtx, Map<String, Object> params) {
+    public void init(IDeploymentContext depCtx) {
         outputFile = new File(depCtx.getDeploymentURL().getFile());
         zipFile = depCtx.getArtifacts().get(depCtx.getMainArtifact());
     }
