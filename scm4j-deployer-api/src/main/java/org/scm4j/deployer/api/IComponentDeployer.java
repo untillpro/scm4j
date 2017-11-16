@@ -1,7 +1,5 @@
 package org.scm4j.deployer.api;
 
-import java.util.Map;
-
 public interface IComponentDeployer {
 
     DeploymentResult deploy();
@@ -23,7 +21,4 @@ public interface IComponentDeployer {
     DeploymentResult start();
 
     void init(IDeploymentContext depCtx);
-
-    @Deprecated
-    void init(IDeploymentContext depCtx, Map<String, Object> params);
 }

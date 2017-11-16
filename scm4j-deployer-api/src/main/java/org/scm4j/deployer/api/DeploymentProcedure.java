@@ -7,7 +7,6 @@ import java.util.List;
 @Data
 public class DeploymentProcedure implements IDeploymentProcedure {
 
-    final private List<IAction> actions;
     final private List<IComponentDeployer> componentDeployers;
 
 }
