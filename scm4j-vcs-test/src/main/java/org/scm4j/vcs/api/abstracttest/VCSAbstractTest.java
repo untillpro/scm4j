@@ -522,11 +522,7 @@ public abstract class VCSAbstractTest {
 		List<VCSTag> tags = vcs.getTags();
 		verifyMocks();
 		assertTrue(tags.size() == 2);
-		
-		VCSTag actualTag1 = tags.get(0);
-		VCSTag actualTag2 = tags.get(1);
-		assertEquals(actualTag1, ethalonTag1);
-		assertEquals(actualTag2, ethalonTag2);
+		tags.containsAll(Arrays.asList(ethalonTag1, ethalonTag2));
 	}
 
 	@Test
