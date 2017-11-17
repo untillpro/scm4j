@@ -10,7 +10,7 @@ public interface ILegacyProduct {
 
     File getLegacyFile();
 
-    int removeLegacyProduct();
+    DeploymentResult removeLegacyProduct();
 
     boolean queryLegacyProduct();
 
