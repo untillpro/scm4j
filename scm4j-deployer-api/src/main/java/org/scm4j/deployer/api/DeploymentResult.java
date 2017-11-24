@@ -7,5 +7,5 @@ public enum DeploymentResult {
     OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED, FAILED;
     @Getter
     @Setter
-    private IProduct product;
+    private String productCoords;
 }

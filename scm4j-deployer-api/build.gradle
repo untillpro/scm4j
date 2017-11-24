@@ -23,16 +23,8 @@ group = 'org.scm4j'
 version = file('version').text.trim()
 
 dependencies {
-
-	def s = '[ \t]*', w = '[^:#@\\s]+?'
-	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
-		match, group, name, version, classifier, ext, configuration ->
-			add(configuration ?: 'compile', "$group:$name:${version ?: 'latest.integration'}${classifier ?: ''}${ext ?: ''}", {
-				changing = true
-			})
-	}
-
 	compileOnly 'org.projectlombok:lombok:1.16.18'
+
 	compile 'org.apache.commons:commons-lang3:3.5'
 	compile 'org.apache.maven.resolver:maven-resolver-api:1.1.0'
 
