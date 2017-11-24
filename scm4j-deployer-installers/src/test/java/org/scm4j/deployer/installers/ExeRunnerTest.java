@@ -1,6 +1,7 @@
 package org.scm4j.deployer.installers;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +21,7 @@ public class ExeRunnerTest {
     private static final String MAIN_ARTIFACT = "unTill";
     private DeploymentContext depCtx;
     private ExeRunner executor;
+    private File mainArtifactFolder;
 
     @Before
     public void setUp() throws Exception {
@@ -29,7 +31,7 @@ public class ExeRunnerTest {
         String deployCmd = " /silent /prepare_restart=1 /dir=$deploymentPath";
         String undeployCmd = " /verysilent";
         Map<String, File> artifacts = new HashMap<>();
-        File mainArtifactFolder = new File(TMP_FOLDER, MAIN_ARTIFACT + ".exe");
+        mainArtifactFolder = new File(TMP_FOLDER, MAIN_ARTIFACT + ".exe");
         mainArtifactFolder.createNewFile();
         artifacts.put(MAIN_ARTIFACT, mainArtifactFolder);
         depCtx.setArtifacts(artifacts);
@@ -48,11 +50,12 @@ public class ExeRunnerTest {
     @Test
     public void testCreateCmd() throws Exception {
         ProcessBuilder expected = executor.getBuilder(executor.getDeployCmd());
-        ProcessBuilder actual = new ProcessBuilder("cmd", "/c", MAIN_ARTIFACT + ".exe", "/silent",
+        ProcessBuilder actual = new ProcessBuilder(StringUtils
+                .replace(mainArtifactFolder.getPath(), "\\", "/"), "/silent",
                 "/prepare_restart=1", "/dir=/Program Files/unTill");
         ProcessBuilder undeployCmd = executor.getBuilder(executor.getUndeployCmd(), executor.getUndeployExecutable());
-        ProcessBuilder undeployBuilder = new ProcessBuilder("cmd", "/c", "unins000.exe", "/verysilent");
-        assertEquals(TMP_FOLDER, expected.directory());
+        ProcessBuilder undeployBuilder = new ProcessBuilder(StringUtils.
+                replace(executor.getUndeployExecutable().getPath(), "\\", "/"), "/verysilent");
         assertEquals(expected.command(), actual.command());
         assertEquals(executor.getUndeployExecutable().getParentFile(), executor.getOutputDir());
         assertEquals(undeployCmd.command(), undeployBuilder.command());

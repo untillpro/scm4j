@@ -37,10 +37,7 @@ public class ExeRunner implements IComponentDeployer {
         String deploymentPath = "$deploymentPath";
         ProcessBuilder builder = new ProcessBuilder();
         List<String> cmds = new ArrayList<>();
-        cmds.add("cmd");
-        cmds.add("/c");
-        builder.directory(executableFile.getParentFile());
-        cmds.add(executableFile.getName());
+        cmds.add(StringUtils.replace(executableFile.getPath(), "\\", "/"));
         Arrays.stream(str.split("\\s(?=/)"))
                 .filter(cmd -> !cmd.equals(""))
                 .map(cmd -> StringUtils.replace(cmd, deploymentPath, outputDir.toString()))
