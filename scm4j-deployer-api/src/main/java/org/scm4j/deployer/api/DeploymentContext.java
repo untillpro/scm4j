@@ -12,7 +12,6 @@ public class DeploymentContext implements IDeploymentContext {
     private String mainArtifact;
     private Map<String, File> artifacts;
     private URL deploymentURL;
-    private Map<String, Map<String,Object>> params;
 
     public DeploymentContext(String mainArtifact) {
         this.mainArtifact = mainArtifact;

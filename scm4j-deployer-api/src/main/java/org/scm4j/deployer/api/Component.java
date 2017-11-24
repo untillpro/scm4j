@@ -8,8 +8,10 @@ import java.util.ArrayList;
 
 public class Component implements IComponent {
 
-    @Getter final private Artifact artifactCoords;
-    @Getter private IDeploymentProcedure deploymentProcedure;
+    @Getter
+    final private Artifact artifactCoords;
+    @Getter
+    private IDeploymentProcedure deploymentProcedure;
     private final ProductStructure ps;
 
     public Component(String coords, ProductStructure productStructure) {
@@ -17,15 +19,11 @@ public class Component implements IComponent {
         this.ps = productStructure;
     }
 
-    public Action addAction(Class<? extends IComponentDeployer> clazz) {
-        Action action = new Action(clazz, this);
-            if (this.deploymentProcedure == null) {
-                this.deploymentProcedure = new DeploymentProcedure(new ArrayList<>());
-                this.deploymentProcedure.getActions().add(action);
-            } else {
-                this.deploymentProcedure.getActions().add(action);
-            }
-            return action;
+    public Component addComponentDeployer(IComponentDeployer deployer) {
+        if (this.deploymentProcedure == null)
+            this.deploymentProcedure = new DeploymentProcedure(new ArrayList<>());
+        this.deploymentProcedure.getComponentDeployers().add(deployer);
+        return this;
     }
 
     public ProductStructure parent() {
