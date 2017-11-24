@@ -11,4 +11,4 @@ Changes in readme
 
 # Terms
 
-...  
+# How It Works
