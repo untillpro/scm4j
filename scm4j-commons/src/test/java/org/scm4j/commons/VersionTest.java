@@ -67,7 +67,7 @@ public class VersionTest {
 		} catch (IllegalArgumentException e) {
 		}
 		try {
-			assertThat(version.toPreviousMinor(), null);
+			assertNull(version.toPreviousMinor());
 			fail();
 		} catch (IllegalArgumentException e) {
 		}

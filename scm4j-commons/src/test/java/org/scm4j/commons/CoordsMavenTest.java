@@ -113,7 +113,7 @@ public class CoordsMavenTest {
 		assertEquals("com.myproject:c1:12.13 #comment", new CoordsMaven("com.myproject:c1 #comment").toString("12.13"));
 		assertEquals("com.myproject:c1:12.13 #comment", new CoordsMaven("com.myproject:c1: #comment").toString("12.13"));
 		assertEquals("com.myproject:c1::12.13 #comment", new CoordsMaven("com.myproject:c1:: #comment").toString("12.13"));
-		assertEquals("com.myproject:c1:::12.13 #comment", new CoordsMaven("com.myproject:c1::: #comment").toString("12.13"));;
+		assertEquals("com.myproject:c1:::12.13 #comment", new CoordsMaven("com.myproject:c1::: #comment").toString("12.13"));
 		assertEquals("com.myproject:c1:ext:class:12.13 #comment", new CoordsMaven("com.myproject:c1:ext:class:-SNAPSHOT #comment").toString("12.13"));
 	}
 

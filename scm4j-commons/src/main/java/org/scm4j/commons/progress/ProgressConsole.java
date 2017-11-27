@@ -7,10 +7,10 @@ import java.io.PrintStream;
 public class ProgressConsole implements IProgress {
 
 	private int level;
-	private String name;
-	private String indent;
-	private String outdent;
-	private PrintStream out;
+	private final String name;
+	private final String indent;
+	private final String outdent;
+	private final PrintStream out;
 
 	public int getLevel() {
 		return level;
@@ -56,7 +56,7 @@ public class ProgressConsole implements IProgress {
 		this(System.out, 0, "", "", "");
 	}
 
-	protected void indent(int level) {
+	private void indent(int level) {
 		out.print(Strings.repeat("\t", level));
 	}
 
