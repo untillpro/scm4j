@@ -87,8 +87,8 @@ public class ProgressConsoleTest extends TestCase {
 	
 	public void testEmpty() throws Exception {
 		PrintStream mockedOut = Mockito.mock(PrintStream.class);
-		try (IProgress pc = new ProgressConsole(mockedOut, 0, "", "", "")) {
-		}
+		IProgress ipc = new ProgressConsole(mockedOut, 0, "", "", "");
+		ipc.close();
 		Mockito.verifyNoMoreInteractions(mockedOut);
 		
 		ProgressConsole pc = new ProgressConsole();

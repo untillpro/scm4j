@@ -1,12 +1,10 @@
 package org.scm4j.commons.coords;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.scm4j.commons.Version;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
+import static org.junit.Assert.*;
 
 public class CoordsMavenTest {
 
@@ -113,7 +111,7 @@ public class CoordsMavenTest {
 		assertEquals("com.myproject:c1:12.13 #comment", new CoordsMaven("com.myproject:c1 #comment").toString("12.13"));
 		assertEquals("com.myproject:c1:12.13 #comment", new CoordsMaven("com.myproject:c1: #comment").toString("12.13"));
 		assertEquals("com.myproject:c1::12.13 #comment", new CoordsMaven("com.myproject:c1:: #comment").toString("12.13"));
-		assertEquals("com.myproject:c1:::12.13 #comment", new CoordsMaven("com.myproject:c1::: #comment").toString("12.13"));;
+		assertEquals("com.myproject:c1:::12.13 #comment", new CoordsMaven("com.myproject:c1::: #comment").toString("12.13"));
 		assertEquals("com.myproject:c1:ext:class:12.13 #comment", new CoordsMaven("com.myproject:c1:ext:class:-SNAPSHOT #comment").toString("12.13"));
 	}
 
