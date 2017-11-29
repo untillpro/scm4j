@@ -10,23 +10,9 @@ import java.util.List;
 public class ProductStructure implements IProductStructure {
 
     @Getter
-    private final URL defaultDeploymentURL;
-    @Getter private List<IComponent> components;
-
-    private ProductStructure(URL defaultDeploymentURL) {
-        this.defaultDeploymentURL = defaultDeploymentURL;
-    }
-
-    public Component addComponent(String component) {
-        Component comp = new Component(component, this);
-        if (this.components == null) {
-            this.components = new ArrayList<>();
-            this.components.add(comp);
-        } else {
-            this.components.add(comp);
-        }
-        return comp;
-    }
+    private URL defaultDeploymentURL;
+    @Getter
+    private List<IComponent> components;
 
     public static ProductStructure create(String defaultDeploymentURL) {
         URL url;
@@ -35,9 +21,21 @@ public class ProductStructure implements IProductStructure {
         } catch (MalformedURLException e) {
             throw new RuntimeException("Invalid URL: " + defaultDeploymentURL);
         }
-        return new ProductStructure(url);
+        ProductStructure ps = new ProductStructure();
+        ps.defaultDeploymentURL = url;
+        ps.components = new ArrayList<>();
+        return ps;
     }
 
+    public static ProductStructure createEmptyStructure() {
+        return new ProductStructure();
+    }
+
+    public Component addComponent(String component) {
+        Component comp = new Component(component, this);
+        this.components.add(comp);
+        return comp;
+    }
 }
 
 
