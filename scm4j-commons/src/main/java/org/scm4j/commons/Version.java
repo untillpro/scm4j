@@ -137,7 +137,12 @@ public class Version {
 		return isEmpty;
 	}
 	
+	@Deprecated
 	public boolean isExact() {
+		return isLocked();
+	}
+	
+	public boolean isLocked() {
 		return isSemantic && !isSnapshot();
 	}
 
