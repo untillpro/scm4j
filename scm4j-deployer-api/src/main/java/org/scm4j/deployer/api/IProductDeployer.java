@@ -10,8 +10,6 @@ public interface IProductDeployer {
 
     DeploymentResult undeploy(String artifactId, String version);
 
-    DeploymentResult upgrade(String artifactId, String version);
-
 	File download(String artifactId, String version);
 
 	List<String> listProducts();
