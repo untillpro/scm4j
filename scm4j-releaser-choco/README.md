@@ -1,4 +1,19 @@
-﻿## Summary
+## Files puprose
+- scm4j-releaser-choco.nuget
+  - describes the source, name, dependencies and other stuff for releaser
+- update.ps1
+  - detects the latest version (from url) and writes it to chocolateyinstall.ps1 so exact version will be downloaded and installed then 
+- chocolatey(un)install.ps1
+  - (un)install script
+- chocolateybeforemodify.ps1
+  - stop services etc
+## How it works
+- releaser depends on jre 8 and groovy 4.1.13
+- run.groovy with exact version is zipped and uploaded to github
+- update.ps1 script detects the latest version and writes it to chocoinstall.ps1
+- chocoinstall.ps1 downloads the exact version and uzips it
+ 
+## Summary
 How do I create packages? See https://chocolatey.org/docs/create-packages
 
 If you are submitting packages to the community feed (https://chocolatey.org)
