@@ -178,12 +178,12 @@ public class VersionTest {
 	}
 
 	@Test
-	public void testIsExact() {
-		assertFalse(new Version("11.23.31.41-SNAPSHOT").isExact());
-		assertTrue(new Version("11.23.31.41").isExact());
-		assertFalse(new Version("-SNAPSHOT").isExact());
-		assertFalse(new Version("").isExact());
-		assertFalse(new Version("dfgdfg-SNAPSHOT").isExact());
+	public void testIsLocked() {
+		assertFalse(new Version("11.23.31.41-SNAPSHOT").isLocked());
+		assertTrue(new Version("11.23.31.41").isLocked());
+		assertFalse(new Version("-SNAPSHOT").isLocked());
+		assertFalse(new Version("").isLocked());
+		assertFalse(new Version("dfgdfg-SNAPSHOT").isLocked());
 	}
 
 	@Test
