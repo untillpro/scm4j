@@ -14,6 +14,9 @@ public class ProductStructure implements IProductStructure {
     @Getter
     private List<IComponent> components;
 
+    private ProductStructure() {
+    }
+
     public static ProductStructure create(String defaultDeploymentURL) {
         URL url;
         try {
