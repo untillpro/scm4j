@@ -9,7 +9,6 @@ import org.scm4j.deployer.api.DeploymentResult;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -28,7 +27,7 @@ public class UnzipArtifactTest {
         ZIP_FOLDER.mkdirs();
         ZIP_FILE.createNewFile();
         depCtx = new DeploymentContext(ZIP_FILE.getName());
-        depCtx.setDeploymentURL(new URL("file://" + ZIP_FOLDER.getPath()));
+        depCtx.setDeploymentPath(ZIP_FOLDER.getPath());
         Map<String, File> artifacts = new HashMap<>();
         artifacts.put(ZIP_FILE.getName(), ZIP_FILE);
         depCtx.setArtifacts(artifacts);
@@ -70,6 +69,6 @@ public class UnzipArtifactTest {
         unzipArtifact.init(depCtx);
         assertEquals(unzipArtifact.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName()));
         assertTrue(FileUtils.contentEquals(unzipArtifact.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName())));
-        assertEquals(unzipArtifact.getOutputFile(), new File(depCtx.getDeploymentURL().getFile()));
+        assertEquals(unzipArtifact.getOutputFile(), new File(depCtx.getDeploymentPath()));
     }
 }

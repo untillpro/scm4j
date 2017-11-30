@@ -97,7 +97,7 @@ public class ExeRunner implements IComponentDeployer {
     @Override
     public void init(IDeploymentContext depCtx) {
         mainArtifact = depCtx.getMainArtifact();
-        outputDir = new File(depCtx.getDeploymentURL().getPath());
+        outputDir = new File(depCtx.getDeploymentPath());
         defaultExecutable = depCtx.getArtifacts().get(mainArtifact);
     }
 
