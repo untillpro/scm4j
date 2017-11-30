@@ -1,10 +1,8 @@
 package org.scm4j.deployer.api;
 
-import java.net.URL;
+public interface IDeployedProduct {
 
-public interface IDeployedProduct extends IProduct {
-
-    URL getDeploymentUrl();
+    String getDeploymentUrlToString();
     String getProductVersion();
 
 }
