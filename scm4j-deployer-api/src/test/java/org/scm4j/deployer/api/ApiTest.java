@@ -2,6 +2,8 @@ package org.scm4j.deployer.api;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -40,9 +42,12 @@ public class ApiTest {
                 .parent()
                 .addComponent("345:345:345")
                 .parent();
-        assertEquals(ps.getDefaultDeploymentURL().toString(), "file:/C:/smth");
+        assertEquals(ps.getDefaultDeploymentPath(), "file:/C:/smth");
         assertEquals(ps.getComponents().get(0).getArtifactCoords().toString(), "123:123:jar:123");
         assertEquals(ps.getComponents().get(1).getArtifactCoords().toString(), "345:345:jar:345");
         assertNotNull(ps.getComponents().get(0).getDeploymentProcedure().getComponentDeployers().get(0));
+        ps = ProductStructure.createEmptyStructure();
+        assertEquals(ps.getDefaultDeploymentPath(), "");
+        assertEquals(ps.getComponents(), Collections.emptyList());
     }
 }

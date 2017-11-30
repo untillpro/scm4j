@@ -8,7 +8,7 @@ import java.util.Map;
 public class Action implements IAction {
 
     @Getter
-    final private Class<? extends IComponentDeployer> installerClass;
+    private final Class<? extends IComponentDeployer> installerClass;
     @Getter private Map<String, Object> params;
     private final Component comp;
 

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class Component implements IComponent {
 
     @Getter
-    final private Artifact artifactCoords;
+    private final Artifact artifactCoords;
     @Getter
     private IDeploymentProcedure deploymentProcedure;
     private final ProductStructure ps;
@@ -35,5 +35,20 @@ public class Component implements IComponent {
         return "Component{" +
                 "artifactCoords=" + artifactCoords +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Component component = (Component) o;
+
+        return artifactCoords.equals(component.artifactCoords);
+    }
+
+    @Override
+    public int hashCode() {
+        return artifactCoords.hashCode();
     }
 }

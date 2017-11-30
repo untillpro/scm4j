@@ -2,36 +2,31 @@ package org.scm4j.deployer.api;
 
 import lombok.Getter;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ProductStructure implements IProductStructure {
 
     @Getter
-    private URL defaultDeploymentURL;
+    private String defaultDeploymentPath;
     @Getter
     private List<IComponent> components;
 
-    private ProductStructure() {
+    private ProductStructure(String defaultDeploymentPath) {
+        this.defaultDeploymentPath = defaultDeploymentPath;
     }
 
-    public static ProductStructure create(String defaultDeploymentURL) {
-        URL url;
-        try {
-            url = new URL(defaultDeploymentURL);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Invalid URL: " + defaultDeploymentURL);
-        }
-        ProductStructure ps = new ProductStructure();
-        ps.defaultDeploymentURL = url;
+    public static ProductStructure create(String defaultDeploymentPath) {
+        ProductStructure ps = new ProductStructure(defaultDeploymentPath);
         ps.components = new ArrayList<>();
         return ps;
     }
 
     public static ProductStructure createEmptyStructure() {
-        return new ProductStructure();
+        ProductStructure ps = new ProductStructure("");
+        ps.components = Collections.emptyList();
+        return ps;
     }
 
     public Component addComponent(String component) {
