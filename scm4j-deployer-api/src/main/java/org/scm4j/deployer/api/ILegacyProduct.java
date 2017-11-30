@@ -11,6 +11,6 @@ public interface ILegacyProduct {
      *
      * @return the deployed product or null if not found
      */
-    IDeployedProduct queryLegacyDeployedProduct();
+    <T extends IDeployedProduct> T queryLegacyDeployedProduct();
 
 }
