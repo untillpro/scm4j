@@ -1,11 +1,10 @@
 package org.scm4j.deployer.api;
 
 import java.io.File;
-import java.util.Map;
 
 public interface IDownloader {
 
-    Map<String, IDeploymentContext> getDepCtx();
+    <T extends IDeploymentContext> T getContextByArtifactId(String artifactId);
 
     File getProductFile(String coords) throws Exception;
 
