@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface IDownloader {
 
-    Map<String, ? extends IDeploymentContext> getDepCtx();
+    Map<String, ? super IDeploymentContext> getDepCtx();
 
     File getProductFile(String coords) throws Exception;
 
