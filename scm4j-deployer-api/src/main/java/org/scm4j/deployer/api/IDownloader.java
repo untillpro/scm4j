@@ -7,6 +7,8 @@ public interface IDownloader {
 
     Map<String, ? extends IDeploymentContext> getDepCtx();
 
-    File getProductFile();
+    File getProductFile(String coords);
+
+    IProduct getProduct();
 
 }
