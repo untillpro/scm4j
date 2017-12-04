@@ -16,5 +16,3 @@ How to use this module
 # Under the Hood
 
 How it works: interactions of core classes
-
-
