@@ -7,8 +7,14 @@ TBD
 
 # Overview
 
-Changes in readme
+What it is
 
-# Terms
+# Usage
 
-# How It Works
+How to use this module
+
+# Under the Hood
+
+How it works: interactions of core classes
+
+
