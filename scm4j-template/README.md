@@ -11,8 +11,8 @@ What it is
 
 # Usage
 
-How to use this module
+How to use this
 
 # Under the Hood
 
-How it works: interactions of core classes
+How it works: interactions of core classes/modules
