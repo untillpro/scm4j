@@ -49,5 +49,7 @@ public class ApiTest {
         ps = ProductStructure.createEmptyStructure();
         assertEquals(ps.getDefaultDeploymentPath(), "");
         assertEquals(ps.getComponents(), Collections.emptyList());
+        assertEquals(new Component("123:123:123", ps), new Component("123:123:123", ps));
+        assertEquals(new Component("123:123:123", ps).toString(), "Component{artifactCoords=123:123:jar:123}");
     }
 }

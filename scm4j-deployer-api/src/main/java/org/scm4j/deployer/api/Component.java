@@ -32,9 +32,7 @@ public class Component implements IComponent {
 
     @Override
     public String toString() {
-        return "Component{" +
-                "artifactCoords=" + artifactCoords +
-                '}';
+        return "Component{artifactCoords=" + artifactCoords + '}';
     }
 
     @Override
