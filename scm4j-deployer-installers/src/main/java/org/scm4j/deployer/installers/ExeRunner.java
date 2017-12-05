@@ -23,6 +23,8 @@ public class ExeRunner implements IComponentDeployer {
     private File defaultExecutable;
     @Getter
     private File undeployExecutable;
+    private String undeployExecutableName;
+    private String stopExecutableName;
     @Getter
     private File stopExecutable;
     @Getter
@@ -75,11 +77,12 @@ public class ExeRunner implements IComponentDeployer {
     @Override
     @SneakyThrows
     public DeploymentResult undeploy() {
-        if (undeployCmd != null && undeployExecutable != null)
+        if (undeployCmd != null && undeployExecutableName != null) {
+            undeployExecutable = new File(outputDir, undeployExecutableName);
             return executeCommand(undeployCmd, undeployExecutable);
-        else
+        } else
             throw new EParamsNotFoundException(String.format("Can't find params for this operation cmd = %s executable= %s",
-                    undeployCmd, undeployExecutable));
+                    undeployCmd, undeployExecutableName));
     }
 
     @Override
@@ -113,12 +116,12 @@ public class ExeRunner implements IComponentDeployer {
     }
 
     public ExeRunner setStopExecutableName(String executable) {
-        this.stopExecutable = new File(outputDir, executable);
+        this.stopExecutableName = executable;
         return this;
     }
 
     public ExeRunner setUndeployExecutableName(String executable) {
-        this.undeployExecutable = new File(outputDir, executable);
+        this.undeployExecutableName = executable;
         return this;
     }
 

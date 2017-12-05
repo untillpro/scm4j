@@ -52,13 +52,7 @@ public class ExeRunnerTest {
         ProcessBuilder actual = new ProcessBuilder(StringUtils
                 .replace(mainArtifactFolder.getPath(), "\\", "/"), "/silent",
                 "/prepare_restart=1", "/dir=C:/Program Files/unTill");
-        ProcessBuilder undeployCmd = executor.getBuilder(executor.getUndeployCmd(), executor.getUndeployExecutable());
-        ProcessBuilder undeployBuilder = new ProcessBuilder(StringUtils.
-                replace(executor.getUndeployExecutable().getPath(), "\\", "/"), "/verysilent");
         assertEquals(expected.command(), actual.command());
-        assertEquals(executor.getUndeployExecutable().getParentFile(), executor.getOutputDir());
-        assertEquals(undeployCmd.command(), undeployBuilder.command());
-        assertEquals(new File("C:/Program Files/unTill/untill.exe"), executor.getStopExecutable());
     }
 
     @Test
