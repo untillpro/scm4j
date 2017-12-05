@@ -68,6 +68,7 @@ public class UnzipArtifact implements IComponentDeployer {
     @Override
     public void init(IDeploymentContext depCtx) {
         outputFile = new File(depCtx.getDeploymentPath());
-        zipFile = depCtx.getArtifacts().get(depCtx.getMainArtifact());
+        if (depCtx.getArtifacts() != null)
+            zipFile = depCtx.getArtifacts().get(depCtx.getMainArtifact());
     }
 }

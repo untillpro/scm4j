@@ -11,8 +11,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ExeRunnerTest {
 
@@ -67,5 +66,13 @@ public class ExeRunnerTest {
         assertEquals(executor.getDefaultExecutable(), depCtx.getArtifacts().get(MAIN_ARTIFACT));
         assertTrue(FileUtils.contentEquals(executor.getDefaultExecutable(), depCtx.getArtifacts().get(MAIN_ARTIFACT)));
         assertEquals(executor.getOutputDir(), new File(depCtx.getDeploymentPath()));
+    }
+
+    @Test
+    public void testInitEmptyAtrifacts() throws Exception {
+        depCtx = new DeploymentContext(MAIN_ARTIFACT);
+        depCtx.setDeploymentPath("C:/");
+        executor.init(depCtx);
+        assertNull(depCtx.getArtifacts());
     }
 }

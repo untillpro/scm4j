@@ -31,7 +31,7 @@ public class ExeRunner implements IComponentDeployer {
     private String deployCmd;
 
     ProcessBuilder getBuilder(String str, File executableFile) {
-        if (null == executableFile) {
+        if (executableFile == null) {
             executableFile = defaultExecutable;
         }
         String deploymentPath = "$deploymentPath";
@@ -98,7 +98,8 @@ public class ExeRunner implements IComponentDeployer {
     public void init(IDeploymentContext depCtx) {
         mainArtifact = depCtx.getMainArtifact();
         outputDir = new File(depCtx.getDeploymentPath());
-        defaultExecutable = depCtx.getArtifacts().get(mainArtifact);
+        if (depCtx.getArtifacts() != null)
+            defaultExecutable = depCtx.getArtifacts().get(mainArtifact);
     }
 
     public ExeRunner setUndeployCmd(String cmd) {
@@ -123,6 +124,6 @@ public class ExeRunner implements IComponentDeployer {
 
     @Override
     public String toString() {
-        return "ExeRunner{product=" + defaultExecutable.getName() + '}';
+        return "ExeRunner{product=" + mainArtifact + '}';
     }
 }
