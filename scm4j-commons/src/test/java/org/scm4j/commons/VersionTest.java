@@ -187,6 +187,11 @@ public class VersionTest {
 	}
 
 	@Test
+	public void testIsExact() {
+		assertFalse(new Version("11.23.31.41-SNAPSHOT").isExact());
+	}
+
+	@Test
 	public void testSetMinor() {
 		assertEquals(new Version("12.13.14.15-SNAPSHOT"), new Version("12.13.13.15-SNAPSHOT").setMinor("14"));
 		assertEquals(new Version("12.13.abc.15-SNAPSHOT"), new Version("12.13.13.15-SNAPSHOT").setMinor("abc"));

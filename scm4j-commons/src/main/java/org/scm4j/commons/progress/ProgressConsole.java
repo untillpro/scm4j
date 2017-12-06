@@ -36,10 +36,6 @@ public class ProgressConsole implements IProgress {
 		this(System.out, 0, name, indent, outdent);
 	}
 
-	public ProgressConsole(PrintStream out, String name, String indent, String outdent) {
-		this(out, 0, name, indent, outdent);
-	}
-
 	public ProgressConsole(String name) {
 		this(System.out, 0, name, "", "");
 	}
