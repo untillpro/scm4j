@@ -8,6 +8,10 @@ public interface IDownloader {
 
     File getProductFile(String coords) throws Exception;
 
+    File getProductWithDependency(String coords) throws Exception;
+
+    File getProductDependency(File repository);
+
     IProduct getProduct();
 
 }
