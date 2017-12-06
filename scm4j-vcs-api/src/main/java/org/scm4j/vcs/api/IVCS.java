@@ -3,7 +3,6 @@ package org.scm4j.vcs.api;
 import org.scm4j.vcs.api.exceptions.EVCSBranchExists;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSTagExists;
-import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 
 import java.util.List;
 import java.util.Set;
@@ -35,11 +34,9 @@ public interface IVCS {
 	
 	VCSCommit removeFile(String branchName, String filePath, String commitMessage);
 	
-	List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId);
+	List<VCSCommit> getCommitsRange(String branchName, String startRevision, String endRevision);
 	
-	List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit);
-	
-	IVCSWorkspace getWorkspace();
+	List<VCSCommit> getCommitsRange(String branchName, String startRevision, WalkDirection direction, int limit);
 	
 	VCSCommit getHeadCommit(String branchName);
 	

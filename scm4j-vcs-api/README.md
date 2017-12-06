@@ -107,14 +107,14 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Returns short name of current IVCS implementation: "git", "svn" etc
 - `VCSCommit removeFile(String branchName, String filePath, String commitMessage)`
 	- Removes the file with path `filePath` within branch `branchName`. Operation is executed as separate commit with `commitMessage` message attached. Note: filePath = "folder\file.txt" -> file.txt is removed, folder is kept. Returns resulting commit.
-- `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, String untilCommitId)`
-	- Returns ordered list of all commits located between commits specified by `firstCommitId` and `untilCommitId` inclusively within branch `branchName` 
-	- If `firstCommitId` is null then all commits until commit specified by `untilCommitId` inclusively are fetched 
-	- If `untilCommitId` is null then all commits starting from commit specified by `firstCommitId` are fetched
-	- If `firstCommitId` and `untilCommitId` are null then all commits are fetched
-- `List<VCSCommit> getCommitsRange(String branchName, String firstCommitId, WalkDirection direction, int limit)`
-    - Returns ordered list of `limit` commits (0 is unlimited) starting from commit specified by `firstCommitId` in direction specified by `direction`
-    - If `firstCommitId` is null then commits are starting at branch `branchName` first commit (for ASC direction) or at head of branch (for DESC direction)
+- `List<VCSCommit> getCommitsRange(String branchName, String startRevision, String endRevision)`
+	- Returns ordered list of all commits located between commits specified by `startRevision` and `endRevision` inclusively within branch `branchName`
+	- If `startRevision` is null then all commits up to commit specified by `endRevision` inclusively are fetched
+	- If `endRevision` is null then all commits starting from commit specified by `startRevision` are fetched
+	- If `startRevision` and `endRevision` are null then all commits are fetched
+- `List<VCSCommit> getCommitsRange(String branchName, String startRevision, WalkDirection direction, int limit)`
+    - Returns ordered list of `limit` commits (0 is unlimited) starting from commit specified by `startRevision` in direction specified by `direction`
+    - If `startRevision` is null then all commits are fetched
 - `VCSCommit getHeadCommit(String branchName)`
     - Returns `VCSCommit` instance pointing to the head (last) commit of the branch `branchName` or `null` if the requested branch does not exists  
 - `Boolean fileExists(String branchName, String filePath)`
