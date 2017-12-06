@@ -10,7 +10,7 @@ public interface IDownloader {
 
     File getProductWithDependency(String coords) throws Exception;
 
-    File getProductDependency(File repository);
+    void loadProductDependency(File repository);
 
     IProduct getProduct();
 
