@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream;
 
 import static org.junit.Assert.*;
 
-public class UnzipArtifactTest {
+public class UnzipComponentTest {
 
     private static final File ZIP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "test-zip");
     private static final File ZIP_FILE = new File(ZIP_FOLDER, "file.zip");
@@ -47,28 +47,31 @@ public class UnzipArtifactTest {
     }
 
     @Test
-    public void testDeploy() throws Exception {
-        UnzipArtifact unzipArtifact = new UnzipArtifact();
-        unzipArtifact.init(depCtx);
-        unzipArtifact.deploy();
-        assertEquals(FileUtils.readFileToString(new File(ZIP_FOLDER, "mytext.txt"), "UTF-8"), "Test String");
+    public void testDeployUndeploy() throws Exception {
+        UnzipComponent unzipComponent = new UnzipComponent();
+        File textFile = new File(ZIP_FOLDER, "mytext.txt");
+        unzipComponent.init(depCtx);
+        unzipComponent.deploy();
+        assertEquals(FileUtils.readFileToString(textFile, "UTF-8"), "Test String");
+        unzipComponent.undeploy();
+        assertFalse(textFile.exists());
     }
 
     @Test
     public void testFail() throws Exception {
-        UnzipArtifact unzipArtifact = new UnzipArtifact();
-        unzipArtifact.init(depCtx);
-        FileUtils.forceDelete(unzipArtifact.getZipFile());
-        DeploymentResult res = unzipArtifact.deploy();
+        UnzipComponent unzipComponent = new UnzipComponent();
+        unzipComponent.init(depCtx);
+        FileUtils.forceDelete(unzipComponent.getZipFile());
+        DeploymentResult res = unzipComponent.deploy();
         assertNotEquals(DeploymentResult.OK, res);
     }
 
     @Test
     public void testInit() throws Exception {
-        UnzipArtifact unzipArtifact = new UnzipArtifact();
-        unzipArtifact.init(depCtx);
-        assertEquals(unzipArtifact.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName()));
-        assertTrue(FileUtils.contentEquals(unzipArtifact.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName())));
-        assertEquals(unzipArtifact.getOutputFile(), new File(depCtx.getDeploymentPath()));
+        UnzipComponent unzipComponent = new UnzipComponent();
+        unzipComponent.init(depCtx);
+        assertEquals(unzipComponent.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName()));
+        assertTrue(FileUtils.contentEquals(unzipComponent.getZipFile(), depCtx.getArtifacts().get(ZIP_FILE.getName())));
+        assertEquals(unzipComponent.getOutputFile(), new File(depCtx.getDeploymentPath()));
     }
 }
