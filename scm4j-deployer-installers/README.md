@@ -2,10 +2,9 @@
 [![Build Status](https://travis-ci.org/scm4j/scm4j-deployer-installers.svg?branch=master)](https://travis-ci.org/scm4j/scm4j-deployer-installers)
 [![Coverage Status](https://coveralls.io/repos/scm4j/scm4j-deployer-installers/badge.png)](https://coveralls.io/r/scm4j/scm4j-deployer-installers)
 
-# Overview
+# Usage
 
-Changes in readme
+- Use `Copy` to copy artifacts to a given folder
+- Use `Unzip` to unzip main artifact to a given folder
+- Use `Exec` to execute main artifact (must be executable)
 
-# Terms
-
-...  
