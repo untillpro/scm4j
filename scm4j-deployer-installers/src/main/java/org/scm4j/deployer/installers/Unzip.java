@@ -16,7 +16,7 @@ import java.util.zip.ZipInputStream;
 
 
 @Data
-public class UnzipComponent implements IComponentDeployer {
+public class Unzip implements IComponentDeployer {
 
     private File outputFile;
     private File zipFile;

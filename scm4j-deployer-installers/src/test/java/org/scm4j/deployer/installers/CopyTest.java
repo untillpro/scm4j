@@ -14,7 +14,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CopyComponentTest {
+public class CopyTest {
 
     private static final File TEST_FOLDER = new File(System.getProperty("java.io.tmpdir"), "test-copy");
     private static final File FOLDER_FOR_COPY = new File(TEST_FOLDER, "file");
@@ -45,9 +45,9 @@ public class CopyComponentTest {
 
     @Test
     public void testDeploy() throws Exception {
-        CopyComponent copyComponent = new CopyComponent();
-        copyComponent.init(depCtx);
-        copyComponent.deploy();
+        Copy copy = new Copy();
+        copy.init(depCtx);
+        copy.deploy();
         for (int i = 0; i < 5; i++)
             assertTrue(FileUtils.contentEquals(new File(FOLDER_FOR_COPY, String.valueOf(i) + ".txt"),
                     new File(OUTPUT_FOLDER, String.valueOf(i) + ".txt")));
@@ -55,18 +55,28 @@ public class CopyComponentTest {
 
     @Test
     public void testFail() throws Exception {
-        CopyComponent copyComponent = new CopyComponent();
-        copyComponent.init(depCtx);
-        FileUtils.forceDelete(copyComponent.getFileForDeploy());
-        DeploymentResult res = copyComponent.deploy();
+        Copy copy = new Copy();
+        copy.init(depCtx);
+        for (File file : copy.getFilesForDeploy()) {
+            FileUtils.forceDelete(file);
+        }
+        DeploymentResult res = copy.deploy();
         assertEquals(DeploymentResult.NEED_REBOOT, res);
     }
 
     @Test
     public void testInit() throws Exception {
-        CopyComponent copyComponent = new CopyComponent();
-        copyComponent.init(depCtx);
-        assertEquals(copyComponent.getFileForDeploy(), depCtx.getArtifacts().get(FOLDER_FOR_COPY.getName()));
-        assertEquals(copyComponent.getOutputFile(), new File(depCtx.getDeploymentPath()));
+        Copy copy = new Copy();
+        copy.init(depCtx);
+        assertEquals(copy.getFilesForDeploy(), depCtx.getArtifacts().values());
+        assertEquals(copy.getOutputFile(), new File(depCtx.getDeploymentPath()));
+    }
+
+    @Test
+    public void testInitSetPath() throws Exception {
+        Copy copy = new Copy();
+        copy.setDefaultFolderName("hello");
+        copy.init(depCtx);
+        assertEquals(new File(OUTPUT_FOLDER, "hello"), copy.getOutputFile());
     }
 }

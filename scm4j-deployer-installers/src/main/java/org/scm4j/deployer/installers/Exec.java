@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ExeRunner implements IComponentDeployer {
+public class Exec implements IComponentDeployer {
 
     @Getter
     private String mainArtifact;
@@ -105,28 +105,28 @@ public class ExeRunner implements IComponentDeployer {
             defaultExecutable = depCtx.getArtifacts().get(mainArtifact);
     }
 
-    public ExeRunner setUndeployCmd(String cmd) {
+    public Exec setUndeployCmd(String cmd) {
         this.undeployCmd = cmd;
         return this;
     }
 
-    public ExeRunner setDeployCmd(String cmd) {
+    public Exec setDeployCmd(String cmd) {
         this.deployCmd = cmd;
         return this;
     }
 
-    public ExeRunner setStopExecutableName(String executable) {
+    public Exec setStopExecutableName(String executable) {
         this.stopExecutableName = executable;
         return this;
     }
 
-    public ExeRunner setUndeployExecutableName(String executable) {
+    public Exec setUndeployExecutableName(String executable) {
         this.undeployExecutableName = executable;
         return this;
     }
 
     @Override
     public String toString() {
-        return "ExeRunner{product=" + mainArtifact + '}';
+        return "Exec{product=" + mainArtifact + '}';
     }
 }

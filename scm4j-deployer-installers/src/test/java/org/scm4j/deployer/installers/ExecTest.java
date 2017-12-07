@@ -13,12 +13,12 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class ExeRunnerTest {
+public class ExecTest {
 
     private static final File TMP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "scm4j-tmp-executor");
     private static final String MAIN_ARTIFACT = "unTill";
     private DeploymentContext depCtx;
-    private ExeRunner executor;
+    private Exec executor;
     private File mainArtifactFolder;
 
     @Before
@@ -33,7 +33,7 @@ public class ExeRunnerTest {
         mainArtifactFolder.createNewFile();
         artifacts.put(MAIN_ARTIFACT, mainArtifactFolder);
         depCtx.setArtifacts(artifacts);
-        executor = new ExeRunner();
+        executor = new Exec();
         executor.init(depCtx);
         executor.setDeployCmd(deployCmd);
         executor.setUndeployCmd(undeployCmd);

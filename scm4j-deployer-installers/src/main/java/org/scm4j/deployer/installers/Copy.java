@@ -8,21 +8,24 @@ import org.scm4j.deployer.api.IDeploymentContext;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
 import static org.scm4j.deployer.api.DeploymentResult.NEED_REBOOT;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
 
-public class CopyComponent implements IComponentDeployer {
+public class Copy implements IComponentDeployer {
 
     @Getter
     private File outputFile;
     @Getter
-    private File fileForDeploy;
+    private Collection<File> filesForDeploy;
+    private String folderName;
 
     @Override
     public DeploymentResult deploy() {
         try {
-            FileUtils.copyDirectory(fileForDeploy, outputFile);
+            for (File file : filesForDeploy)
+                FileUtils.copyDirectory(file, outputFile);
             return OK;
         } catch (IOException e) {
             return NEED_REBOOT;
@@ -32,21 +35,21 @@ public class CopyComponent implements IComponentDeployer {
     @Override
     public DeploymentResult undeploy() {
         try {
-            File fileForUndeploy = new File(outputFile.getPath(), fileForDeploy.getName());
-            FileUtils.forceDelete(fileForUndeploy);
+            for (File file : filesForDeploy) {
+                File fileForUndeploy = new File(outputFile.getPath(), file.getName());
+                FileUtils.forceDelete(fileForUndeploy);
+            }
             return OK;
         } catch (IOException e) {
             return NEED_REBOOT;
         }
     }
 
-    //TODO find working services who execute's from this directory and try to stop them
     @Override
     public DeploymentResult stop() {
         return OK;
     }
 
-    //TODO how to start copied artifacts?
     @Override
     public DeploymentResult start() {
         return OK;
@@ -54,7 +57,15 @@ public class CopyComponent implements IComponentDeployer {
 
     @Override
     public void init(IDeploymentContext depCtx) {
-        outputFile = new File(depCtx.getDeploymentPath());
-        fileForDeploy = depCtx.getArtifacts().get(depCtx.getMainArtifact());
+        if (folderName != null)
+            outputFile = new File(depCtx.getDeploymentPath(), folderName);
+        else
+            outputFile = new File(depCtx.getDeploymentPath());
+        filesForDeploy = depCtx.getArtifacts().values();
+    }
+
+    public Copy setDefaultFolderName(String folderName) {
+        this.folderName = folderName;
+        return this;
     }
 }
