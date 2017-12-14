@@ -20,3 +20,7 @@ How to use this
 # Under the Hood
 
 How it works: interactions of core classes/modules
+
+# How to Test
+
+Idea of testing
