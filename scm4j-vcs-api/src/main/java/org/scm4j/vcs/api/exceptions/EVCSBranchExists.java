@@ -4,7 +4,7 @@ public class EVCSBranchExists extends EVCSException {
 
 	private static final long serialVersionUID = 1806733612822322930L;
 
-	public EVCSBranchExists(Exception e) {
-		super(e);
+	public EVCSBranchExists(String branchName) {
+		super("branch already exists: " + branchName);
 	}
 }

@@ -21,10 +21,8 @@ public class ExceptionsTest {
 
 	@Test
 	public void testEVCSBranchExists() {
-		Exception e = new Exception(TEST_MESSAGE);
-		EVCSBranchExists e1 = new EVCSBranchExists(e);
-		assertTrue(e1.getMessage().contains(TEST_MESSAGE));
-		assertEquals(e1.getCause(), e);
+		EVCSBranchExists e = new EVCSBranchExists(TEST_BRANCH_NAME);
+		assertTrue(e.getMessage().contains(TEST_BRANCH_NAME));
 	}
 
 	@Test
