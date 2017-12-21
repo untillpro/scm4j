@@ -65,5 +65,6 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	public IVCSLockedWorkingCopy getVCSLockedWorkingCopyTemp() throws IOException {
 		return new VCSLockedWorkingCopy(this, true);
 	}
+	
 
 }
