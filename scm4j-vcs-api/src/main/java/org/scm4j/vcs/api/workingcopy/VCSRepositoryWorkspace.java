@@ -2,9 +2,13 @@ package org.scm4j.vcs.api.workingcopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 
 public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
+	private static final String UNPRINTABLE_CHAR_PLACEHOLDER = "_";
+	private static final String HTTP_PREFIX = "http" + String.join("", Collections.nCopies(3, UNPRINTABLE_CHAR_PLACEHOLDER));
+	private static final String HTTPS_PREFIX = "https" + String.join("", Collections.nCopies(3, UNPRINTABLE_CHAR_PLACEHOLDER));
 	private final IVCSWorkspace workspace;
 	private final String repoUrl;
 	private File repoFolder;
@@ -26,7 +30,12 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	}
 
 	private String getRepoFolderName() {
-		String tmp = repoUrl.replaceAll("[^a-zA-Z0-9.-]", "_");
+		String tmp = repoUrl.replaceAll("[^a-zA-Z0-9.-]", UNPRINTABLE_CHAR_PLACEHOLDER);
+		if (tmp.toLowerCase().startsWith(HTTPS_PREFIX)) {
+			tmp = tmp.substring(HTTPS_PREFIX.length());
+		} else if (tmp.toLowerCase().startsWith(HTTP_PREFIX)) {
+			tmp = tmp.substring(HTTP_PREFIX.length());
+		}
 		return new File(workspace.getHomeFolder(), tmp).getPath().replace("\\", File.separator);
 	}
 

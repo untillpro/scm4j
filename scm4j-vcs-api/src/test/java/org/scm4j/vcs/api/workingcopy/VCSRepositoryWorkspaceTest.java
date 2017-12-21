@@ -30,4 +30,17 @@ public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 		IVCSRepositoryWorkspace r = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
 		assertTrue(r.toString().contains(WORKSPACE_DIR));
 	}
+	
+	@Test
+	public void testHTTPAndHTTPSFolderPrefixesStripping() {
+		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
+		String repoUrl = "test.repo.url";
+		String httpProto = "http://";
+		String httpsProto = "https://";
+		IVCSRepositoryWorkspace r = w.getVCSRepositoryWorkspace(httpProto + repoUrl);
+		assertEquals(repoUrl, r.getRepoFolder().getName());
+		
+		r = w.getVCSRepositoryWorkspace(httpsProto + repoUrl);
+		assertEquals(repoUrl, r.getRepoFolder().getName());
+	}
 }
