@@ -1,9 +1,5 @@
 ﻿!!omap
 - node4(.*):
     prop4: value4_$1
-- ~:
-    defaultProp: defaultValue
-    placeholderedProp: $0
-    intProp: 1
-    booleanProp: true
+
     

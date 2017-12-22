@@ -16,7 +16,8 @@ public class RegexConfigTest {
 		config = new RegexConfig();
 		String url1 = this.getClass().getResource("urls-omap.yml").toString();
 		String url2 = this.getClass().getResource("urls-omap-bom.yml").toString();
-		config.loadFromYamlUrls(url1, url2);
+		String url3 = this.getClass().getResource("urls-omap-last.yml").toString();
+		config.loadFromYamlUrls(url1, url2 + ";" + url3);
 	}
 
 	@Test

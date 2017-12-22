@@ -15,16 +15,19 @@ public class URLContentLoaderTest {
 	
 	private static final String URLS_OMAP_BOM_FILE = "urls-omap-bom.yml";
 	private static final String URLS_OMAP_FILE = "urls-omap.yml";
+	private static final String URLS_OMAP_LAST_FILE = "urls-omap-last.yml";
 
 	@Test
 	public void testGetContentFromUrls() throws Exception {
 		URLContentLoader loader = new URLContentLoader();
 		URL url1 = this.getClass().getResource(URLS_OMAP_FILE);
 		URL url2 = this.getClass().getResource(URLS_OMAP_BOM_FILE);
+		URL url3 = this.getClass().getResource(URLS_OMAP_LAST_FILE);
 		String content1 = FileUtils.readFileToString(new File(url1.toURI()), StandardCharsets.UTF_8);
 		String content2 = FileUtils.readFileToString(new File(url2.toURI()), StandardCharsets.UTF_8);
-		List<String> contents = loader.getContentsFromUrlStrings(Arrays.asList(url1.toString(), url2.toString()));
-		assertEquals(String.join("", content1, content2), String.join("",  contents));
+		String content3 = FileUtils.readFileToString(new File(url3.toURI()), StandardCharsets.UTF_8);
+		List<String> contents = loader.getContentsFromUrlStrings(Arrays.asList(url1.toString(), url2.toString() +";" + url3.toString()));
+		assertEquals(String.join("", content1, content2, content3), String.join("", contents));
 		
 		contents = loader.getContentsFromUrls(Arrays.asList(url1, url2));
 		assertEquals(String.join("", content1, content2), String.join("",  contents));
@@ -43,3 +46,4 @@ public class URLContentLoaderTest {
 		assertEquals(String.join("", content1, content2), String.join("",  contents));
 	}
 }
+
