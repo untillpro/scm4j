@@ -17,7 +17,9 @@ public class RegexConfig {
 		URLContentLoader loader = new URLContentLoader();
 		List<String> contents = loader.getContentsFromUrlStrings(Arrays.asList(separatedUrls));
 		for (String content : contents) {
-			this.content.putAll((Map<? extends Object, ? extends Object>) yaml.load(content));
+			if (!content.isEmpty()) {
+				this.content.putAll((Map<? extends Object, ? extends Object>) yaml.load(content));
+			}
 		}
 	}
 	
