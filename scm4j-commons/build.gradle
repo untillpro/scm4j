@@ -20,6 +20,8 @@ dependencies {
 	
 	compile 'com.google.guava:guava:20.0'
 	compile 'org.apache.commons:commons-lang3:3.5'
+	compile 'commons-io:commons-io:2.5'
+	compile 'org.yaml:snakeyaml:1.18'
 }
 
 configurations.all {

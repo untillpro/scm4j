@@ -186,7 +186,9 @@ public class VersionTest {
 		assertFalse(new Version("dfgdfg-SNAPSHOT").isLocked());
 	}
 
+	
 	@Test
+	@SuppressWarnings("deprecation")
 	public void testIsExact() {
 		assertFalse(new Version("11.23.31.41-SNAPSHOT").isExact());
 	}

@@ -1,0 +1,45 @@
+package org.scm4j.commons;
+
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.junit.Test;
+
+public class URLContentLoaderTest {
+	
+	private static final String URLS_OMAP_BOM_FILE = "urls-omap-bom.yml";
+	private static final String URLS_OMAP_FILE = "urls-omap.yml";
+
+	@Test
+	public void testGetContentFromUrls() throws Exception {
+		URLContentLoader loader = new URLContentLoader();
+		URL url1 = this.getClass().getResource(URLS_OMAP_FILE);
+		URL url2 = this.getClass().getResource(URLS_OMAP_BOM_FILE);
+		String content1 = FileUtils.readFileToString(new File(url1.toURI()), StandardCharsets.UTF_8);
+		String content2 = FileUtils.readFileToString(new File(url2.toURI()), StandardCharsets.UTF_8);
+		List<String> contents = loader.getContentsFromUrlStrings(Arrays.asList(url1.toString(), url2.toString()));
+		assertEquals(String.join("", content1, content2), String.join("",  contents));
+		
+		contents = loader.getContentsFromUrls(Arrays.asList(url1, url2));
+		assertEquals(String.join("", content1, content2), String.join("",  contents));
+	}
+	
+	@Test
+	public void testFileProtocolOmitting() throws Exception {
+		URLContentLoader loader = new URLContentLoader();
+		URL url1 = this.getClass().getResource(URLS_OMAP_FILE);
+		URL url2 = this.getClass().getResource(URLS_OMAP_BOM_FILE);
+		File file1 = new File(url1.toURI());
+		File file2 = new File(url2.toURI());
+		String content1 = FileUtils.readFileToString(file1, StandardCharsets.UTF_8);
+		String content2 = FileUtils.readFileToString(file2, StandardCharsets.UTF_8);
+		List<String> contents = loader.getContentsFromUrlStrings(Arrays.asList(file1.toString(), file2.toString()));
+		assertEquals(String.join("", content1, content2), String.join("",  contents));
+	}
+}
