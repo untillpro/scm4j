@@ -1,13 +1,13 @@
 package org.scm4j.commons;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.io.IOUtils;
 
 public class URLContentLoader {
 	
@@ -22,9 +22,12 @@ public class URLContentLoader {
 		return res;
 	}
 
-	public List<String> getContentsFromUrlStrings(List<String> separatedUrls) throws IOException {
+	public List<String> getContentsFromUrls(String... separatedUrls) throws IOException {
 		List<String> res = new ArrayList<>();
 		for (String separatedUrl : separatedUrls) {
+			if (separatedUrl.isEmpty()) {
+				continue;
+			}
 			String[] urls = separatedUrl.split(URL_SEPARATOR);
 			for (String url : urls) {
 				res.add(getContentFromUrl(url));
