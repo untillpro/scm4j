@@ -37,10 +37,23 @@ public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 		String repoUrl = "test.repo.url";
 		String httpProto = "http://";
 		String httpsProto = "https://";
+		String fileProto1 = "file:/";
+		String fileProto2 = "file://";
+		String fileProto3 = "file:///";
+		
 		IVCSRepositoryWorkspace r = w.getVCSRepositoryWorkspace(httpProto + repoUrl);
 		assertEquals(repoUrl, r.getRepoFolder().getName());
 		
 		r = w.getVCSRepositoryWorkspace(httpsProto + repoUrl);
+		assertEquals(repoUrl, r.getRepoFolder().getName());
+		
+		r = w.getVCSRepositoryWorkspace(fileProto1 + repoUrl);
+		assertEquals(repoUrl, r.getRepoFolder().getName());
+		
+		r = w.getVCSRepositoryWorkspace(fileProto2 + repoUrl);
+		assertEquals(repoUrl, r.getRepoFolder().getName());
+		
+		r = w.getVCSRepositoryWorkspace(fileProto3 + repoUrl);
 		assertEquals(repoUrl, r.getRepoFolder().getName());
 	}
 }

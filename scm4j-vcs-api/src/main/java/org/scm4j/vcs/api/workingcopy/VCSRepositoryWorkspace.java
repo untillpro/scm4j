@@ -9,6 +9,9 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	private static final String UNPRINTABLE_CHAR_PLACEHOLDER = "_";
 	private static final String HTTP_PREFIX = "http" + String.join("", Collections.nCopies(3, UNPRINTABLE_CHAR_PLACEHOLDER));
 	private static final String HTTPS_PREFIX = "https" + String.join("", Collections.nCopies(3, UNPRINTABLE_CHAR_PLACEHOLDER));
+	private static final String FILE_PREFIX_1 = "file" + String.join("", Collections.nCopies(2, UNPRINTABLE_CHAR_PLACEHOLDER));
+	private static final String FILE_PREFIX_2 = "file" + String.join("", Collections.nCopies(3, UNPRINTABLE_CHAR_PLACEHOLDER));
+	private static final String FILE_PREFIX_3 = "file" + String.join("", Collections.nCopies(4, UNPRINTABLE_CHAR_PLACEHOLDER));
 	private final IVCSWorkspace workspace;
 	private final String repoUrl;
 	private File repoFolder;
@@ -35,6 +38,12 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 			tmp = tmp.substring(HTTPS_PREFIX.length());
 		} else if (tmp.toLowerCase().startsWith(HTTP_PREFIX)) {
 			tmp = tmp.substring(HTTP_PREFIX.length());
+		} else if (tmp.toLowerCase().startsWith(FILE_PREFIX_3)) {
+			tmp = tmp.substring(FILE_PREFIX_3.length());
+		} else if (tmp.toLowerCase().startsWith(FILE_PREFIX_2)) {
+			tmp = tmp.substring(FILE_PREFIX_2.length());
+		} else if (tmp.toLowerCase().startsWith(FILE_PREFIX_1)) {
+			tmp = tmp.substring(FILE_PREFIX_1.length());
 		}
 		return new File(workspace.getHomeFolder(), tmp).getPath().replace("\\", File.separator);
 	}
