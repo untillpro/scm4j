@@ -1,12 +1,11 @@
 package org.scm4j.commons;
 
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.yaml.snakeyaml.Yaml;
 
 public class RegexConfig {
 	private final LinkedHashMap<Object, Object> content = new LinkedHashMap<>();
@@ -15,7 +14,7 @@ public class RegexConfig {
 	public void loadFromYamlUrls(String... separatedUrls) throws IOException {
 		Yaml yaml = new Yaml();
 		URLContentLoader loader = new URLContentLoader();
-		List<String> contents = loader.getContentsFromUrlStrings(Arrays.asList(separatedUrls));
+		List<String> contents = loader.getContentsFromUrls(separatedUrls);
 		for (String content : contents) {
 			if (!content.isEmpty()) {
 				this.content.putAll((Map<? extends Object, ? extends Object>) yaml.load(content));
@@ -54,5 +53,9 @@ public class RegexConfig {
 			}
 		}
 		return result;
+	}
+
+	public Boolean isEmpty() {
+		return content.isEmpty();
 	}
 }

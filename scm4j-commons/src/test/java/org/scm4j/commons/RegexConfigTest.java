@@ -1,27 +1,27 @@
 package org.scm4j.commons;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.*;
 
 public class RegexConfigTest {
 	
 	private RegexConfig config;
-	
+	private String url1 = this.getClass().getResource("urls-omap.yml").toString();
+	private String url2 = this.getClass().getResource("urls-omap-bom.yml").toString();
+	private String url3 = this.getClass().getResource("urls-omap-last.yml").toString();
+
 	@Before
-	public void setUp() throws IOException {
+	public void setUp() {
 		config = new RegexConfig();
-		String url1 = this.getClass().getResource("urls-omap.yml").toString();
-		String url2 = this.getClass().getResource("urls-omap-bom.yml").toString();
-		String url3 = this.getClass().getResource("urls-omap-last.yml").toString();
-		config.loadFromYamlUrls(url1, url2 + ";" + url3);
 	}
 
 	@Test
-	public void testGetPropByName() {
+	public void testGetPropByName() throws IOException {
+		config.loadFromYamlUrls(url1, url2 + ";" + url3);
 		assertEquals("value1and2", config.getPropByName("node1", "prop1and2", null));
 		assertEquals("value1and2", config.getPropByName("node2", "prop1and2", null));
 		assertEquals("default value", config.getPropByName("node1", "unexisting_prop", "default value"));
@@ -36,8 +36,15 @@ public class RegexConfigTest {
 	}
 	
 	@Test
-	public void testGetPlaceholderedStringByName() {
+	public void testGetPlaceholderedStringByName() throws IOException {
+		config.loadFromYamlUrls(url1, url2 + ";" + url3);
 		assertEquals("value4_placeholder", config.getPlaceholderedStringByName("node4placeholder", "prop4", null));
 		assertEquals("unexisting_node", config.getPlaceholderedStringByName("unexisting_node", "placeholderedProp", null));
+	}
+
+	@Test
+	public void testIsEmpty() throws IOException {
+		config.loadFromYamlUrls("");
+		assertTrue(config.isEmpty());
 	}
 }
