@@ -14,10 +14,14 @@ public class RegexConfig {
 	public void loadFromYamlUrls(String... separatedUrls) throws IOException {
 		Yaml yaml = new Yaml();
 		URLContentLoader loader = new URLContentLoader();
+		
 		List<String> contents = loader.getContentsFromUrls(separatedUrls);
 		for (String content : contents) {
 			if (!content.isEmpty()) {
-				this.content.putAll((Map<? extends Object, ? extends Object>) yaml.load(content));
+				LinkedHashMap<Object, Object> map = (LinkedHashMap<Object, Object>) yaml.load(content);
+				if (map != null) {
+					this.content.putAll(map);
+				}
 			}
 		}
 	}
