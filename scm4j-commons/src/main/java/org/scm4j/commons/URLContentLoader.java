@@ -11,7 +11,7 @@ import org.apache.commons.io.IOUtils;
 
 public class URLContentLoader {
 	
-	private static final String URL_SEPARATOR = ";";
+	public static final String URL_SEPARATOR = ";";
 	public static final String DEFAULT_PROTOCOL = "file:///";
 	
 	public List<String> getContentsFromUrls(List<URL> urls) throws IOException {
