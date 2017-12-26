@@ -1,11 +1,8 @@
 #/bin/sh
-set -e
-WD=$(dirname $0)
 
-# Not starts with '.' since: The name '.releaser' starts or ends with a '.'. This has been deprecated and is scheduled to be removed in Gradle 5.0
-RGIT="$WD/releaser-git"
-REPO="https://github.com/scm4j/scm4j-releaser.git"
-LIBS=$RGIT/build/libs
+set -e
+
+# Helpers
 
 fatjar(){
 	info "Run gradle..."
@@ -17,6 +14,17 @@ info(){
 	echo "$@" 1>&2
 	printf "\e[0m" 1>&2
 }
+
+# Main part
+
+WD=$(dirname $0)
+
+# Does not start with '.' since: The name '.releaser' starts or ends with a '.'. 
+#   This has been deprecated and is scheduled to be removed in Gradle 5.0
+RGIT="$WD/releaser-git"
+
+REPO="https://github.com/scm4j/scm4j-releaser.git"
+LIBS=$RGIT/build/libs
 
 if [ ! -d "$RGIT" ]; then
 	info "$RGIT" does not exist, will be cloned from $REPO
