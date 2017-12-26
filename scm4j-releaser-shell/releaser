@@ -1,7 +1,10 @@
 #/bin/sh
 set -e
 WD=$(dirname $0)
-RGIT="$WD/.releaser"
+
+# The name '.releaser' starts or ends with a '.'. This has been deprecated and is scheduled to be removed in Gradle 5.0
+RGIT="$WD/releaser-git"
+
 LIBS=$RGIT/build/libs
 
 fatjar(){
