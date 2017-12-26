@@ -4,7 +4,7 @@ WD=$(dirname $0)
 
 # The name '.releaser' starts or ends with a '.'. This has been deprecated and is scheduled to be removed in Gradle 5.0
 RGIT="$WD/releaser-git"
-
+REPO="https://github.com/scm4j/scm4j-releaser.git"
 LIBS=$RGIT/build/libs
 
 fatjar(){
@@ -18,8 +18,8 @@ info(){
 }
 
 if [ ! -d "$RGIT" ]; then
-	info "$RGIT" does not exist, will be cloned from https://github.com/scm4j/scm4j-releaser.git
-	git clone https://github.com/scm4j/scm4j-releaser.git $RGIT || exit 1
+	info "$RGIT" does not exist, will be cloned from $REPO
+	git clone $REPO $RGIT || exit 1
 	fatjar
 fi
 
@@ -29,9 +29,10 @@ if [ "$1" == "pull" ]; then
 	if [ -z "$branch" ]; then
 		branch=master		
 	fi
-	info Getting updates from $branch...
+	info "Get updates from $REPO:$branch..."
 	git -C "$RGIT" pull
 	git -C "$RGIT" checkout $branch
+	info "Run gradle..."
 	fatjar
 	info Done
 	exit
