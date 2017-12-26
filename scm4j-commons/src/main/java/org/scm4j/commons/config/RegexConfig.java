@@ -1,26 +1,38 @@
-package org.scm4j.commons;
-
-import org.yaml.snakeyaml.Yaml;
+package org.scm4j.commons.config;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
+import org.scm4j.commons.URLContentLoader;
+import org.yaml.snakeyaml.Yaml;
+
 public class RegexConfig {
+	public static final String URL_SEPARATOR = URLContentLoader.URL_SEPARATOR;
 	private final LinkedHashMap<Object, Object> content = new LinkedHashMap<>();
 	
 	@SuppressWarnings("unchecked")
 	public void loadFromYamlUrls(String... separatedUrls) throws IOException {
 		Yaml yaml = new Yaml();
 		URLContentLoader loader = new URLContentLoader();
-		
-		List<String> contents = loader.getContentsFromUrls(separatedUrls);
-		for (String content : contents) {
-			if (!content.isEmpty()) {
-				LinkedHashMap<Object, Object> map = (LinkedHashMap<Object, Object>) yaml.load(content);
-				if (map != null) {
-					this.content.putAll(map);
+		for (String separatedUrl : separatedUrls) {
+			String[] urls = separatedUrl.split(URL_SEPARATOR);
+			for (String url : urls) {
+				if (url.isEmpty()) {
+					continue;
+				}
+				String content = loader.getContentFromUrl(url);
+				if (!content.isEmpty()) {
+					LinkedHashMap<Object, Object> map;
+					try {
+						map = (LinkedHashMap<Object, Object>) yaml.load(content);
+					} catch (Exception e) {
+						throw new EConfig("failed to load config from yaml content at " + url + ": " + e.getMessage(), e);
+					}
+					if (map != null) {
+						this.content.putAll(map);
+					}
+					
 				}
 			}
 		}

@@ -1,7 +1,8 @@
-package org.scm4j.commons;
+package org.scm4j.commons.config;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.scm4j.commons.config.RegexConfig;
 
 import java.io.IOException;
 
@@ -14,6 +15,7 @@ public class RegexConfigTest {
 	private String url2 = this.getClass().getResource("urls-omap-bom.yml").toString();
 	private String url3 = this.getClass().getResource("urls-omap-last.yml").toString();
 	private String url4 = this.getClass().getResource("urls-empty.yml").toString();
+	private String url5 = this.getClass().getResource("urls-wrong-content.yml").toString();
 
 	@Before
 	public void setUp() {
@@ -53,5 +55,15 @@ public class RegexConfigTest {
 	public void testEmptyUrls() throws IOException {
 		config.loadFromYamlUrls("");
 		assertTrue(config.isEmpty());
+	}
+	
+	@Test
+	public void testWrongContent() throws IOException {
+		try {
+			config.loadFromYamlUrls(url5);
+			fail();
+		} catch (EConfig e) {
+			
+		}
 	}
 }
