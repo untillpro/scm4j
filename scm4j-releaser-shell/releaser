@@ -2,7 +2,7 @@
 set -e
 WD=$(dirname $0)
 
-# The name '.releaser' starts or ends with a '.'. This has been deprecated and is scheduled to be removed in Gradle 5.0
+# Not starts with '.' since: The name '.releaser' starts or ends with a '.'. This has been deprecated and is scheduled to be removed in Gradle 5.0
 RGIT="$WD/releaser-git"
 REPO="https://github.com/scm4j/scm4j-releaser.git"
 LIBS=$RGIT/build/libs
