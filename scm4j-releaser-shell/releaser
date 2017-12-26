@@ -1,0 +1,2 @@
+#/bin/sh
+groovy $(dirname $0)/releaser.gsh $*
