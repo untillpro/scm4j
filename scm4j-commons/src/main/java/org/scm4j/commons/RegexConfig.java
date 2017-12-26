@@ -1,10 +1,9 @@
-package org.scm4j.commons.config;
+package org.scm4j.commons;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.scm4j.commons.URLContentLoader;
 import org.yaml.snakeyaml.Yaml;
 
 public class RegexConfig {

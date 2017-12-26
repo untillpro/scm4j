@@ -1,8 +1,9 @@
-package org.scm4j.commons.config;
+package org.scm4j.commons;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.scm4j.commons.config.RegexConfig;
+import org.scm4j.commons.EConfig;
+import org.scm4j.commons.RegexConfig;
 
 import java.io.IOException;
 

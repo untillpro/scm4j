@@ -1,4 +1,4 @@
-package org.scm4j.commons.config;
+package org.scm4j.commons;
 
 public class EConfig extends RuntimeException {
 
