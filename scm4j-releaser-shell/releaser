@@ -8,6 +8,7 @@ REPO="https://github.com/scm4j/scm4j-releaser.git"
 LIBS=$RGIT/build/libs
 
 fatjar(){
+	info "Run gradle..."
 	"$RGIT"/gradlew -p "$RGIT" fatJar
 }
 
@@ -32,7 +33,6 @@ if [ "$1" == "pull" ]; then
 	info "Get updates from $REPO:$branch..."
 	git -C "$RGIT" pull
 	git -C "$RGIT" checkout $branch
-	info "Run gradle..."
 	fatjar
 	info Done
 	exit
