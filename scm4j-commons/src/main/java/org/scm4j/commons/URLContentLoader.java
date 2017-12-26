@@ -30,7 +30,10 @@ public class URLContentLoader {
 			}
 			String[] urls = separatedUrl.split(URL_SEPARATOR);
 			for (String url : urls) {
-				res.add(getContentFromUrl(url));
+				String content = getContentFromUrl(url);
+				if (content != null) {
+					res.add(content);
+				}
 			}
 		}
 		return res;
@@ -50,6 +53,9 @@ public class URLContentLoader {
 	}
 	
 	public String getContentFromUrl(String url) throws IOException {
+		if (url.isEmpty()) {
+			return null;
+		}
 		return getContentFromUrl(new URL(getWithDefaultProtocol(url)));
 	}
 }

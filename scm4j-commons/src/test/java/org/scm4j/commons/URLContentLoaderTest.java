@@ -26,11 +26,14 @@ public class URLContentLoaderTest {
 		String content1 = FileUtils.readFileToString(new File(url1.toURI()), StandardCharsets.UTF_8);
 		String content2 = FileUtils.readFileToString(new File(url2.toURI()), StandardCharsets.UTF_8);
 		String content3 = FileUtils.readFileToString(new File(url3.toURI()), StandardCharsets.UTF_8);
-		List<String> contents = loader.getContentsFromUrls(url1.toString(), url2.toString() +";" + url3.toString());
+		List<String> contents = loader.getContentsFromUrls(url1.toString(), url2.toString() + URLContentLoader.URL_SEPARATOR + url3.toString());
 		assertEquals(String.join("", content1, content2, content3), String.join("", contents));
 		
 		contents = loader.getContentsFromUrls(Arrays.asList(url1, url2));
 		assertEquals(String.join("", content1, content2), String.join("",  contents));
+		
+		contents = loader.getContentsFromUrls("", URLContentLoader.URL_SEPARATOR + url1.toString());
+		assertEquals(content1, String.join("",  contents));
 	}
 	
 	@Test
