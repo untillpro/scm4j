@@ -1,2 +1,38 @@
 #/bin/sh
-groovy $(dirname $0)/releaser.gsh $*
+set -e
+WD=$(dirname $0)
+RGIT="$WD/releaser-git"
+LIBS=$RGIT/build/libs
+
+fatjar(){
+	"$RGIT"/gradlew -p "$RGIT" fatJar
+}
+
+info(){
+	printf "\e[1;32m" 1>&2
+	echo "$@" 1>&2
+	printf "\e[0m" 1>&2
+}
+
+if [ ! -d "$RGIT" ]; then
+	info "$RGIT" does not exist, will be cloned from https://github.com/scm4j/scm4j-releaser.git
+	git clone https://github.com/scm4j/scm4j-releaser.git $RGIT || exit 1
+	fatjar
+fi
+
+if [ "$1" == "pull" ]; then
+	rm -rf $LIBS
+	branch=$2
+	if [ -z "$branch" ]; then
+		branch=master		
+	fi
+	info Getting updates from $branch...
+	git -C "$RGIT" pull
+	git -C "$RGIT" checkout $branch
+	fatjar
+	info Done
+	exit
+fi
+
+jar=$(ls "$LIBS"/fa*)
+java -cp "$jar" -Djava.util.concurrent.ForkJoinPool.common.parallelism=64 org.scm4j.releaser.cli.CLI $*
