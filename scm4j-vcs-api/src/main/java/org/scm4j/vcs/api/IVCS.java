@@ -24,6 +24,8 @@ public interface IVCS {
 
 	VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage);
 	
+	VCSCommit setFilesContent(String branchName, List<String> filePathes, List<String> contents, String commitMessage);
+	
 	List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName);
 	
 	Set<String> getBranches(String path);
