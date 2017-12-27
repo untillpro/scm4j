@@ -18,6 +18,7 @@ import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -201,6 +202,17 @@ public abstract class VCSAbstractTest {
 			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSBranchNotFound e) {
 		}
+	}
+	
+	@Test
+	public void testFileSetContents() throws Exception {
+		vcsTestDataGen.setFilesContent(null, Arrays.asList(FILE1_NAME, FILE3_IN_FOLDER_NAME), Arrays.asList(LINE_1, LINE_2), FILE3_ADDED_COMMIT_MESSAGE);
+		verifyMocks();
+		assertTrue(logContainsMessage(null, FILE3_ADDED_COMMIT_MESSAGE));
+		assertEquals(LINE_1, vcs.getFileContent(null, FILE1_NAME, null));
+		assertEquals(LINE_2, vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null));
+		
+		assertNull(vcsTestDataGen.setFilesContent(null, new ArrayList<String>(), new ArrayList<String>(), ""));
 	}
 
 	@Test
