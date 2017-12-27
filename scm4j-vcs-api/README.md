@@ -69,6 +69,11 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 - `VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
+- `VCSCommit setFilesContent(String branchName, List<String> filePathes, List<String> contents, String commitMessage)`
+	- Rewrites files with paths `filePathes` within branch `branchName` with according contents `contents` and applies `commitMessage` message to commit
+	- Creates files and its parent folders if doesn't exists
+	- Does not checks `contents` and `filePathes` sizes equality
+	- Returns null if `filePathes` is empty
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
 	- Note: result could be considered as a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
