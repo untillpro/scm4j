@@ -42,7 +42,7 @@ if [ "$1" == "pull" ]; then
 	if [ -z "$branch" ]; then
 		branch=master		
 	fi
-	info "Get updates from $REPO:$branch..."
+	info "Pull from $REPO:$branch to $RGIT..."
 	git -C "$RGIT" pull
 	git -C "$RGIT" checkout $branch
 	fatjar
