@@ -17,17 +17,19 @@ info(){
 
 # Main part
 
-WD=$(dirname $0)
+WD=$HOME/.scm4j
+mkdir -p $WD
+#WD=$(dirname $0)
 
 # Does not start with '.' since: The name '.releaser' starts or ends with a '.'. 
 #   This has been deprecated and is scheduled to be removed in Gradle 5.0
-RGIT="$WD/releaser-git"
+RGIT="$WD/releaser-src"
 
 REPO="https://github.com/scm4j/scm4j-releaser.git"
 LIBS=$RGIT/build/libs
 
 if [ ! -d "$RGIT" ]; then
-	info "$RGIT" does not exist, will be cloned from $REPO
+	info Clone $REPO to "$RGIT"...
 	git clone $REPO $RGIT || exit 1
 	fatjar
 fi
