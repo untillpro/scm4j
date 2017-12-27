@@ -537,11 +537,6 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
-	public void testGetWorkspace() {
-		assertEquals(vcs.getWorkspace(), localVCSWorkspace);
-	}
-
-	@Test
 	public void testToString() {
 		assertTrue(vcs.toString().contains(repoUrl));
 	}
