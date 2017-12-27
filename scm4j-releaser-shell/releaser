@@ -17,9 +17,11 @@ info(){
 
 # Main part
 
-WD=$HOME/.scm4j
-mkdir -p $WD
-#WD=$(dirname $0)
+if [ -z "$HOME" ];then
+	WD=$(dirname $0)
+else
+	WD=$HOME/.scm4j
+fi
 
 # Does not start with '.' since: The name '.releaser' starts or ends with a '.'. 
 #   This has been deprecated and is scheduled to be removed in Gradle 5.0
