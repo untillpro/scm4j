@@ -5,6 +5,7 @@
 /bin
 
 releaser-git/
+releaser-src/
 
 # gradle
 /.gradle
