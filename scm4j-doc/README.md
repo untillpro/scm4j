@@ -24,12 +24,12 @@ See also [softwareengineering.stackexchange: scm vs devops](https://softwareengi
 - dzone: [Software Configuration Management Patterns](https://dzone.com/storage/assets/7529578-rc-167-softwareconfigurationmanagementpatterns.pdf)
 - wiki: [Configuration Management](https://en.wikipedia.org/wiki/Configuration_management)
 - http://scmquest.com/software-configuration-management-scm/
-- [ru: Конфигурационное управление](https://goo.gl/ReJrjH)
+- ru: [Конфигурационное управление](https://goo.gl/ReJrjH)
 
 Related:
 - [ITIL, Information Technology Infrastructure Library](https://en.wikipedia.org/wiki/ITIL)  
-  - [ru: wikipedia ITIL](https://ru.wikipedia.org/wiki/ITIL)
-  - [ru: ITIL books](http://www.wikiitil.ru/books.html)
+  - ru: [wikipedia ITIL](https://ru.wikipedia.org/wiki/ITIL)
+  - ru: [ITIL books](http://www.wikiitil.ru/books.html)
   
   
   
