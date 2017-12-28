@@ -4,7 +4,7 @@ Shell runner for https://github.com/scm4j/scm4j-releaser
 
 # Usage
 
-- Install `jdk8`, `git`, `sh` (on Windows `sh` normally comes with git)
+- Install `jdk8`, `git`, `sh` (on Windows `sh` normally comes with `git`, use `chocolatey install git`)
 - Clone this repository
 - Run `releaser.cmd` or `releaser`
 - Use `releaser pull` to update from `master`
