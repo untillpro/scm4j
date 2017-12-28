@@ -13,7 +13,7 @@ Shell runner for https://github.com/scm4j/scm4j-releaser
 
 # Under the Hood
 
-- releaser.cmd on windows has a single purpose - find `sh`, `git` and launch `releaser`
+- releaser.cmd on windows has a single purpose - find `sh`, `git` and launch `sh releaser`
 
 # Problems
 
