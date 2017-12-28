@@ -21,8 +21,8 @@ According to [scmquest](http://scmquest.com/software-configuration-management-sc
 See also [softwareengineering.stackexchange: scm vs devops](https://softwareengineering.stackexchange.com/questions/130850/difference-between-devops-and-software-configuration-management).
 
 # Links
-- [Software Configuration Management Patterns](https://dzone.com/storage/assets/7529578-rc-167-softwareconfigurationmanagementpatterns.pdf)
-- [wiki: Configuration Management](https://en.wikipedia.org/wiki/Configuration_management)
+- dzone: [Software Configuration Management Patterns](https://dzone.com/storage/assets/7529578-rc-167-softwareconfigurationmanagementpatterns.pdf)
+- wiki: [Configuration Management](https://en.wikipedia.org/wiki/Configuration_management)
 - http://scmquest.com/software-configuration-management-scm/
 - [ru: Конфигурационное управление](https://goo.gl/ReJrjH)
 
