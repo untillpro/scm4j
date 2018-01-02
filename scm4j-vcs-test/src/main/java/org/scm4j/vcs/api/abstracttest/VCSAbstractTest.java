@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -97,8 +96,8 @@ public abstract class VCSAbstractTest {
 		
 		repoName = "scm4j-vcs-" + getVCSTypeString() + "-testrepo";
 
-		String uuid = UUID.randomUUID().toString();
-		repoName = (repoName + "_" + uuid);
+//		String uuid = UUID.randomUUID().toString();
+//		repoName = (repoName + "_" + uuid);
 		
 		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
 		IVCSWorkspace localVCSGenWorkspace = new VCSWorkspace(TEST_DATA_GEN_WORKSAPCE_DIR);
