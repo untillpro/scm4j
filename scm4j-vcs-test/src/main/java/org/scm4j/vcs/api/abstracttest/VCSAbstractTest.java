@@ -202,13 +202,19 @@ public abstract class VCSAbstractTest {
 	
 	@Test
 	public void testFileSetContents() throws Exception {
-		vcsTestDataGen.setFilesContent(null, Arrays.asList(FILE1_NAME, FILE3_IN_FOLDER_NAME), Arrays.asList(LINE_1, LINE_2), FILE3_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(null, Arrays.asList(
+				new VCSChangeListNode(FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE),
+				new VCSChangeListNode(FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE)));
 		verifyMocks();
-		assertTrue(logContainsMessage(null, FILE3_ADDED_COMMIT_MESSAGE));
+		List<VCSCommit> commits = vcs.getCommitsRange(null, null, WalkDirection.DESC, 1);
+		assertTrue(commits.size() == 1);
+		VCSCommit lastCommit = commits.get(0);
+		assertTrue(lastCommit.getLogMessage().contains(FILE1_ADDED_COMMIT_MESSAGE));
+		assertTrue(lastCommit.getLogMessage().contains(FILE3_ADDED_COMMIT_MESSAGE));
 		assertEquals(LINE_1, vcs.getFileContent(null, FILE1_NAME, null));
 		assertEquals(LINE_2, vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null));
 		
-		assertNull(vcsTestDataGen.setFilesContent(null, new ArrayList<String>(), new ArrayList<String>(), ""));
+		assertNull(vcsTestDataGen.setFileContent(null, new ArrayList<>()));
 	}
 
 	@Test
