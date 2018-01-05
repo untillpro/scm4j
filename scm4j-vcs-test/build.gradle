@@ -5,8 +5,8 @@ plugins {
 	id 'idea'
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_7
-targetCompatibility = JavaVersion.VERSION_1_7
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
 version = file('version').text.trim()
