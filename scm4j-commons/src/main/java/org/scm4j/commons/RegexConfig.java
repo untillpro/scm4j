@@ -1,13 +1,18 @@
 package org.scm4j.commons;
 
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.NodeId;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.yaml.snakeyaml.Yaml;
-
 public class RegexConfig {
 	public static final String URL_SEPARATOR = URLContentLoader.URL_SEPARATOR;
+	public static final String OMAP_TAG = "!!omap";
 	private final LinkedHashMap<Object, Object> content = new LinkedHashMap<>();
 	
 	@SuppressWarnings("unchecked")
@@ -21,10 +26,13 @@ public class RegexConfig {
 					continue;
 				}
 				String content = loader.getContentFromUrl(url);
+
 				if (!content.isEmpty()) {
+					content = prependOmapIfNeed(content, yaml);
 					LinkedHashMap<Object, Object> map;
 					try {
 						map = (LinkedHashMap<Object, Object>) yaml.load(content);
+						//map = (LinkedHashMap<Object, Object>) yaml.loadAs(content, Map.class);
 					} catch (Exception e) {
 						throw new EConfig("failed to load config from yaml content at " + url + ": " + e.getMessage(), e);
 					}
@@ -36,16 +44,40 @@ public class RegexConfig {
 			}
 		}
 	}
-	
+
+	String prependOmapIfNeed(String content, Yaml yaml) throws IOException {
+		if (isNotEmptyAndHasNoOMAPTag(content)) {
+			StringReader sr = new StringReader(content);
+			Node node = yaml.compose(sr);
+			if (node.getNodeId().equals(NodeId.sequence)) {
+				return OMAP_TAG + "\r\n" + content;
+			}
+			return content;
+		}
+		return content;
+	}
+
+	private boolean isNotEmptyAndHasNoOMAPTag(String content) throws IOException {
+		StringReader sr = new StringReader(content);
+		BufferedReader br = new BufferedReader(sr);
+		String line = br.readLine();
+		while (line != null) {
+			CommentedString cs = new CommentedString(line);
+			if (cs.isValuable()) {
+				return !cs.getStrNoComment().trim().startsWith(OMAP_TAG);
+			}
+			line = br.readLine();
+		}
+		return false;
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T> T getPropByName(String nameToMatch, String propName, T defaultValue) {
-		if (content != null) {
-			for (Object key : content.keySet()) {
-				if (key == null || nameToMatch.matches((String) key)) {
-					Map<?, ?> props = (Map<?, ?>) content.get(key);
-					if (props.containsKey(propName)) {
-						return (T) props.get(propName);
-					}
+		for (Object key : content.keySet()) {
+			if (key == null || nameToMatch.matches((String) key)) {
+				Map<?, ?> props = (Map<?, ?>) content.get(key);
+				if (props.containsKey(propName)) {
+					return (T) props.get(propName);
 				}
 			}
 		}
@@ -54,16 +86,14 @@ public class RegexConfig {
 
 	public String getPlaceholderedStringByName(String nameToMatch, Object propName, String defaultValue) {
 		String result = defaultValue;
-		if (content != null) {
-			for (Object key : content.keySet()) {
-				if (key == null || nameToMatch.matches((String) key)) {
-					Map<?, ?> props = (Map<?, ?>) content.get(key);
-					if (props.containsKey(propName)) {
-						result = (String) props.get(propName);
-						if (result != null)
-							result = nameToMatch.replaceFirst(key == null ? ".*" : (String) key, result);
-						break;
-					}
+		for (Object key : content.keySet()) {
+			if (key == null || nameToMatch.matches((String) key)) {
+				Map<?, ?> props = (Map<?, ?>) content.get(key);
+				if (props.containsKey(propName)) {
+					result = (String) props.get(propName);
+					if (result != null)
+						result = nameToMatch.replaceFirst(key == null ? ".*" : (String) key, result);
+					break;
 				}
 			}
 		}
