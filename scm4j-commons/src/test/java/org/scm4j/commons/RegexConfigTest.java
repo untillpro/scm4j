@@ -92,4 +92,10 @@ public class RegexConfigTest {
 		content = config.prependOmapIfNeed(FileUtils.readFileToString(empty, StandardCharsets.UTF_8), yaml);
 		assertTrue(StringUtils.countMatches(content, RegexConfig.OMAP_TAG) == 0);
 	}
+
+	@Test
+	public void testNoOmapTagOnEmptyFile() throws Exception {
+		File empty = new File(this.getClass().getResource("empty.yml").toURI());
+		assertTrue(config.noOMAPTag(FileUtils.readFileToString(empty, StandardCharsets.UTF_8)));
+	}
 }

@@ -53,7 +53,7 @@ public class RegexConfig {
 		return content;
 	}
 
-	boolean isSequence(String content, Yaml yaml) {
+	private boolean isSequence(String content, Yaml yaml) {
 		StringReader sr = new StringReader(content);
 		Node node = yaml.compose(sr);
 		return node != null && node.getNodeId().equals(NodeId.sequence);
