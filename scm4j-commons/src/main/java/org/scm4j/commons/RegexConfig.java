@@ -13,6 +13,7 @@ import java.util.Map;
 public class RegexConfig {
 	public static final String URL_SEPARATOR = URLContentLoader.URL_SEPARATOR;
 	public static final String OMAP_TAG = "!!omap";
+
 	private final LinkedHashMap<Object, Object> content = new LinkedHashMap<>();
 	
 	@SuppressWarnings("unchecked")
@@ -32,7 +33,6 @@ public class RegexConfig {
 					LinkedHashMap<Object, Object> map;
 					try {
 						map = (LinkedHashMap<Object, Object>) yaml.load(content);
-						//map = (LinkedHashMap<Object, Object>) yaml.loadAs(content, Map.class);
 					} catch (Exception e) {
 						throw new EConfig("failed to load config from yaml content at " + url + ": " + e.getMessage(), e);
 					}
@@ -52,7 +52,6 @@ public class RegexConfig {
 			if (node.getNodeId().equals(NodeId.sequence)) {
 				return OMAP_TAG + "\r\n" + content;
 			}
-			return content;
 		}
 		return content;
 	}
