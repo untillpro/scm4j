@@ -1,5 +1,8 @@
-package org.scm4j.commons;
+package org.scm4j.commons.regexconfig;
 
+import org.scm4j.commons.CommentedString;
+import org.scm4j.commons.EConfig;
+import org.scm4j.commons.URLContentLoader;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeId;
@@ -8,16 +11,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.LinkedHashMap;
-import java.util.Map;
 
-public class RegexConfig {
+public class RegexConfigLoaderYaml {
+
 	public static final String URL_SEPARATOR = URLContentLoader.URL_SEPARATOR;
 	public static final String OMAP_TAG = "!!omap";
 
-	private final LinkedHashMap<Object, Object> content = new LinkedHashMap<>();
-	
 	@SuppressWarnings("unchecked")
-	public void loadFromYamlUrls(String... separatedUrls) throws IOException {
+	public void loadFromUrls(LinkedHashMap<Object, Object> content, String... separatedUrls) throws IOException {
 		Yaml yaml = new Yaml();
 		URLContentLoader loader = new URLContentLoader();
 		for (String separatedUrl : separatedUrls) {
@@ -26,18 +27,18 @@ public class RegexConfig {
 				if (url.isEmpty()) {
 					continue;
 				}
-				String content = loader.getContentFromUrl(url);
+				String contentStr = loader.getContentFromUrl(url);
 
-				if (!content.isEmpty()) {
-					content = prependOmapIfNeed(content, yaml);
+				if (!contentStr.isEmpty()) {
+					contentStr = prependOmapIfNeed(contentStr, yaml);
 					LinkedHashMap<Object, Object> map;
 					try {
-						map = (LinkedHashMap<Object, Object>) yaml.load(content);
+						map = (LinkedHashMap<Object, Object>) yaml.load(contentStr);
 					} catch (Exception e) {
 						throw new EConfig("failed to load config from yaml content at " + url + ": " + e.getMessage(), e);
 					}
 					if (map != null) {
-						this.content.putAll(map);
+						content.putAll(map);
 					}
 				}
 			}
@@ -71,38 +72,5 @@ public class RegexConfig {
 			line = br.readLine();
 		}
 		return true;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <T> T getPropByName(String nameToMatch, String propName, T defaultValue) {
-		for (Object key : content.keySet()) {
-			if (key == null || nameToMatch.matches((String) key)) {
-				Map<?, ?> props = (Map<?, ?>) content.get(key);
-				if (props.containsKey(propName)) {
-					return (T) props.get(propName);
-				}
-			}
-		}
-		return defaultValue;
-	}
-
-	public String getPlaceholderedStringByName(String nameToMatch, Object propName, String defaultValue) {
-		String result = defaultValue;
-		for (Object key : content.keySet()) {
-			if (key == null || nameToMatch.matches((String) key)) {
-				Map<?, ?> props = (Map<?, ?>) content.get(key);
-				if (props.containsKey(propName)) {
-					result = (String) props.get(propName);
-					if (result != null)
-						result = nameToMatch.replaceFirst(key == null ? ".*" : (String) key, result);
-					break;
-				}
-			}
-		}
-		return result;
-	}
-
-	public Boolean isEmpty() {
-		return content.isEmpty();
 	}
 }

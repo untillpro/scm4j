@@ -13,9 +13,9 @@ import static org.junit.Assert.*;
 
 public class URLContentLoaderTest {
 	
-	private static final String SEQ_BOM = "sequence-bom.yml";
-	private static final String SEQ_OMAP = "sequence-omap.yml";
-	private static final String SEQ = "sequence.yml";
+	private static final String SEQ_BOM = "regexconfig/sequence-bom.yml";
+	private static final String SEQ_OMAP = "regexconfig/sequence-omap.yml";
+	private static final String SEQ = "regexconfig/sequence.yml";
 
 	@Test
 	public void testGetContentFromUrls() throws Exception {
