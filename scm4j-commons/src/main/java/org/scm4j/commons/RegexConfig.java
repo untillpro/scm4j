@@ -39,24 +39,27 @@ public class RegexConfig {
 					if (map != null) {
 						this.content.putAll(map);
 					}
-					
 				}
 			}
 		}
 	}
 
 	String prependOmapIfNeed(String content, Yaml yaml) throws IOException {
-		if (isNotEmptyAndHasNoOMAPTag(content)) {
-			StringReader sr = new StringReader(content);
-			Node node = yaml.compose(sr);
-			if (node.getNodeId().equals(NodeId.sequence)) {
+		if (isSequence(content, yaml)) {
+			if (noOMAPTag(content)) {
 				return OMAP_TAG + "\r\n" + content;
 			}
 		}
 		return content;
 	}
 
-	private boolean isNotEmptyAndHasNoOMAPTag(String content) throws IOException {
+	boolean isSequence(String content, Yaml yaml) {
+		StringReader sr = new StringReader(content);
+		Node node = yaml.compose(sr);
+		return node != null && node.getNodeId().equals(NodeId.sequence);
+	}
+
+	boolean noOMAPTag(String content) throws IOException {
 		StringReader sr = new StringReader(content);
 		BufferedReader br = new BufferedReader(sr);
 		String line = br.readLine();
@@ -67,7 +70,7 @@ public class RegexConfig {
 			}
 			line = br.readLine();
 		}
-		return false;
+		return true;
 	}
 
 	@SuppressWarnings("unchecked")
