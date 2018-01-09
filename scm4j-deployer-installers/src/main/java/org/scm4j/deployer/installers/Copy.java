@@ -24,8 +24,12 @@ public class Copy implements IComponentDeployer {
     @Override
     public DeploymentResult deploy() {
         try {
-            for (File file : filesForDeploy)
-                FileUtils.copyDirectory(file, outputFile);
+            for (File file : filesForDeploy) {
+                if (file.isDirectory())
+                    FileUtils.copyDirectory(file, outputFile);
+                else
+                    FileUtils.copyFile(file, outputFile);
+            }
             return OK;
         } catch (IOException e) {
             return NEED_REBOOT;

@@ -47,7 +47,7 @@ public class ExecTest {
     }
 
     @Test
-    public void testCreateCmd() throws Exception {
+    public void testCreateCmd() {
         ProcessBuilder expected = executor.getBuilder(executor.getDeployCmd());
         ProcessBuilder actual = new ProcessBuilder(StringUtils
                 .replace(mainArtifactFolder.getPath(), "\\", "/"), "/silent",
@@ -63,7 +63,7 @@ public class ExecTest {
     }
 
     @Test
-    public void testInitEmptyAtrifacts() throws Exception {
+    public void testInitEmptyAtrifacts() {
         depCtx = new DeploymentContext(MAIN_ARTIFACT);
         depCtx.setDeploymentPath("C:/");
         executor.init(depCtx);

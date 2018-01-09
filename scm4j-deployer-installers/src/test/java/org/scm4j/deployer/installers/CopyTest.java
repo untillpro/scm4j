@@ -1,8 +1,9 @@
 package org.scm4j.deployer.installers;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.DeploymentResult;
@@ -18,17 +19,15 @@ public class CopyTest {
 
     private static final File TEST_FOLDER = new File(System.getProperty("java.io.tmpdir"), "test-copy");
     private static final File FOLDER_FOR_COPY = new File(TEST_FOLDER, "file");
+    private static final File FILE_FOR_COPY = new File(TEST_FOLDER, "file.txt");
     private static final File OUTPUT_FOLDER = new File(TEST_FOLDER, "output");
     private DeploymentContext depCtx;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeClass
+    public static void setUp() throws Exception {
         FOLDER_FOR_COPY.mkdirs();
-        depCtx = new DeploymentContext(FOLDER_FOR_COPY.getName());
-        depCtx.setDeploymentPath(OUTPUT_FOLDER.getPath());
-        Map<String, File> artifacts = new HashMap<>();
-        artifacts.put(FOLDER_FOR_COPY.getName(), FOLDER_FOR_COPY);
-        depCtx.setArtifacts(artifacts);
+        FILE_FOR_COPY.createNewFile();
+        FileUtils.writeStringToFile(FILE_FOR_COPY, "hello file", "UTF-8");
         for (int i = 0; i < 5; i++) {
             File file = new File(FOLDER_FOR_COPY, String.valueOf(i));
             file.mkdir();
@@ -38,19 +37,39 @@ public class CopyTest {
         }
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDown() throws Exception {
         FileUtils.deleteDirectory(TEST_FOLDER);
     }
 
+    @Before
+    public void before() {
+        depCtx = new DeploymentContext(FOLDER_FOR_COPY.getName());
+        depCtx.setDeploymentPath(OUTPUT_FOLDER.getPath());
+        Map<String, File> artifacts = new HashMap<>();
+        artifacts.put(FOLDER_FOR_COPY.getName(), FOLDER_FOR_COPY);
+        depCtx.setArtifacts(artifacts);
+    }
+
     @Test
-    public void testDeploy() throws Exception {
+    public void testDeployFolder() throws Exception {
         Copy copy = new Copy();
         copy.init(depCtx);
         copy.deploy();
         for (int i = 0; i < 5; i++)
             assertTrue(FileUtils.contentEquals(new File(FOLDER_FOR_COPY, String.valueOf(i) + ".txt"),
                     new File(OUTPUT_FOLDER, String.valueOf(i) + ".txt")));
+    }
+
+    @Test
+    public void testDeployFile() throws Exception {
+        Map<String, File> artifacts = new HashMap<>();
+        artifacts.put(FILE_FOR_COPY.getName(), FILE_FOR_COPY);
+        depCtx.setArtifacts(artifacts);
+        Copy copy = new Copy();
+        copy.init(depCtx);
+        copy.deploy();
+        assertEquals(FileUtils.readFileToString(FILE_FOR_COPY, "UTF-8"), "hello file");
     }
 
     @Test
@@ -65,7 +84,7 @@ public class CopyTest {
     }
 
     @Test
-    public void testInit() throws Exception {
+    public void testInit() {
         Copy copy = new Copy();
         copy.init(depCtx);
         assertEquals(copy.getFilesForDeploy(), depCtx.getArtifacts().values());
@@ -73,7 +92,7 @@ public class CopyTest {
     }
 
     @Test
-    public void testInitSetPath() throws Exception {
+    public void testInitSetPath() {
         Copy copy = new Copy();
         copy.setDefaultFolderName("hello");
         copy.init(depCtx);
