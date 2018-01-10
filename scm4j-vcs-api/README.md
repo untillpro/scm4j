@@ -72,7 +72,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 - `VCSCommit setFileContent(String branchName, List<VCSChangeListNode> vcsChangeList)`
 	- For each `vcsChangeListNode`: rewrites file with path `vcsChangeListNode.getFilePath()` within branch `branchName` with content `vcsChangeListNode.getContent()`
 	- Single commit, commit message is all `vcsChangeListNode.getCommitMessage()` strings joined with ", "
-	- Creates files and its parent folders if doesn't exists
+	- Creates files and its parent folders if aren't exist
 	- Returns null if `vcsChangeList` is empty
 - `List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String destBranchName)`
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
