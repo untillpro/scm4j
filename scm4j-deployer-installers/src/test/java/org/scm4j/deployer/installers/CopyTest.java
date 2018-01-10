@@ -18,7 +18,7 @@ import static org.junit.Assert.assertTrue;
 public class CopyTest {
 
     private static final File TEST_FOLDER = new File(System.getProperty("java.io.tmpdir"), "test-copy");
-    private static final File FOLDER_FOR_COPY = new File(TEST_FOLDER, "file");
+    private static final File FOLDER_FOR_COPY = new File(TEST_FOLDER, "files");
     private static final File FILE_FOR_COPY = new File(TEST_FOLDER, "file.txt");
     private static final File OUTPUT_FOLDER = new File(TEST_FOLDER, "output");
     private DeploymentContext depCtx;
@@ -56,9 +56,16 @@ public class CopyTest {
         Copy copy = new Copy();
         copy.init(depCtx);
         copy.deploy();
-        for (int i = 0; i < 5; i++)
-            assertTrue(FileUtils.contentEquals(new File(FOLDER_FOR_COPY, String.valueOf(i) + ".txt"),
-                    new File(OUTPUT_FOLDER, String.valueOf(i) + ".txt")));
+        File newFile;
+        for (int i = 0; i < 5; i++) {
+            newFile = new File(OUTPUT_FOLDER, FOLDER_FOR_COPY.getName());
+            newFile = new File(newFile, String.valueOf(i));
+            newFile = new File(newFile, String.valueOf(i) + ".txt");
+            File ethalon = new File(FOLDER_FOR_COPY, String.valueOf(i));
+            assertTrue(newFile.exists());
+            assertTrue(FileUtils.contentEquals(new File(ethalon, String.valueOf(i) + ".txt"),
+                    newFile));
+        }
     }
 
     @Test
@@ -81,6 +88,8 @@ public class CopyTest {
         }
         DeploymentResult res = copy.deploy();
         assertEquals(DeploymentResult.NEED_REBOOT, res);
+
+        setUp();
     }
 
     @Test

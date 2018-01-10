@@ -7,6 +7,13 @@ plugins {
 	id 'idea'
 }
 
+configurations.compile {
+	resolutionStrategy {
+		cacheChangingModulesFor 0, 'seconds'
+		cacheDynamicVersionsFor 0, 'seconds'
+	}
+}
+
 repositories {
 	maven { url "https://jitpack.io" }
 	mavenCentral()
@@ -23,7 +30,9 @@ dependencies {
 	def s = '[ \t]*', w = '[^:#@\\s]+?'
 	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
 		match, group, name, version, classifier, ext, configuration ->
-			add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}")
+			add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}", {
+				changing = true
+			})
 	}
 
 	compileOnly 'org.projectlombok:lombok:1.16.18'

@@ -26,9 +26,9 @@ public class Copy implements IComponentDeployer {
         try {
             for (File file : filesForDeploy) {
                 if (file.isDirectory())
-                    FileUtils.copyDirectory(file, outputFile);
+                    FileUtils.copyDirectoryToDirectory(file, outputFile);
                 else
-                    FileUtils.copyFile(file, outputFile);
+                    FileUtils.copyFileToDirectory(file, outputFile);
             }
             return OK;
         } catch (IOException e) {
