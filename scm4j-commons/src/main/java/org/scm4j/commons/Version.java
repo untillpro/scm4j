@@ -200,7 +200,7 @@ public class Version {
 
 	}
 
-	private boolean isSemantic() {
+	public boolean isSemantic() {
 		return isSemantic;
 	}
 
