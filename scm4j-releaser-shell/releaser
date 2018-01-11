@@ -17,10 +17,12 @@ info(){
 
 # Main part
 
-if [ -z "$HOME" ];then
+USR_HOME=${USERPROFILE:-$HOME}
+
+if [ -z "$USR_HOME" ];then
 	WD=$(dirname $0)
 else
-	WD=$HOME/.scm4j
+	WD=$USR_HOME/.scm4j
 fi
 
 # Does not start with '.' since: The name '.releaser' starts or ends with a '.'. 

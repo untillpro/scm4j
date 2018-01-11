@@ -3,13 +3,13 @@ if [%1] == [git.exe] goto normal
 if [%1] == [java.exe] goto test_empty_path
 
 call %~dp0releaser git.exe sh.exe %*
-exit
+exit /b
 
 :test_empty_path
 SET PATH=%~dp$PATH:1
 echo Test path=%PATH%
 ./releaser.cmd %2 %3 %4 %5 %6
-exit
+exit /b
 
 :normal
 @echo off
@@ -29,12 +29,12 @@ if ."%shpath%" == ."" goto sh_not_found
 
 "%shpath%sh" %~dp0releaser %3 %4 %5 %6 %7 %8 %9
 
-exit
+exit /b
 
 :git_not_found
 echo %1 not found
-exit 1
+exit /b 1
 
 :sh_not_found
 echo %2 not found
-exit 1
+exit /b 1
