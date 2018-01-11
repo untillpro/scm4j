@@ -2,7 +2,7 @@
 
 set -e
 
-# Helpers
+# Helpers 
 
 fatjar(){
 	info "Run gradle..."
