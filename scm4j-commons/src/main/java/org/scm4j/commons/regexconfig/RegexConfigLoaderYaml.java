@@ -46,8 +46,8 @@ public class RegexConfigLoaderYaml {
 	}
 
 	String prependOmapIfNeed(String content, Yaml yaml) throws IOException {
-		if (isSequence(content, yaml)) {
-			if (noOMAPTag(content)) {
+		if (noOMAPTag(content)) {
+			if (isSequence(content, yaml)) {
 				return OMAP_TAG + "\r\n" + content;
 			}
 		}
