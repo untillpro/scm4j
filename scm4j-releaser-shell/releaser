@@ -30,7 +30,7 @@ fi
 RGIT="$WD/releaser-src"
 
 REPO="https://github.com/scm4j/scm4j-releaser.git"
-REPO_SHELL="https://github.com/scm4j/scm4j-releaser-shell.git"
+REPO_SHELL="https://github.com/scm4j/scm4j-releaser-shell"
 LIBS=$RGIT/build/libs
 
 if [ ! -d "$RGIT" ]; then
@@ -40,7 +40,7 @@ if [ ! -d "$RGIT" ]; then
 fi
 
 if [ "$1" == "pull" ]; then
-    if [ "$2" == "shell" ]; then
+	if [ "$2" == "shell" ]; then
 		REPOT=$REPO_SHELL
 		DIRT=$(dirname $0)
 	else
@@ -48,15 +48,15 @@ if [ "$1" == "pull" ]; then
 		DIRT=$RGIT
 		branch=$2
 	fi
-	rm -rf $LIBS
 	if [ -z "$branch" ]; then
 		branch=master
 	fi
 	info "Pull from $REPOT:$branch to $DIRT..."
-	git -C "$RGIT" checkout master
-	git -C "$RGIT" pull
-	git -C "$RGIT" checkout $branch
+	git -C "$DIRT" checkout master
+	git -C "$DIRT" pull
 	if [ ! "$2" == "shell" ]; then
+		git -C "$DIRT" checkout $branch
+		rm -rf $LIBS
 		fatjar
 	fi
 	info Done
