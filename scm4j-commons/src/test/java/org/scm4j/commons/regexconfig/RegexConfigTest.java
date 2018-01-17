@@ -1,17 +1,14 @@
 package org.scm4j.commons.regexconfig;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.scm4j.commons.EConfig;
-import org.yaml.snakeyaml.Yaml;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import static org.junit.Assert.*;
 
 public class RegexConfigTest {
 
@@ -69,9 +66,6 @@ public class RegexConfigTest {
 			config.loadFromYamlUrls(wrongContent);
 			fail();
 		} catch (EConfig e) {
-
 		}
 	}
-
-
 }
