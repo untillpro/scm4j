@@ -5,10 +5,10 @@ import java.util.List;
 
 public interface IProduct {
 
-    IProductStructure getProductStructure();
+	IProductStructure getProductStructure();
 
-    default List<String> getDependentProducts() {
-        return Collections.emptyList();
-    }
+	default List<String> getDependentProducts() {
+		return Collections.emptyList();
+	}
 
 }

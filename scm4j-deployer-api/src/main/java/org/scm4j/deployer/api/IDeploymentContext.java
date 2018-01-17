@@ -5,9 +5,10 @@ import java.util.Map;
 
 public interface IDeploymentContext {
 
-    String getMainArtifact();
-    Map<String, File> getArtifacts();
+	String getMainArtifact();
 
-    String getDeploymentPath();
+	Map<String, File> getArtifacts();
+
+	String getDeploymentPath();
 
 }

@@ -8,18 +8,18 @@ import java.util.Map;
 @Data
 public class DeploymentContext implements IDeploymentContext {
 
-    private final String mainArtifact;
-    private Map<String, File> artifacts;
-    private String deploymentPath;
+	private final String mainArtifact;
+	private Map<String, File> artifacts;
+	private String deploymentPath;
 
-    public DeploymentContext(String mainArtifact) {
-        this.mainArtifact = mainArtifact;
-    }
+	public DeploymentContext(String mainArtifact) {
+		this.mainArtifact = mainArtifact;
+	}
 
-    @Override
-    public String toString() {
-        return "DeploymentContext{" +
-                "mainArtifact='" + mainArtifact + '\'' +
-                '}';
-    }
+	@Override
+	public String toString() {
+		return "DeploymentContext{" +
+				"mainArtifact='" + mainArtifact + '\'' +
+				'}';
+	}
 }

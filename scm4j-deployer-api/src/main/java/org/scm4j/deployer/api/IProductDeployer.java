@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface IProductDeployer {
 
-    DeploymentResult deploy(String artifactId, String version);
+	DeploymentResult deploy(String artifactId, String version);
 
 	File download(String artifactId, String version);
 
