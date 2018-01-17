@@ -30,7 +30,7 @@ dependencies {
 	def s = '[ \t]*', w = '[^:#@\\s]+?'
 	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
 		match, group, name, version, classifier, ext, configuration ->
-			add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}", {
+			add(configuration ?: 'compile', "$group:$name:${version ?: 'latest.integration'}${classifier ?: ''}${ext ?: ''}", {
 				changing = true
 			})
 	}
@@ -43,7 +43,7 @@ dependencies {
 }
 
 jar {
-	manifest.attributes (
+	manifest.attributes(
 			'Specification-Title': project.name,
 			'Specification-Version': version.replaceAll(/-SNAPSHOT$/, ''),
 			'Implementation-Title': project.name,
