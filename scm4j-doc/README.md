@@ -18,7 +18,9 @@ According to [scmquest](http://scmquest.com/software-configuration-management-sc
 - Defect tracking and traceability
 - Ensuring integrity, visibility, project coordination and project evolution
 
-See also [softwareengineering.stackexchange: scm vs devops](https://softwareengineering.stackexchange.com/questions/130850/difference-between-devops-and-software-configuration-management).
+See also 
+- [softwareengineering.stackexchange: scm vs devops](https://softwareengineering.stackexchange.com/questions/130850/difference-between-devops-and-software-configuration-management).
+- [DevOps Defined](https://www.hashicorp.com/devops-defined)
 
 # Links
 - dzone: [Software Configuration Management Patterns](https://dzone.com/storage/assets/7529578-rc-167-softwareconfigurationmanagementpatterns.pdf)
