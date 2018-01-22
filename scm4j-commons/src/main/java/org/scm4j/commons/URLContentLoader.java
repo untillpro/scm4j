@@ -1,8 +1,6 @@
 package org.scm4j.commons;
 
-import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.BOMInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,10 +48,7 @@ public class URLContentLoader {
 	
 	public String getContentFromUrl(URL url) throws IOException {
 		try (InputStream inputStream = url.openStream()) {
-			BOMInputStream bOMInputStream = new BOMInputStream(inputStream);
-			ByteOrderMark bom = bOMInputStream.getBOM();
-			String charsetName = bom == null ? StandardCharsets.UTF_8.toString() : bom.getCharsetName();
-			return IOUtils.toString(bOMInputStream, charsetName);
+			return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 		}
 	}
 	

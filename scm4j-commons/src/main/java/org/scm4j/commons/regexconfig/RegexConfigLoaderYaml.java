@@ -1,24 +1,16 @@
 package org.scm4j.commons.regexconfig;
 
-import org.scm4j.commons.CommentedString;
-import org.scm4j.commons.EConfig;
 import org.scm4j.commons.URLContentLoader;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.nodes.Node;
-import org.yaml.snakeyaml.nodes.NodeId;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.LinkedHashMap;
 
 public class RegexConfigLoaderYaml {
 
 	public static final String URL_SEPARATOR = URLContentLoader.URL_SEPARATOR;
-	public static final String OMAP_TAG = "!!omap";
 
 	@SuppressWarnings("unchecked")
-	public void loadFromUrls(LinkedHashMap<Object, Object> content, String... separatedUrls) throws IOException {
+	public void loadFromUrls(LinkedHashMap<Object, Object> content, String... separatedUrls) {
 		Yaml yaml = new Yaml();
 		URLContentLoader loader = new URLContentLoader();
 		for (String separatedUrl : separatedUrls) {
@@ -27,50 +19,28 @@ public class RegexConfigLoaderYaml {
 				if (url.isEmpty()) {
 					continue;
 				}
-				String contentStr = loader.getContentFromUrl(url);
-
-				if (!contentStr.isEmpty()) {
-					contentStr = prependOmapIfNeed(contentStr, yaml);
-					LinkedHashMap<Object, Object> map;
-					try {
-						map = (LinkedHashMap<Object, Object>) yaml.load(contentStr);
-					} catch (Exception e) {
-						throw new EConfig("failed to load config from yaml content at " + url + ": " + e.getMessage(), e);
+				Object res;
+				String contentStr;
+				try {
+					contentStr = loader.getContentFromUrl(url);
+				} catch (Exception e) {
+					throw new EConfigReadFailed("Failed to read config from url " + url + ": "+ e.getMessage(), e);
+				}
+				if (contentStr.isEmpty()) {
+					continue;
+				}
+				try {
+					res = yaml.load(contentStr);
+				} catch (Exception e) {
+					throw new EConfigParseFailed("Failed to parse config from yaml content at " + url + ": " + e.getMessage(), e);
+				}
+				if (res != null) {
+					if (!(res instanceof LinkedHashMap)) {
+						throw new EConfigWrongFormat("Unexpected yaml format at " + url + ": ordered map only is supported");
 					}
-					if (map != null) {
-						content.putAll(map);
-					}
+					content.putAll((LinkedHashMap<Object, Object>) res);
 				}
 			}
 		}
-	}
-
-	String prependOmapIfNeed(String content, Yaml yaml) throws IOException {
-		if (noOMAPTag(content)) {
-			if (isSequence(content, yaml)) {
-				return OMAP_TAG + "\r\n" + content;
-			}
-		}
-		return content;
-	}
-
-	private boolean isSequence(String content, Yaml yaml) {
-		StringReader sr = new StringReader(content);
-		Node node = yaml.compose(sr);
-		return node != null && node.getNodeId().equals(NodeId.sequence);
-	}
-
-	boolean noOMAPTag(String content) throws IOException {
-		StringReader sr = new StringReader(content);
-		BufferedReader br = new BufferedReader(sr);
-		String line = br.readLine();
-		while (line != null) {
-			CommentedString cs = new CommentedString(line);
-			if (cs.isValuable()) {
-				return !cs.getStrNoComment().trim().startsWith(OMAP_TAG);
-			}
-			line = br.readLine();
-		}
-		return true;
 	}
 }

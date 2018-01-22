@@ -1,4 +1,5 @@
 ﻿# this file contains BOM
+!!omap
 - node4(.*):
     prop4: value4_$1
 

@@ -1,14 +1,9 @@
 package org.scm4j.commons.regexconfig;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.scm4j.commons.EConfig;
+
+import static org.junit.Assert.*;
 
 public class RegexConfigTest {
 
@@ -17,8 +12,11 @@ public class RegexConfigTest {
 	private String mapping = this.getClass().getResource("mapping.yml").toString();
 	private String seq = this.getClass().getResource("sequence.yml").toString();
 	private String empty = this.getClass().getResource("empty.yml").toString();
-	private String wrongContent = this.getClass().getResource("wrong-content.yml").toString();
 	private String seqBOM = this.getClass().getResource("sequence-bom.yml").toString();
+	private String nonOmap = this.getClass().getResource("non-omap.yml").toString();
+	private String wrongContent = this.getClass().getResource("wrong-content.yml").toString();
+	private String emptyContent = this.getClass().getResource("empty-content.yml").toString();
+	private String wrongContentInternal = this.getClass().getResource("wrong-internal-content.yml").toString();
 
 	@Before
 	public void setUp() {
@@ -26,7 +24,7 @@ public class RegexConfigTest {
 	}
 
 	@Test
-	public void testGetPropByName() throws IOException {
+	public void testGetPropByName() {
 		config.loadFromYamlUrls(seqOmap, seqBOM + ";" + seq + ";" + mapping);
 		assertEquals("value1and2", config.getPropByName("node1", "prop1and2", null));
 		assertEquals("value1and2", config.getPropByName("node2", "prop1and2", null));
@@ -42,30 +40,64 @@ public class RegexConfigTest {
 	}
 
 	@Test
-	public void testGetPlaceholderedStringByName() throws IOException {
+	public void testGetPlaceholderedStringByName() {
 		config.loadFromYamlUrls(seqOmap, seqBOM + ";" + seq);
 		assertEquals("value4_placeholder", config.getPlaceholderedStringByName("node4placeholder", "prop4", null));
 		assertEquals("unexisting_node", config.getPlaceholderedStringByName("unexisting_node", "placeholderedProp", null));
 	}
 
 	@Test
-	public void testEmptyConfig() throws IOException {
+	public void testEmptyConfig() {
 		config.loadFromYamlUrls(empty);
 		assertTrue(config.isEmpty());
 	}
 
 	@Test
-	public void testEmptyUrls() throws IOException {
+	public void testEmptyContent() {
+		config.loadFromYamlUrls(emptyContent);
+		assertTrue(config.isEmpty());
+	}
+
+	@Test
+	public void testEmptyUrls() {
 		config.loadFromYamlUrls("");
 		assertTrue(config.isEmpty());
 	}
 
 	@Test
-	public void testWrongContent() throws IOException {
+	public void testNonSequenceContent() {
+		try {
+			config.loadFromYamlUrls(nonOmap);
+			fail();
+		} catch (EConfigWrongFormat e) {
+		}
+	}
+
+	@Test
+	public void testConfigReadFailed() {
+		try {
+			config.loadFromYamlUrls("wrong location");
+			fail();
+		} catch (RuntimeException e) {
+		}
+	}
+
+	@Test
+	public void testWrongContent() {
 		try {
 			config.loadFromYamlUrls(wrongContent);
 			fail();
-		} catch (EConfig e) {
+		} catch (EConfigParseFailed e) {
+		}
+	}
+
+	@Test
+	public void testWrongInternalContent() {
+		config.loadFromYamlUrls(wrongContentInternal);
+		try {
+			config.getPropByName("node1", "prop1", "");
+			fail();
+		} catch (EConfigWrongFormat e) {
 		}
 	}
 }
