@@ -6,9 +6,9 @@ public interface IDownloader {
 
 	<T extends IDeploymentContext> T getContextByArtifactId(String artifactId);
 
-	File getProductFile(String coords) throws Exception;
+	void getProductFile(String coords);
 
-	File getProductWithDependency(String coords) throws Exception;
+	void getProductWithDependency(String coords);
 
 	void loadProductDependency(File repository);
 
