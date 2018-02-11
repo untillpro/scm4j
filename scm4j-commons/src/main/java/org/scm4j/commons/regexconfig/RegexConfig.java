@@ -1,7 +1,6 @@
 package org.scm4j.commons.regexconfig;
 
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class RegexConfig {
 
@@ -42,7 +41,7 @@ public class RegexConfig {
 
 	private LinkedHashMap<?,?> getPropsMap(LinkedHashMap<Object, Object> content, Object key) {
 		Object res = content.get(key);
-		if (!(Map.class.isInstance(res))) {
+		if (!(res instanceof LinkedHashMap)) {
 			throw new EConfigWrongFormat("Wrong config format met by key " + key + ": ordered map only is supported");
 		}
 		return (LinkedHashMap<?, ?>) res;
