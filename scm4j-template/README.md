@@ -9,16 +9,34 @@ TBD
 
 # Overview
 
-What it is
+Solution in few words
+
+# Terms
+
+Basic definitions
+
+# Configuration
+
+How to configure the solution
 
 # Usage
 
-How to use this
+How to use the solution (scenarious, who does what and when)
+
+# Status & Troubleshooting
+
+- If background tasks run as a part of the solution it must be possible to view their statuses
+- If t13g actions are possible they must be described
+- If the solution has logging function it must be described
+
+# Limitations
+
+Limitations users should be aware of
 
 # Under the Hood
 
 How it works: interactions of core classes/modules
 
-# How to Test
+# Under the Hood: Testing
 
-Idea of testing
+Ideas of testing
