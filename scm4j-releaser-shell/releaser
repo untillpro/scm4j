@@ -15,6 +15,10 @@ info(){
 	printf "\e[0m" 1>&2
 }
 
+get_branch() {
+	git -C "$DIRT" branch | grep \*
+}
+
 # Main part
 
 USR_HOME=${USERPROFILE:-$HOME}
@@ -56,7 +60,10 @@ if [ "$1" == "pull" ]; then
 	git -C "$DIRT" pull
 	if [ ! "$2" == "shell" ]; then
 		git -C "$DIRT" checkout $branch
-		git -C "$DIRT" pull
+		branch_name=`get_branch`
+		if [[ ! $branch_name = *"HEAD detached"* ]]; then 
+			git -C "$DIRT" pull
+		fi
 		rm -rf $LIBS
 		fatjar
 	fi
