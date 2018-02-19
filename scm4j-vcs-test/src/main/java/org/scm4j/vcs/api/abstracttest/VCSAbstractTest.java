@@ -133,7 +133,7 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertTrue(vcs.getBranches(null).contains(NEW_BRANCH));
 		verifyMocks();
-		assertTrue(vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null).equals(LINE_1));
+		assertTrue(vcs.getFileContentFromBranch(NEW_BRANCH, FILE3_IN_FOLDER_NAME).equals(LINE_1));
 		resetMocks();
 
 		vcsTestDataGen.createBranch(NEW_BRANCH, NEW_BRANCH_2, CREATED_DST_BRANCH_COMMIT_MESSAGE);
@@ -177,24 +177,24 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertTrue(logContainsMessage(null, FILE3_ADDED_COMMIT_MESSAGE));
 		verifyMocks();
-		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_1);
+		assertEquals(vcs.getFileContentFromBranch(null, FILE3_IN_FOLDER_NAME), LINE_1);
 		verifyMocks();
 
 		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
-		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_2);
+		assertEquals(vcs.getFileContentFromBranch(null, FILE3_IN_FOLDER_NAME), LINE_2);
 
 		resetMocks();
-		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, commit.getRevision()), LINE_1);
+		assertEquals(vcs.getFileContentFromRevision(commit.getRevision(), FILE3_IN_FOLDER_NAME), LINE_1);
 		verifyMocks();
 
 		try {
-			vcs.getFileContent(null, "sdfsdf1.txt", null);
+			vcs.getFileContentFromBranch(null, "sdfsdf1.txt");
 			fail(EVCSFileNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSFileNotFound e) {
 		}
 		
 		try {
-			vcs.getFileContent("wrong-branch", FILE3_IN_FOLDER_NAME, null) ;
+			vcs.getFileContentFromBranch("wrong-branch", FILE3_IN_FOLDER_NAME) ;
 			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSBranchNotFound e) {
 		}
@@ -211,8 +211,8 @@ public abstract class VCSAbstractTest {
 		VCSCommit lastCommit = commits.get(0);
 		assertTrue(lastCommit.getLogMessage().contains(FILE1_ADDED_COMMIT_MESSAGE));
 		assertTrue(lastCommit.getLogMessage().contains(FILE3_ADDED_COMMIT_MESSAGE));
-		assertEquals(LINE_1, vcs.getFileContent(null, FILE1_NAME, null));
-		assertEquals(LINE_2, vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null));
+		assertEquals(LINE_1, vcs.getFileContentFromBranch(null, FILE1_NAME));
+		assertEquals(LINE_2, vcs.getFileContentFromBranch(null, FILE3_IN_FOLDER_NAME));
 		
 		assertNull(vcsTestDataGen.setFileContent(null, new ArrayList<>()));
 	}
@@ -230,10 +230,10 @@ public abstract class VCSAbstractTest {
 		assertFalse(mockedLWC.getCorrupted());
 		assertTrue(res.getSuccess());
 		assertTrue(res.getConflictingFiles().size() == 0);
-		String content = vcs.getFileContent(null, FILE1_NAME, null);
+		String content = vcs.getFileContentFromBranch(null, FILE1_NAME);
 
 		assertEquals(content, LINE_1);
-		content = vcs.getFileContent(null, FILE2_NAME, null);
+		content = vcs.getFileContentFromBranch(null, FILE2_NAME);
 		assertEquals(content, LINE_2);
 	}
 
@@ -355,7 +355,7 @@ public abstract class VCSAbstractTest {
 		vcs.removeFile(null, FILE3_IN_FOLDER_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
 		verifyMocks();
 		try {
-			vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null);
+			vcs.getFileContentFromBranch(null, FILE3_IN_FOLDER_NAME);
 			fail();
 		} catch (EVCSFileNotFound e) {
 		}
