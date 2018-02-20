@@ -27,7 +27,7 @@ public class ExceptionsTest {
 
 	@Test
 	public void testEVCSFileNotFound() {
-		EVCSFileNotFound e = new EVCSFileNotFound("test repo", "test branch", "test file", "test revision");
+		EVCSFileNotFound e = new EVCSFileNotFound("test repo", "test file", "test revision");
 		assertFalse(e.getMessage().isEmpty());
 	}
 	

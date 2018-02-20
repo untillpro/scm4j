@@ -62,10 +62,12 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Sets proxy parameters if necessary
 - `String getRepoUrl()`
 	- Returns string url of current vcs repository
-- `String getFileContent(String branchName, String fileRelativePath, String revision)`
+- `String getFileContentFromBranch(String branchName, String filePath)`
 	- Returns file content as a string using UTF-8 encoding.
-	- `fileRelativePath` is a path to file within `branchName` branch 
-	- File state at `revision` revision is used. If `revision` is null then Head state is used
+	- HEAD file state within branch `branchName` is used
+- `String getFileContentFromRevision(String revision, String filePath)`
+	- Returns file content as a string using UTF-8 encoding.
+	- File state at `revision` revision is used.
 - `VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
