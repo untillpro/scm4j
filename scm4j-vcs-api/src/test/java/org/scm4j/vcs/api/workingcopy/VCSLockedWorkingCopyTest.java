@@ -1,14 +1,18 @@
 package org.scm4j.vcs.api.workingcopy;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
-import java.nio.channels.NonWritableChannelException;
+import java.nio.channels.OverlappingFileLockException;
 
-import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
 public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
@@ -29,10 +33,10 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 			assertFalse(lwc.getCorrupted());
 			assertTrue(lwc.getLockFile().exists());
 			assertTrue(lwc.getLockFile().getName().equals(VCSLockedWorkingCopy.LOCK_FILE_PREFIX + lwc.getFolder().getName()));
-			try (FileChannel channel = new FileInputStream(lwc.getLockFile()).getChannel()) {
+			try (FileChannel channel = new FileOutputStream(lwc.getLockFile()).getChannel()) {
 				channel.tryLock();
 				fail();
-			} catch (NonWritableChannelException e) {
+			} catch (OverlappingFileLockException e) {
 
 			}
 			lwc.close();
