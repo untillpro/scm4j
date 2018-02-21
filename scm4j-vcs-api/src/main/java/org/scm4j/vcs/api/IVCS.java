@@ -20,9 +20,7 @@ public interface IVCS {
 
 	String getRepoUrl();
 
-	String getFileContentFromBranch(String branchName, String filePath) throws EVCSFileNotFound;
-
-	String getFileContentFromRevision(String revision, String filePath) throws EVCSFileNotFound;
+	String getFileContent(String branchName, String fileRelativePath, String revision) throws EVCSFileNotFound;
 
 	VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage);
 	
