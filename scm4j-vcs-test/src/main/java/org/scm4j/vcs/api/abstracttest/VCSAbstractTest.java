@@ -186,6 +186,14 @@ public abstract class VCSAbstractTest {
 		resetMocks();
 		assertEquals(vcs.getFileContentFromRevision(commit.getRevision(), FILE3_IN_FOLDER_NAME), LINE_1);
 		verifyMocks();
+		
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, "new branch created");
+		commit = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, MOD_LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_3, CONTENT_CHANGED_COMMIT_MESSAGE);
+		
+		assertEquals(LINE_3, vcs.getFileContentFromBranch(NEW_BRANCH, FILE3_IN_FOLDER_NAME));
+		assertEquals(MOD_LINE_2, vcs.getFileContentFromRevision(commit.getRevision(), FILE3_IN_FOLDER_NAME));
+		
 
 		try {
 			vcs.getFileContentFromBranch(null, "sdfsdf1.txt");
