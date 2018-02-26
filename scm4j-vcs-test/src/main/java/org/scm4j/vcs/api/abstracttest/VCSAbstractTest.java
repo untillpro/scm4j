@@ -191,8 +191,8 @@ public abstract class VCSAbstractTest {
 		commit = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, MOD_LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_3, CONTENT_CHANGED_COMMIT_MESSAGE);
 		
-		assertEquals(LINE_3, vcs.getFileContentFromBranch(NEW_BRANCH, FILE3_IN_FOLDER_NAME));
-		assertEquals(MOD_LINE_2, vcs.getFileContentFromRevision(commit.getRevision(), FILE3_IN_FOLDER_NAME));
+		assertEquals(LINE_3, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null));
+		assertEquals(MOD_LINE_2, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, commit.getRevision()));
 		
 
 		try {
