@@ -472,7 +472,7 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.getHeadCommit(null).equals(commit2));
 		verifyMocks();
 		assertTrue(vcs.getHeadCommit(NEW_BRANCH).equals(commit3));
-		assertNull(vcs.getHeadCommit("wrong branch"));
+		assertNull(vcs.getHeadCommit("wrong-branch"));
 	}
 	
 	@Test
