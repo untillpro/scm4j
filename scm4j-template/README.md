@@ -15,6 +15,10 @@ Solution in few words
 
 Basic definitions
 
+# Installation
+
+How to install the solution
+
 # Configuration
 
 How to configure the solution
