@@ -1,6 +1,6 @@
 TBD
-- Replace `scm4j/scm4j-template` with your actual module name
-- Connect repository to travis-ci.org and coveralls.io
+- replace `scm4j/scm4j-template` with your actual module name
+- connect repository to travis-ci.org and coveralls.io
   - https://github.com/settings/connections/applications/f244293c729d5066cf27
   - https://github.com/settings/connections/applications/5b064d049aaeb3438e8e
 
