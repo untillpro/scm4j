@@ -11,14 +11,16 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-public class ExecTest {
+public class ExecOldTest {
 
 	private static final File TMP_FOLDER = new File(System.getProperty("java.io.tmpdir"), "scm4j-tmp-executor");
 	private static final String MAIN_ARTIFACT = "unTill";
 	private DeploymentContext depCtx;
-	private Exec executor;
+	private ExecOld executor;
 	private File mainArtifactFolder;
 
 	@Before
@@ -33,7 +35,7 @@ public class ExecTest {
 		mainArtifactFolder.createNewFile();
 		artifacts.put(MAIN_ARTIFACT, mainArtifactFolder);
 		depCtx.setArtifacts(artifacts);
-		executor = new Exec();
+		executor = new ExecOld();
 		executor.init(depCtx);
 		executor.setDeployCmd(deployCmd);
 		executor.setUndeployCmd(undeployCmd);
