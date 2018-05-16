@@ -2,19 +2,25 @@ package org.scm4j.deployer.installers;
 
 import lombok.Cleanup;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 
 @Data
+@Slf4j
 public class Unzip implements IComponentDeployer {
 
 	private File outputDir;
@@ -42,6 +48,7 @@ public class Unzip implements IComponentDeployer {
 			}
 			return DeploymentResult.OK;
 		} catch (IOException e) {
+			log.info(e.getMessage());
 			return DeploymentResult.NEED_REBOOT;
 		}
 	}
@@ -60,6 +67,7 @@ public class Unzip implements IComponentDeployer {
 			}
 			return DeploymentResult.OK;
 		} catch (IOException e) {
+			log.info(e.getMessage());
 			return DeploymentResult.NEED_REBOOT;
 		}
 	}
