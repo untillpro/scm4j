@@ -19,22 +19,35 @@ import java.util.stream.IntStream;
 @Accessors(chain = true)
 public class Exec implements IComponentDeployer {
 
+	private enum Event {ON_DEPLOY, ON_UNDEPLOY, ON_START, ON_STOP};
+	
 	@Setter
-	private String deployExecutable;
-	private String[] deployArgs;
-	@Setter
-	private String undeployExecutable;
-	private String[] undeployArgs;
-	@Setter
-	private String startExecutable;
-	private String[] startArgs;
-	@Setter
-	private String stopExecutable;
-	private String[] stopArgs;
-
+	private String executable;
+	private String[] args;
+	private Event event = Event.ON_DEPLOY;
 	@Setter
 	private boolean ignoreExitValue;
 	private int[] needRebootExitValues;
+
+	public Exec onDeploy() {
+		event = Event.ON_DEPLOY;
+		return this;
+	}
+
+	public Exec onUndeploy() {
+		event = Event.ON_UNDEPLOY;
+		return this;
+	}
+
+	public Exec onStart() {
+		event = Event.ON_START;
+		return this;
+	}
+
+	public Exec onStop() {
+		event = Event.ON_STOP;
+		return this;
+	}
 
 	private String mainArtifact;
 	private String deploymentPath;
@@ -59,23 +72,8 @@ public class Exec implements IComponentDeployer {
 		}).start();
 	}
 
-	public Exec setDeployArgs(String... deployArgs) {
-		this.deployArgs = deployArgs;
-		return this;
-	}
-
-	public Exec setUndeployArgs(String... undeployArgs) {
-		this.undeployArgs = undeployArgs;
-		return this;
-	}
-
-	public Exec setStartArgs(String... startArgs) {
-		this.startArgs = startArgs;
-		return this;
-	}
-
-	public Exec setStopArgs(String... stopArgs) {
-		this.stopArgs = stopArgs;
+	public Exec setArgs(String... args) {
+		this.args = args;
 		return this;
 	}
 
@@ -106,30 +104,30 @@ public class Exec implements IComponentDeployer {
 
 	@Override
 	public DeploymentResult deploy() {
-		if (deployExecutable == null && defaultDeployExecutable == null)
+		if (event != Event.ON_DEPLOY || executable == null && defaultDeployExecutable == null)
 			return DeploymentResult.OK;
-		return executeCommand(deployExecutable == null ? defaultDeployExecutable.getPath() : deployExecutable, deployArgs);
+		return executeCommand(executable == null ? defaultDeployExecutable.getPath() : executable, args);
 	}
 
 	@Override
 	public DeploymentResult undeploy() {
-		if (undeployExecutable == null)
+		if (event != Event.ON_UNDEPLOY || executable == null)
 			return DeploymentResult.OK;
-		return executeCommand(undeployExecutable, undeployArgs);
+		return executeCommand(executable, args);
 	}
 
 	@Override
 	public DeploymentResult stop() {
-		if (stopExecutable == null)
+		if (event != Event.ON_STOP || executable == null)
 			return DeploymentResult.OK;
-		return executeCommand(stopExecutable, stopArgs);
+		return executeCommand(executable, args);
 	}
 
 	@Override
 	public DeploymentResult start() {
-		if (startExecutable == null)
+		if (event != Event.ON_START || executable == null)
 			return DeploymentResult.OK;
-		return executeCommand(startExecutable, startArgs);
+		return executeCommand(executable, args);
 	}
 
 	@Override
