@@ -17,6 +17,6 @@ public interface IProductDeployer {
 
 	Map<String, Boolean> refreshProductVersions(String artifactId);
 
-	Map<String, Object> listDeployedProducts();
+	Map<String, Boolean> listDeployedProducts(String artifactId);
 
 }
