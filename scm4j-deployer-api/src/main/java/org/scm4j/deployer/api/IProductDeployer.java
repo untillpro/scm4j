@@ -1,6 +1,5 @@
 package org.scm4j.deployer.api;
 
-import java.util.List;
 import java.util.Map;
 
 public interface IProductDeployer {
@@ -9,9 +8,9 @@ public interface IProductDeployer {
 
 	void download(String artifactId, String version);
 
-	List<String> listProducts();
+	Map<String, String> mapProductNamesAndArtifactIds();
 
-	List<String> refreshProducts();
+	Map<String, String> refreshProductNamesAndArtifactIds();
 
 	Map<String, Boolean> listProductVersions(String artifactId);
 
