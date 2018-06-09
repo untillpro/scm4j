@@ -1,7 +1,9 @@
 package org.scm4j.deployer.installers;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,6 +26,7 @@ public class ShortcutTest {
 
 	@BeforeClass
 	public static void beforeClass() {
+		Assume.assumeTrue(SystemUtils.IS_OS_WINDOWS);
 		depCtx = new DeploymentContext(SHORTCUT_NAME + "-0.0.0");
 	}
 
