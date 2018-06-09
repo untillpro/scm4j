@@ -1,7 +1,7 @@
 package org.scm4j.deployer.installers;
 
 import lombok.Cleanup;
-import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -18,12 +18,12 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-
-@Data
 @Slf4j
 public class Unzip implements IComponentDeployer {
 
+	@Getter
 	private File outputDir;
+	@Getter
 	private File zipFileName;
 	private String folderName;
 

@@ -19,8 +19,8 @@ import java.util.stream.IntStream;
 @Accessors(chain = true)
 public class Exec implements IComponentDeployer {
 
-	private enum Event {ON_DEPLOY, ON_UNDEPLOY, ON_START, ON_STOP};
-	
+	private String workingDirectory;
+
 	@Setter
 	private String executable;
 	private String[] args;
@@ -51,6 +51,11 @@ public class Exec implements IComponentDeployer {
 
 	private String mainArtifact;
 	private String deploymentPath;
+
+	public Exec setWorkingDirectory(String workingDirectory) {
+		this.workingDirectory = workingDirectory;
+		return this;
+	}
 	private File defaultDeployExecutable;
 
 	@SneakyThrows
@@ -77,11 +82,6 @@ public class Exec implements IComponentDeployer {
 		return this;
 	}
 
-	public Exec setNeedRebootExitValues(int... needRebootExitValues) {
-		this.needRebootExitValues = needRebootExitValues;
-		return this;
-	}
-
 	private DeploymentResult executeCommand(String executable, String[] args) {
 		List<String> command = new ArrayList<>();
 		command.add(executable);
@@ -93,7 +93,9 @@ public class Exec implements IComponentDeployer {
 			}
 		}
 
-		int exitValue = exec(command, new File(deploymentPath));
+		String workingDirectoryName = workingDirectory != null ? workingDirectory : deploymentPath;
+
+		int exitValue = exec(command, new File(workingDirectoryName));
 
 		if (needRebootExitValues != null && IntStream.of(needRebootExitValues).anyMatch(i -> exitValue == i))
 			return DeploymentResult.NEED_REBOOT;
@@ -101,6 +103,13 @@ public class Exec implements IComponentDeployer {
 			return DeploymentResult.FAILED;
 		return DeploymentResult.OK;
 	}
+
+	public Exec setNeedRebootExitValues(int... needRebootExitValues) {
+		this.needRebootExitValues = needRebootExitValues;
+		return this;
+	}
+
+	private enum Event {ON_DEPLOY, ON_UNDEPLOY, ON_START, ON_STOP}
 
 	@Override
 	public DeploymentResult deploy() {
