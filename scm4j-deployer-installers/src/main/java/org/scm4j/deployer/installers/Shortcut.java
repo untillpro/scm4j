@@ -21,8 +21,8 @@ public class Shortcut implements IComponentDeployer {
 	private String shortcutName;
 	private String image;
 	private String pathToExistingFile;
-	private Optional<String> args;
-	private Optional<String> deploymentPath;
+	private Optional<String> args = Optional.empty();
+	private Optional<String> deploymentPath = Optional.empty();
 
 	public Shortcut setShortcutName(String shortcutName) {
 		this.shortcutName = shortcutName;
@@ -92,7 +92,5 @@ public class Shortcut implements IComponentDeployer {
 	@Override
 	public void init(IDeploymentContext depCtx) {
 		shortcutName = StringUtils.substringBeforeLast(depCtx.getMainArtifact(), "-");
-		args = Optional.empty();
-		deploymentPath = Optional.empty();
 	}
 }
