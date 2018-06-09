@@ -14,7 +14,6 @@ import java.util.Optional;
 
 import static org.scm4j.deployer.api.DeploymentResult.FAILED;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
-import static org.scm4j.deployer.installers.Common.normalize;
 
 @Slf4j
 public class Shortcut implements IComponentDeployer {
@@ -60,7 +59,7 @@ public class Shortcut implements IComponentDeployer {
 		if (!dest.exists())
 			dest.mkdirs();
 		try {
-			String destFile = normalize(dest.getPath()) + '/' + shortcutName + ".lnk";
+			String destFile = dest.getPath().replace('\\', '/') + '/' + shortcutName + ".lnk";
 			sl.saveTo(destFile);
 		} catch (IOException e) {
 			log.warn(e.getMessage());

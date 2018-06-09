@@ -13,7 +13,6 @@ import java.io.File;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
-import static org.scm4j.deployer.installers.Common.normalize;
 
 public class ShortcutTest {
 
@@ -21,7 +20,6 @@ public class ShortcutTest {
 	private static final String TEST_FILE_NAME = "for-shortcut";
 	private static final String SHORTCUT_NAME = "hello";
 	private static DeploymentContext depCtx;
-	private File testFile;
 	private Shortcut sc;
 
 	@BeforeClass
@@ -37,16 +35,16 @@ public class ShortcutTest {
 
 	@Before
 	public void before() throws Exception {
-		testFile = new File(TEST_FOLDER, TEST_FILE_NAME);
+		File testFile = new File(TEST_FOLDER, TEST_FILE_NAME);
 		FileUtils.writeStringToFile(testFile, "abc", "UTF-8");
 		sc = new Shortcut();
 		sc.init(depCtx);
-		sc.setPathToExistingFile(normalize(testFile.getPath()));
+		sc.setPathToExistingFile(testFile.getPath());
 	}
 
 	@Test
 	public void testSimpleShortcut() {
-		sc.setDeploymentPath(normalize(TEST_FOLDER.getPath()));
+		sc.setDeploymentPath(TEST_FOLDER.getPath());
 		sc.deploy();
 		assertTrue(new File(TEST_FOLDER, SHORTCUT_NAME + ".lnk").exists());
 	}
@@ -64,7 +62,7 @@ public class ShortcutTest {
 	public void testNotDefaultName() {
 		String testName = "abc";
 		sc.setShortcutName(testName)
-				.setDeploymentPath(normalize(TEST_FOLDER.getPath()))
+				.setDeploymentPath(TEST_FOLDER.getPath())
 				//image tested manually
 				.setImage("C:/Windows/System32/imageres.dll");
 		sc.deploy();
@@ -73,7 +71,7 @@ public class ShortcutTest {
 
 	@Test
 	public void testUndeploy() {
-		sc.setDeploymentPath(normalize(TEST_FOLDER.getPath()));
+		sc.setDeploymentPath(TEST_FOLDER.getPath());
 		sc.deploy();
 		File shortcut = new File(TEST_FOLDER, SHORTCUT_NAME + ".lnk");
 		assertTrue(shortcut.exists());

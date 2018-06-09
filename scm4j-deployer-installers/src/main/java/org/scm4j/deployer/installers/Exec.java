@@ -16,8 +16,6 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.stream.IntStream;
 
-import static org.scm4j.deployer.installers.Common.normalize;
-
 @Accessors(chain = true)
 public class Exec implements IComponentDeployer {
 
@@ -90,7 +88,7 @@ public class Exec implements IComponentDeployer {
 		if (args != null) {
 			for (String arg : args) {
 				arg = StringUtils.replace(arg, "$deploymentPath", deploymentPath);
-				arg = normalize(arg);
+				arg = StringUtils.replace(arg, "\\", "/");
 				command.add(arg);
 			}
 		}
