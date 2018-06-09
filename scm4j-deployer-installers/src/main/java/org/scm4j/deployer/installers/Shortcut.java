@@ -21,8 +21,8 @@ public class Shortcut implements IComponentDeployer {
 	private String shortcutName;
 	private String image;
 	private String pathToExistingFile;
-	private Optional<String> args = Optional.empty();
-	private Optional<String> deploymentPath = Optional.empty();
+	private String args;
+	private String deploymentPath;
 
 	public Shortcut setShortcutName(String shortcutName) {
 		this.shortcutName = shortcutName;
@@ -40,22 +40,22 @@ public class Shortcut implements IComponentDeployer {
 	}
 
 	public Shortcut setArgs(String args) {
-		this.args = Optional.of(args);
+		this.args = args;
 		return this;
 	}
 
 	public Shortcut setDeploymentPath(String deploymentPath) {
-		this.deploymentPath = Optional.of(deploymentPath);
+		this.deploymentPath = deploymentPath;
 		return this;
 	}
 
 	@Override
 	public DeploymentResult deploy() {
 		ShellLink sl = ShellLink.createLink(pathToExistingFile)
-				.setCMDArgs(args.orElse(""));
+				.setCMDArgs(Optional.ofNullable(args).orElse(""));
 		if (image != null)
 			sl.setIconLocation(image);
-		File dest = new File(deploymentPath.orElse(System.getProperty("user.home") + "/Desktop"));
+		File dest = new File(Optional.ofNullable(deploymentPath).orElse(System.getProperty("user.home") + "/Desktop"));
 		if (!dest.exists())
 			dest.mkdirs();
 		try {
@@ -70,7 +70,7 @@ public class Shortcut implements IComponentDeployer {
 
 	@Override
 	public DeploymentResult undeploy() {
-		File dest = new File(deploymentPath.orElse(System.getProperty("user.home") + "/Desktop"));
+		File dest = new File(Optional.ofNullable(deploymentPath).orElse(System.getProperty("user.home") + "/Desktop"));
 		File shortcutFile = new File(dest, shortcutName + ".lnk");
 		FileUtils.deleteQuietly(shortcutFile);
 		if (shortcutFile.exists())
