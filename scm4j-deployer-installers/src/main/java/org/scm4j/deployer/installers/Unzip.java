@@ -25,6 +25,7 @@ public class Unzip implements IComponentDeployer {
 
 	private File outputDir;
 	private File zipFileName;
+	private String folderName;
 
 	@Override
 	public DeploymentResult deploy() {
@@ -84,11 +85,19 @@ public class Unzip implements IComponentDeployer {
 
 	@Override
 	public void init(IDeploymentContext depCtx) {
-		this.outputDir = new File(depCtx.getDeploymentPath());
+		if (folderName != null)
+			this.outputDir = new File(depCtx.getDeploymentPath(), folderName);
+		else
+			this.outputDir = new File(depCtx.getDeploymentPath());
 		this.zipFileName = depCtx.getArtifacts().get(depCtx.getMainArtifact());
 		try (ZipFile zipFile = new ZipFile(this.zipFileName)) {
 		} catch (IOException e) {
 			throw new RuntimeException("Not a zip file!", e);
 		}
+	}
+
+	public Unzip setDefaultFolderName(String folderName) {
+		this.folderName = folderName;
+		return this;
 	}
 }
