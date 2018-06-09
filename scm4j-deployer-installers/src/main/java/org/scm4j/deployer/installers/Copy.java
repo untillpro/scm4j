@@ -1,6 +1,7 @@
 package org.scm4j.deployer.installers;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
@@ -13,6 +14,7 @@ import java.util.Collection;
 import static org.scm4j.deployer.api.DeploymentResult.NEED_REBOOT;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
 
+@Slf4j
 public class Copy implements IComponentDeployer {
 
 	@Getter
@@ -32,6 +34,7 @@ public class Copy implements IComponentDeployer {
 			}
 			return OK;
 		} catch (IOException e) {
+			log.warn(e.getMessage());
 			return NEED_REBOOT;
 		}
 	}
@@ -45,6 +48,7 @@ public class Copy implements IComponentDeployer {
 			}
 			return OK;
 		} catch (IOException e) {
+			log.warn(e.getMessage());
 			return NEED_REBOOT;
 		}
 	}

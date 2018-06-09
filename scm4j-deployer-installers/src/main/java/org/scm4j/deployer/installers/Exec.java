@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.stream.IntStream;
 
+import static org.scm4j.deployer.installers.Common.normalize;
+
 @Accessors(chain = true)
 public class Exec implements IComponentDeployer {
 
@@ -51,12 +53,12 @@ public class Exec implements IComponentDeployer {
 
 	private String mainArtifact;
 	private String deploymentPath;
+	private File defaultDeployExecutable;
 
 	public Exec setWorkingDirectory(String workingDirectory) {
 		this.workingDirectory = workingDirectory;
 		return this;
 	}
-	private File defaultDeployExecutable;
 
 	@SneakyThrows
 	public static int exec(List<String> command, File directory) {
@@ -88,7 +90,7 @@ public class Exec implements IComponentDeployer {
 		if (args != null) {
 			for (String arg : args) {
 				arg = StringUtils.replace(arg, "$deploymentPath", deploymentPath);
-				arg = StringUtils.replace(arg, "\\", "/");
+				arg = normalize(arg);
 				command.add(arg);
 			}
 		}

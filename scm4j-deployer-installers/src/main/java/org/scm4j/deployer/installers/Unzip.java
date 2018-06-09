@@ -49,7 +49,7 @@ public class Unzip implements IComponentDeployer {
 			}
 			return DeploymentResult.OK;
 		} catch (IOException e) {
-			log.info(e.getMessage());
+			log.warn(e.getMessage());
 			return DeploymentResult.NEED_REBOOT;
 		}
 	}
@@ -68,7 +68,7 @@ public class Unzip implements IComponentDeployer {
 			}
 			return DeploymentResult.OK;
 		} catch (IOException e) {
-			log.info(e.getMessage());
+			log.warn(e.getMessage());
 			return DeploymentResult.NEED_REBOOT;
 		}
 	}
@@ -92,6 +92,7 @@ public class Unzip implements IComponentDeployer {
 		this.zipFileName = depCtx.getArtifacts().get(depCtx.getMainArtifact());
 		try (ZipFile zipFile = new ZipFile(this.zipFileName)) {
 		} catch (IOException e) {
+			log.error(e.getMessage());
 			throw new RuntimeException("Not a zip file!", e);
 		}
 	}
