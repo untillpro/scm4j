@@ -23,6 +23,8 @@ public class Shortcut implements IComponentDeployer {
 	private String pathToExistingFile;
 	private String args;
 	private String deploymentPath;
+	private String workingDirectory;
+	private boolean runAsAdmin;
 
 	public Shortcut setShortcutName(String shortcutName) {
 		this.shortcutName = shortcutName;
@@ -36,6 +38,16 @@ public class Shortcut implements IComponentDeployer {
 
 	public Shortcut setPathToExistingFile(String pathToExistingFile) {
 		this.pathToExistingFile = pathToExistingFile;
+		return this;
+	}
+
+	public Shortcut setWorkingDir(String workingDir) {
+		this.workingDirectory = workingDir;
+		return this;
+	}
+
+	public Shortcut setRunAsAdmin() {
+		this.runAsAdmin = true;
 		return this;
 	}
 
@@ -55,6 +67,10 @@ public class Shortcut implements IComponentDeployer {
 				.setCMDArgs(Optional.ofNullable(args).orElse(""));
 		if (image != null)
 			sl.setIconLocation(image);
+		if (runAsAdmin)
+			sl.getHeader().getLinkFlags().setRunAsUser();
+		if (workingDirectory != null)
+			sl.setWorkingDir(workingDirectory);
 		File dest = new File(Optional.ofNullable(deploymentPath).orElse(System.getProperty("user.home") + "/Desktop"));
 		if (!dest.exists())
 			dest.mkdirs();
@@ -93,4 +109,5 @@ public class Shortcut implements IComponentDeployer {
 	public void init(IDeploymentContext depCtx) {
 		shortcutName = StringUtils.substringBeforeLast(depCtx.getMainArtifact(), "-");
 	}
+
 }
