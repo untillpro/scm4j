@@ -18,6 +18,7 @@ import static org.scm4j.deployer.api.DeploymentResult.OK;
 @Slf4j
 public class Shortcut implements IComponentDeployer {
 
+	private String mainArtifactName;
 	private String shortcutName;
 	private String image;
 	private String pathToExistingFile;
@@ -63,8 +64,11 @@ public class Shortcut implements IComponentDeployer {
 
 	@Override
 	public DeploymentResult deploy() {
+		String name = Optional.ofNullable(shortcutName).orElse(StringUtils.substringBeforeLast(mainArtifactName,
+				"-"));
 		ShellLink sl = ShellLink.createLink(pathToExistingFile)
-				.setCMDArgs(Optional.ofNullable(args).orElse(""));
+				.setCMDArgs(Optional.ofNullable(args).orElse(""))
+				.setName(name);
 		if (image != null)
 			sl.setIconLocation(image);
 		if (runAsAdmin)
@@ -75,7 +79,7 @@ public class Shortcut implements IComponentDeployer {
 		if (!dest.exists())
 			dest.mkdirs();
 		try {
-			String destFile = dest.getPath().replace('\\', '/') + '/' + shortcutName + ".lnk";
+			String destFile = dest.getPath().replace('\\', '/') + '/' + name + ".lnk";
 			sl.saveTo(destFile);
 		} catch (IOException e) {
 			log.warn(e.getMessage());
@@ -86,8 +90,10 @@ public class Shortcut implements IComponentDeployer {
 
 	@Override
 	public DeploymentResult undeploy() {
+		String name = Optional.ofNullable(shortcutName).orElse(StringUtils.substringBeforeLast(mainArtifactName,
+				"-"));
 		File dest = new File(Optional.ofNullable(deploymentPath).orElse(System.getProperty("user.home") + "/Desktop"));
-		File shortcutFile = new File(dest, shortcutName + ".lnk");
+		File shortcutFile = new File(dest, name + ".lnk");
 		FileUtils.deleteQuietly(shortcutFile);
 		if (shortcutFile.exists())
 			return FAILED;
@@ -107,7 +113,7 @@ public class Shortcut implements IComponentDeployer {
 
 	@Override
 	public void init(IDeploymentContext depCtx) {
-		shortcutName = StringUtils.substringBeforeLast(depCtx.getMainArtifact(), "-");
+		this.mainArtifactName = StringUtils.substringBeforeLast(depCtx.getMainArtifact(), "-");
 	}
 
 }
