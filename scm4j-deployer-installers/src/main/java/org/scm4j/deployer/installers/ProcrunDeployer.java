@@ -41,6 +41,13 @@ public class ProcrunDeployer implements IComponentDeployer {
 	@Setter
 	private String stopParams;
 
+	@Setter
+	private String logPath;
+	@Setter
+	private String logPrefix;
+	@Setter
+	private String logLevel;
+
 	private String deploymentPath;
 	private File mainArtifact;
 
@@ -85,6 +92,9 @@ public class ProcrunDeployer implements IComponentDeployer {
 		if (stopClass != null) cmd.addAll(Arrays.asList("--StopClass", stopClass));
 		if (stopMethod != null) cmd.addAll(Arrays.asList("--StopMethod", stopMethod));
 		if (stopParams != null) cmd.addAll(Arrays.asList("--StopParams", stopParams));
+		if (logPath != null) cmd.addAll(Arrays.asList("--LogPath", logPath));
+		if (logPrefix != null) cmd.addAll(Arrays.asList("--LogPrefix", logPrefix));
+		if (logLevel != null) cmd.addAll(Arrays.asList("--LogLevel", logLevel));
 		execute(cmd);
 		return DeploymentResult.OK; // TODO 8 = DeploymentResult.NEED_REBOOT
 	}
