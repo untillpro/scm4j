@@ -64,17 +64,17 @@ public class VersionTest {
 		try {
 			version.toNextMinor();
 			fail();
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalStateException e) {
 		}
 		try {
 			assertNull(version.toPreviousMinor());
 			fail();
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalStateException e) {
 		}
 		try {
 			version.toNextMinor();
 			fail();
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalStateException e) {
 		}
 	}
 
@@ -250,5 +250,14 @@ public class VersionTest {
 	@Test
 	public void testInitialStringFormat() {
 		assertEquals("11.12.13.14", new Version("\t\r\n11.12.13.14\t\r\n\t").toString());
+	}
+	
+	@Test
+	public void testToReleaseNoPatch() {
+		assertEquals(new Version("11.21.31"), new Version("11.21.31.41-SNAPSHOT").toReleaseNoPatch());
+		assertEquals(new Version("11.21.31"), new Version("11.21.31.41").toReleaseNoPatch());
+		assertEquals(new Version("11.21"), new Version("11.21.31").toReleaseNoPatch());
+		assertEquals(new Version("11"), new Version("11.21").toReleaseNoPatch());
+		assertEquals(new Version("11"), new Version("11-SNAPSHOT").toReleaseNoPatch());
 	}
 }

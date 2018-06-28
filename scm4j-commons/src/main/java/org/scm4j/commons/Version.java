@@ -104,7 +104,7 @@ public class Version {
 
 	private void checkSemantic() {
 		if (!isSemantic) {
-			throw new IllegalArgumentException("wrong version" + verStr);
+			throw new IllegalStateException("wrong version" + verStr);
 		}
 	}
 
@@ -225,5 +225,9 @@ public class Version {
 
 	public Version toReleaseZeroPatch() {
 		return toRelease().setPatch("0");
+	}
+
+	public Version toReleaseNoPatch() {
+		return new Version(getReleaseNoPatchString());
 	}
 }
