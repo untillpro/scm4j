@@ -14,7 +14,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.scm4j.deployer.api.DeploymentResult.NEED_REBOOT;
+import static org.scm4j.deployer.api.DeploymentResult.REBOOT_CONTINUE;
 
 public class CopyTest {
 
@@ -88,7 +88,7 @@ public class CopyTest {
 			FileUtils.forceDelete(file);
 		}
 		DeploymentResult res = copy.deploy();
-		assertEquals(NEED_REBOOT, res);
+		assertEquals(REBOOT_CONTINUE, res);
 
 		setUp();
 	}

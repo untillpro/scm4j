@@ -95,10 +95,12 @@ public class Shortcut implements IComponentDeployer {
 		File dest = new File(Optional.ofNullable(deploymentPath).orElse(System.getProperty("user.home") + "/Desktop"));
 		File shortcutFile = new File(dest, name + ".lnk");
 		FileUtils.deleteQuietly(shortcutFile);
-		if (shortcutFile.exists())
+		if (shortcutFile.exists()) {
+			log.warn("Can't delete shortcut " + shortcutFile.getPath());
 			return FAILED;
-		else
+		} else {
 			return OK;
+		}
 	}
 
 	@Override

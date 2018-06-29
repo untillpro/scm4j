@@ -11,8 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
-import static org.scm4j.deployer.api.DeploymentResult.NEED_REBOOT;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
+import static org.scm4j.deployer.api.DeploymentResult.REBOOT_CONTINUE;
 
 @Slf4j
 public class Copy implements IComponentDeployer {
@@ -35,7 +35,7 @@ public class Copy implements IComponentDeployer {
 			return OK;
 		} catch (IOException e) {
 			log.warn(e.getMessage());
-			return NEED_REBOOT;
+			return REBOOT_CONTINUE;
 		}
 	}
 
@@ -48,8 +48,8 @@ public class Copy implements IComponentDeployer {
 			}
 			return OK;
 		} catch (IOException e) {
-			log.warn(e.getMessage());
-			return NEED_REBOOT;
+			log.warn(e.toString());
+			return REBOOT_CONTINUE;
 		}
 	}
 

@@ -50,7 +50,7 @@ public class Unzip implements IComponentDeployer {
 			return DeploymentResult.OK;
 		} catch (IOException e) {
 			log.warn(e.getMessage());
-			return DeploymentResult.NEED_REBOOT;
+			return DeploymentResult.REBOOT_CONTINUE;
 		}
 	}
 
@@ -69,7 +69,7 @@ public class Unzip implements IComponentDeployer {
 			return DeploymentResult.OK;
 		} catch (IOException e) {
 			log.warn(e.getMessage());
-			return DeploymentResult.NEED_REBOOT;
+			return DeploymentResult.REBOOT_CONTINUE;
 		}
 	}
 

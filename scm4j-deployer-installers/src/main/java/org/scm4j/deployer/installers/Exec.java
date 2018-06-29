@@ -1,5 +1,6 @@
 package org.scm4j.deployer.installers;
 
+import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
@@ -14,7 +15,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.IntStream;
 
 @Accessors(chain = true)
 public class Exec implements IComponentDeployer {
@@ -23,11 +23,12 @@ public class Exec implements IComponentDeployer {
 
 	@Setter
 	private String executable;
+	@Getter
 	private String[] args;
 	private Event event = Event.ON_DEPLOY;
 	@Setter
 	private boolean ignoreExitValue;
-	private int[] needRebootExitValues;
+	private int needRebootExitValue;
 
 	public Exec onDeploy() {
 		event = Event.ON_DEPLOY;
@@ -62,6 +63,8 @@ public class Exec implements IComponentDeployer {
 	public static int exec(List<String> command, File directory) {
 		ProcessBuilder builder = new ProcessBuilder(command)
 				.directory(directory);
+		if (!directory.exists())
+			directory.mkdirs();
 		Process p = builder.start();
 		realInheritIO(p.getInputStream(), System.out);
 		realInheritIO(p.getErrorStream(), System.err);
@@ -85,9 +88,13 @@ public class Exec implements IComponentDeployer {
 	private DeploymentResult executeCommand(String executable, String[] args) {
 		List<String> command = new ArrayList<>();
 		command.add(executable);
+		int defaultRestartExitValue = 77;
+		if (needRebootExitValue == 0)
+			needRebootExitValue = defaultRestartExitValue;
 		if (args != null) {
 			for (String arg : args) {
 				arg = StringUtils.replace(arg, "$deploymentPath", deploymentPath);
+				arg = StringUtils.replace(arg, "$restartexitcode", String.valueOf(needRebootExitValue));
 				arg = StringUtils.replace(arg, "\\", "/");
 				command.add(arg);
 			}
@@ -97,15 +104,17 @@ public class Exec implements IComponentDeployer {
 
 		int exitValue = exec(command, new File(workingDirectoryName));
 
-		if (needRebootExitValues != null && IntStream.of(needRebootExitValues).anyMatch(i -> exitValue == i))
+		if (exitValue == needRebootExitValue)
 			return DeploymentResult.NEED_REBOOT;
 		if (!ignoreExitValue && exitValue != 0)
 			return DeploymentResult.FAILED;
 		return DeploymentResult.OK;
 	}
 
-	public Exec setNeedRebootExitValues(int... needRebootExitValues) {
-		this.needRebootExitValues = needRebootExitValues;
+	public Exec setNeedRebootExitValue(int needRebootExitValue) {
+		if (needRebootExitValue < 0 || needRebootExitValue == 0 || needRebootExitValue == 1)
+			throw new IllegalArgumentException("Need reboot exit value can't be 0, 1 and below zero");
+		this.needRebootExitValue = needRebootExitValue;
 		return this;
 	}
 
