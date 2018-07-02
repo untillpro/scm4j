@@ -15,25 +15,25 @@ public class UntillExec extends Exec {
 	private static final String DEFAULT_STATUS_FILE_NAME = "C:/ProgramData/unTill/installer/ssf.txt";
 	private static final String STATUS_FILE_PARAM = "/statusFile=";
 
-	private String statusFileName;
+	private String statusFileFolderName;
 
-	public Exec setStatusFileName(String statusFileName) {
-		this.statusFileName = statusFileName;
+	public Exec setStatusFileFolderName(String statusFileFolderName) {
+		this.statusFileFolderName = statusFileFolderName;
 		return this;
 	}
 
 	@Override
 	public DeploymentResult deploy() {
 		List<String> args = new ArrayList<>(Arrays.asList(super.getArgs()));
-		if (statusFileName == null)
-			statusFileName = DEFAULT_STATUS_FILE_NAME;
-		File statusFile = new File(statusFileName);
+		if (statusFileFolderName == null)
+			statusFileFolderName = DEFAULT_STATUS_FILE_NAME;
+		File statusFile = new File(statusFileFolderName);
 		try {
 			if (!statusFile.exists()) {
 				statusFile.getParentFile().mkdirs();
 				statusFile.createNewFile();
 			}
-			args.add(STATUS_FILE_PARAM + '\"' + statusFileName + '\"');
+			args.add(STATUS_FILE_PARAM + '\"' + statusFileFolderName + '\"');
 			super.setArgs(args.toArray(new String[0]));
 			DeploymentResult res = super.deploy();
 			if (res == DeploymentResult.FAILED) {

@@ -87,6 +87,8 @@ public class Exec implements IComponentDeployer {
 
 	private DeploymentResult executeCommand(String executable, String[] args) {
 		List<String> command = new ArrayList<>();
+		command.add("cmd");
+		command.add("/c");
 		command.add(executable);
 		int defaultRestartExitValue = 77;
 		if (needRebootExitValue == 0)

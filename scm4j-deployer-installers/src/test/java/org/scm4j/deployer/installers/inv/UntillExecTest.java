@@ -23,10 +23,10 @@ public class UntillExecTest {
 		depCtx.setDeploymentPath("C:/unTill");
 		UntillExec exec = new UntillExec();
 		exec.init(depCtx);
-		exec.setStatusFileName("C:/tools/ssf.txt")
-				.setNeedRebootExitValue(33)
-				.setArgs("/verysilent", "/prepare_restart=1", "/norestart", "/restartexitcode=$restartexitcode", "/doNotForceRestart");
-		DeploymentResult res = exec.deploy();
+		exec.onUndeploy();
+		exec.setExecutable("unins000.exe").setArgs("/verysilent", "/norestart", "/restartexitcode=$restartexitcode",
+				"/doNotForceRestart");
+		DeploymentResult res = exec.undeploy();
 		System.out.println(res.toString());
 	}
 }
