@@ -50,6 +50,13 @@ public class UntillExec extends Exec {
 		} finally {
 			FileUtils.deleteQuietly(statusFile);
 		}
+	}
 
+	@Override
+	public DeploymentResult undeploy() {
+		DeploymentResult res = super.undeploy();
+		if (res == DeploymentResult.FAILED)
+			return DeploymentResult.REBOOT_CONTINUE;
+		return res;
 	}
 }
