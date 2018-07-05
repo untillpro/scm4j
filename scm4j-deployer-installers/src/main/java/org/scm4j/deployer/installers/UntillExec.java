@@ -35,9 +35,12 @@ public class UntillExec extends Exec {
 			}
 			args.add(STATUS_FILE_PARAM + '\"' + statusFileFolderName + '\"');
 			super.setArgs(args.toArray(new String[0]));
+			log.info("untill deploy args: " + args);
 			DeploymentResult res = super.deploy();
 			if (res == DeploymentResult.FAILED) {
+				log.info("deploy return FAILED, read status file");
 				List<String> status = FileUtils.readLines(statusFile, "UTF-8");
+				log.info("status is: " + status);
 				if (status.contains("status=restarting"))
 					return DeploymentResult.REBOOT_CONTINUE;
 				else
@@ -54,7 +57,8 @@ public class UntillExec extends Exec {
 
 	@Override
 	public DeploymentResult undeploy() {
-		super.undeploy();
+		DeploymentResult res = super.undeploy();
+		log.info("untill undeploy returns " + res.toString());
 		return DeploymentResult.OK;
 	}
 }
