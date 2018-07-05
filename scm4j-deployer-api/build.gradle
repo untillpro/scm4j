@@ -25,7 +25,6 @@ version = file('version').text.trim()
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.16.18'
 
-    compile 'org.apache.commons:commons-lang3:3.5'
     compile 'org.apache.maven.resolver:maven-resolver-api:1.1.0'
 
     testCompile 'junit:junit:4.12'
