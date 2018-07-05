@@ -31,7 +31,6 @@ public class UntillExec extends Exec {
 		try {
 			if (!statusFile.exists()) {
 				statusFile.getParentFile().mkdirs();
-				statusFile.createNewFile();
 			}
 			args.add(STATUS_FILE_PARAM + '\"' + statusFileFolderName + '\"');
 			super.setArgs(args.toArray(new String[0]));
