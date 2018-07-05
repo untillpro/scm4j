@@ -40,7 +40,6 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok:1.16.18'
 
 	compile 'commons-io:commons-io:2.5'
-	compile 'org.apache.commons:commons-lang3:3.5'
 	compile 'com.github.vatbub:mslinks:1.0.4'
 
 	testCompile 'junit:junit:4.12'
