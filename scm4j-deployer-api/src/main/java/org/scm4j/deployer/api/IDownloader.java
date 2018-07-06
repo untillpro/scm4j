@@ -4,7 +4,7 @@ import java.io.File;
 
 public interface IDownloader {
 
-	<T extends IDeploymentContext> T getContextByArtifactId(String artifactId);
+	<T extends IDeploymentContext> T getContextByArtifactIdAndVersion(String artifactId, String version);
 
 	void getProductFile(String coords);
 
