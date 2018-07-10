@@ -1,4 +1,5 @@
 TBD
+- Modify settings.gradle
 - Replace `scm4j/scm4j-template` with your actual module name
 - Connect repository to travis-ci.org and coveralls.io
   - https://github.com/settings/connections/applications/f244293c729d5066cf27

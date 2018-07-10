@@ -11,15 +11,14 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
-version = file('version').text
+version = file('version').text.trim()
 
 repositories {
 	jcenter()
 }
 
 dependencies {
-	// load managable dependencies
-	def s = '[ \t]*', w = '[^:#@]+?'
+	def s = '[ \t]*', w = '[^:#@\\s]+?'
 	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
 			match, group, name, version, classifier, ext, configuration ->
 		add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}")
@@ -35,13 +34,6 @@ configurations.all {
 	}
 }
 
-test {
- 	testLogging {
-		events "failed"
-		exceptionFormat "full"
-	}
-}
-
 jacocoTestReport {
 	reports {
 		xml.enabled = true // coveralls plugin depends on xml format report
@@ -52,7 +44,7 @@ jacocoTestReport {
 jar {
 	manifest.attributes (
 		'Specification-Title': project.name,
-		'Specification-Version': version,
+		'Specification-Version': version.replaceAll(/-SNAPSHOT$/, ''),
 		'Implementation-Title': project.name,
 		'Implementation-Version': "$version (${new Date().format('yyyy-MM-dd')})",
 	)
@@ -72,3 +64,5 @@ artifacts {
 	archives sourcesJar
 	archives javadocJar
 }
+
+test.testLogging.exceptionFormat 'full'
