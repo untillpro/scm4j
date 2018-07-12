@@ -1,0 +1,68 @@
+plugins {
+	id 'java'
+	id 'maven'
+	id 'eclipse'
+	id 'idea'
+	id 'jacoco'
+	id 'com.github.kt3k.coveralls' version '2.8.1'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+group = 'org.scm4j'
+version = file('version').text.trim()
+
+repositories {
+	jcenter()
+}
+
+dependencies {
+	def s = '[ \t]*', w = '[^:#@\\s]+?'
+	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
+			match, group, name, version, classifier, ext, configuration ->
+		add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}")
+	}
+
+	testCompile 'junit:junit:4.12'
+}
+
+configurations.all {
+	resolutionStrategy {
+		cacheDynamicVersionsFor 0, 'seconds'
+		cacheChangingModulesFor 0, 'seconds'
+	}
+}
+
+jacocoTestReport {
+	reports {
+		xml.enabled = true // coveralls plugin depends on xml format report
+		html.enabled = true
+	}
+}
+
+jar {
+	manifest.attributes (
+		'Specification-Title': project.name,
+		'Specification-Version': version.replaceAll(/-SNAPSHOT$/, ''),
+		'Implementation-Title': project.name,
+		'Implementation-Version': "$version (${new Date().format('yyyy-MM-dd')})",
+	)
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
+
+test.testLogging.exceptionFormat 'full'
