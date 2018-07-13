@@ -27,6 +27,8 @@ public class ProcrunDeployer implements IComponentDeployer {
 	@Setter
 	private String jvm;
 	@Setter
+	private String jvmOptions;
+	@Setter
 	private String classpath;
 	@Setter
 	private String startClass;
@@ -85,6 +87,7 @@ public class ProcrunDeployer implements IComponentDeployer {
 				"--StopMode", "jvm",
 				"--Startup", "auto"));
 		if (jvm != null) cmd.addAll(Arrays.asList("--Jvm", jvm));
+		if (jvmOptions != null) cmd.addAll(Arrays.asList("--JvmOptions", jvmOptions));
 		if (classpath != null) cmd.addAll(Arrays.asList("--Classpath", classpath));
 		if (startClass != null) cmd.addAll(Arrays.asList("--StartClass", startClass));
 		if (startMethod != null) cmd.addAll(Arrays.asList("--StartMethod", startMethod));
