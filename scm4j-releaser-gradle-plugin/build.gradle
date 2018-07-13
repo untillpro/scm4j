@@ -6,6 +6,7 @@ plugins {
 	id 'jacoco'
 	id 'com.github.kt3k.coveralls' version '2.8.1'
 	id 'java-gradle-plugin'
+	id "com.gradle.plugin-publish" version "0.9.10"
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -71,9 +72,22 @@ test {
 
 gradlePlugin {
 	plugins {
-		ReleaserGradlePlugin {
+		scm4jReleaserGradlePlugin {
 			id = 'org.scm4j.releaser.scm4j-releaser-gradle-plugin'
 			implementationClass = 'org.scm4j.releaser.gradle.ReleaserGradlePlugin'
+		}
+	}
+}
+
+pluginBundle {
+	website = 'https://github.com/scm4j/scm4j-releaser-gradle-plugin'
+	vcsUrl = 'https://github.com/scm4j/scm4j-releaser-gradle-plugin.git'
+	plugins {
+		scm4jReleaserGradlePlugin {
+			id = 'org.scm4j.releaser.scm4j-releaser-gradle-plugin'
+			displayName = 'scm4j-releaser Gradle plugin'
+			description = 'This plugin loads version and managable dependencies from external files (version and mdeps)'
+			tags = ['scm', 'release-automation', 'release-helper', 'dependencies']
 		}
 	}
 }
