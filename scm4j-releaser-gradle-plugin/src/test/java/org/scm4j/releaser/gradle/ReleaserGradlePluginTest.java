@@ -1,7 +1,12 @@
 package org.scm4j.releaser.gradle;
 
 import static org.hamcrest.CoreMatchers.isA;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,7 +46,7 @@ public class ReleaserGradlePluginTest {
 	@Test public void noVersionFile() throws Exception {
 		thrown.expect(PluginApplicationException.class);
 		thrown.expectCause(isA(GradleException.class));
-		//thrown.expectCause(hasProperty("message", is("version file is not found"));
+		thrown.expectCause(hasProperty("message", is("version file is not found")));
 		createProject();
 	}
 
@@ -49,6 +54,40 @@ public class ReleaserGradlePluginTest {
 		createFile("version", "1.1");
 		Project project = createProject();
 		assertEquals("1.1", project.getVersion());
+	}
+
+	@Test public void simpleMdeps() throws Exception {
+		createFile("version", "1.1");
+		createFile("mdeps", "g.roup:name:version");
+		Project project = createProject();
+		assertEquals("1.1", project.getVersion());
+		assertThat(project.getConfigurations().getByName("compile").getDependencies(), contains(
+				allOf(hasProperty("group", is("g.roup")),
+						hasProperty("name", is("name")),
+						hasProperty("version", is("version"))
+				)
+		));
+	}
+
+	@Test public void complexMdeps() throws Exception {
+		createFile("version", "1.1");
+		createFile("mdeps", "group.1:name-1:version1\n"
+				+ "group.2:name-2::classifier2@ext2 # configuration2\n"
+		);
+		Project project = createProject();
+		assertEquals("1.1", project.getVersion());
+		assertThat(project.getConfigurations().getByName("compile").getDependencies(), contains(
+				allOf(hasProperty("group", is("group.1")),
+						hasProperty("name", is("name-1")),
+						hasProperty("version", is("version1"))
+				)
+		));
+		assertThat(project.getConfigurations().getByName("configuration2").getDependencies(), contains(
+				allOf(hasProperty("group", is("group.2")),
+						hasProperty("name", is("name-2")),
+						hasProperty("version", is("latest.integration"))
+				)
+		));
 	}
 
 }
