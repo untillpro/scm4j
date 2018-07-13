@@ -1,7 +1,8 @@
 # Overview
 
-Gradle plugin for https://github.com/scm4j/scm4j-releaser
-This plugin loads version and managable dependencies from external files (version and mdeps)
+Gradle plugin for https://github.com/scm4j/scm4j-releaser.
+
+This plugin loads version and managable dependencies from external files (version and mdeps).
 
 # Usage
 
