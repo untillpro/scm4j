@@ -34,21 +34,21 @@ public class ReleaserGradlePlugin implements Plugin<Project> {
 		File mdepsFile = project.file("mdeps");
 		if (mdepsFile.exists()) {
 			try (InputStream is = new FileInputStream(mdepsFile)) {
-				for (ManagedDependency managedDependency : ManagedDependencyParser.parse(is)) {
-					String configurationName = managedDependency.getConfiguration();
+				for (ManagableDependency mdep : ManagableDependencyParser.parse(is)) {
+					String configurationName = mdep.getConfiguration();
 					if (configurationName == null)
 						configurationName = "compile";
 					Configuration configuration = project.getConfigurations().findByName(configurationName);
 					if (configuration == null)
 						configuration = project.getConfigurations().create(configurationName);
 					Map<String, String> paramObject = new HashMap<>();
-					paramObject.put("group", managedDependency.getGroup());
-					paramObject.put("name", managedDependency.getName());
-					paramObject.put("version", managedDependency.getVersion() != null ? managedDependency.getVersion()
+					paramObject.put("group", mdep.getGroup());
+					paramObject.put("name", mdep.getName());
+					paramObject.put("version", mdep.getVersion() != null ? mdep.getVersion()
 							: "latest.integration");
-					paramObject.put("classifier", managedDependency.getClassifier());
-					paramObject.put("ext", managedDependency.getExt());
-					if ("tests".equals(managedDependency.getClassifier()))
+					paramObject.put("classifier", mdep.getClassifier());
+					paramObject.put("ext", mdep.getExt());
+					if ("tests".equals(mdep.getClassifier()))
 						paramObject.put("configuration", "test");
 					Dependency dependency = project.getDependencies().create(paramObject);
 					configuration.getDependencies().add(dependency);

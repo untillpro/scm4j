@@ -1,6 +1,6 @@
 package org.scm4j.releaser.gradle;
 
-public class ManagedDependency {
+public class ManagableDependency {
 	private String group;
 	private String name;
 	private String classifier;
