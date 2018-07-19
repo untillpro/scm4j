@@ -33,6 +33,7 @@ dependencies {
 	compile 'commons-io:commons-io:2.5'
 	compile 'org.apache.commons:commons-lang3:3.7'
 	compile 'com.github.vatbub:mslinks:1.0.4'
+	compile 'com.github.scm4j:scm4j-releaser-gradle-plugin:0.2.0'
 
 	testCompile 'junit:junit:4.12'
 }
