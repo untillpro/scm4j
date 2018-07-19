@@ -5,25 +5,19 @@ plugins {
 	id 'idea'
 	id 'jacoco'
 	id 'com.github.kt3k.coveralls' version '2.8.1'
+	id 'org.scm4j.releaser.scm4j-releaser-gradle-plugin' version '0.2.0'
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
-version = file('version').text.trim()
 
 repositories {
 	jcenter()
 }
 
 dependencies {
-	def s = '[ \t]*', w = '[^:#@\\s]+?'
-	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
-			match, group, name, version, classifier, ext, configuration ->
-		add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}")
-	}
-
 	testCompile 'junit:junit:4.12'
 }
 
