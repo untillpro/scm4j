@@ -5,6 +5,7 @@ plugins {
     id 'maven'
     id 'eclipse'
     id 'idea'
+	id 'org.scm4j.releaser.scm4j-releaser-gradle-plugin' version '0.2.0'
 }
 
 repositories {
@@ -20,7 +21,6 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
-version = file('version').text.trim()
 
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.16.18'
