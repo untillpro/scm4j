@@ -65,15 +65,22 @@ public class Copy implements IComponentDeployer {
 
 	@Override
 	public void init(IDeploymentContext depCtx) {
-		if (folderName != null)
-			outputFile = new File(depCtx.getDeploymentPath(), folderName);
-		else
-			outputFile = new File(depCtx.getDeploymentPath());
+		if (outputFile == null) {
+			if (folderName != null)
+				outputFile = new File(depCtx.getDeploymentPath(), folderName);
+			else
+				outputFile = new File(depCtx.getDeploymentPath());
+		}
 		filesForDeploy = depCtx.getArtifacts().values();
 	}
 
 	public Copy setDefaultFolderName(String folderName) {
 		this.folderName = folderName;
+		return this;
+	}
+
+	public Copy setFullPathToOutputFile(String fullPath) {
+		this.outputFile = new File(fullPath);
 		return this;
 	}
 }
