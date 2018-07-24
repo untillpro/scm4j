@@ -5,6 +5,7 @@ plugins {
 	id 'maven'
 	id 'eclipse'
 	id 'idea'
+	id 'org.scm4j.releaser.scm4j-releaser-gradle-plugin' version '0.2.0'
 }
 
 configurations.compile {
@@ -23,18 +24,8 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
-version = file('version').text.trim()
 
 dependencies {
-
-	def s = '[ \t]*', w = '[^:#@\\s]+?'
-	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
-		match, group, name, version, classifier, ext, configuration ->
-			add(configuration ?: 'compile', "$group:$name:${version ?: 'latest.integration'}${classifier ?: ''}${ext ?: ''}", {
-				changing = true
-			})
-	}
-
 	compile 'org.slf4j:slf4j-log4j12:1.7.25'
 
 	compileOnly 'org.projectlombok:lombok:1.16.18'
@@ -42,6 +33,7 @@ dependencies {
 	compile 'commons-io:commons-io:2.5'
 	compile 'org.apache.commons:commons-lang3:3.7'
 	compile 'com.github.vatbub:mslinks:1.0.4'
+	compile 'com.github.scm4j:scm4j-releaser-gradle-plugin:0.2.0'
 
 	testCompile 'junit:junit:4.12'
 }
