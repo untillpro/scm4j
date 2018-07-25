@@ -21,6 +21,7 @@ public class Copy implements IComponentDeployer {
 	private File outputFile;
 	@Getter
 	private Collection<File> filesForDeploy;
+	private String fileName;
 	private String folderName;
 
 	@Override
@@ -29,6 +30,8 @@ public class Copy implements IComponentDeployer {
 			for (File file : filesForDeploy) {
 				if (file.isDirectory())
 					FileUtils.copyDirectoryToDirectory(file, outputFile);
+				else if (filesForDeploy.size() == 1 && fileName != null)
+					FileUtils.copyFile(file, new File(outputFile, fileName));
 				else
 					FileUtils.copyFileToDirectory(file, outputFile);
 			}
@@ -79,8 +82,13 @@ public class Copy implements IComponentDeployer {
 		return this;
 	}
 
-	public Copy setFullPathToOutputFile(String fullPath) {
+	public Copy setFullPathToOutputFolder(String fullPath) {
 		this.outputFile = new File(fullPath);
+		return this;
+	}
+
+	public Copy setFileName(String fileName) {
+		this.fileName = fileName;
 		return this;
 	}
 }
