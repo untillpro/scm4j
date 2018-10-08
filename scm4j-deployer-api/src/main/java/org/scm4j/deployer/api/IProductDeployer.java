@@ -5,18 +5,18 @@ import java.util.Map;
 
 public interface IProductDeployer {
 
-	DeploymentResult deploy(String artifactId, String version);
+	DeploymentResult deploy(String simpleName, String version);
 
-	void download(String artifactId, String version);
+	void download(String simpleName, String version);
 
 	List<String> listProducts();
 
 	List<String> refreshProducts();
 
-	Map<String, Boolean> listProductVersions(String artifactId);
+	List<String> listProductVersions(String simpleName);
 
-	Map<String, Boolean> refreshProductVersions(String artifactId);
+	List<String> refreshProductVersions(String simpleName);
 
-	Map<String, Boolean> listDeployedProducts(String artifactId);
+	Map<String, String> mapDeployedProducts(String simpleName);
 
 }
