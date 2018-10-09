@@ -17,6 +17,6 @@ public interface IProductDeployer {
 
 	List<String> refreshProductVersions(String simpleName);
 
-	Map<String, String> mapDeployedProducts(String simpleName);
+	Map<String, String> mapDeployedProducts();
 
 }
