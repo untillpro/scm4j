@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Stream;
@@ -154,8 +155,8 @@ public class Exec implements IComponentDeployer {
 					.map(Path::toString)
 					.filter(p -> p.startsWith(executablePrefix))
 					.filter(p -> p.endsWith(".exe"))
-					.sorted()
-					.findFirst().orElseThrow(() -> new RuntimeException("Can't find executable file to undeploy product"));
+					.min(Comparator.reverseOrder())
+					.orElseThrow(() -> new RuntimeException("Can't find executable file to undeploy product"));
 		}
 	}
 
