@@ -10,11 +10,16 @@ import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Stream;
 
 @Accessors(chain = true)
 public class Exec implements IComponentDeployer {
@@ -23,6 +28,8 @@ public class Exec implements IComponentDeployer {
 
 	@Setter
 	private String executable;
+	@Setter
+	private String executablePrefix;
 	@Getter
 	private String[] args;
 	private Event event = Event.ON_DEPLOY;
@@ -131,9 +138,25 @@ public class Exec implements IComponentDeployer {
 
 	@Override
 	public DeploymentResult undeploy() {
-		if (event != Event.ON_UNDEPLOY || executable == null)
+		if (event != Event.ON_UNDEPLOY || executablePrefix == null)
 			return DeploymentResult.OK;
+		try {
+			executable = findLatestUnins(deploymentPath, executablePrefix);
+		} catch (Exception e) {
+			return DeploymentResult.FAILED;
+		}
 		return executeCommand(executable, args);
+	}
+
+	private String findLatestUnins(String deploymentPath, String executablePrefix) throws IOException {
+		try (Stream<Path> filePathStream = Files.walk(Paths.get(deploymentPath))) {
+			return filePathStream.map(Path::getFileName)
+					.map(Path::toString)
+					.filter(p -> p.startsWith(executablePrefix))
+					.filter(p -> p.endsWith(".exe"))
+					.sorted()
+					.findFirst().orElseThrow(() -> new RuntimeException("Can't find executable file to undeploy product"));
+		}
 	}
 
 	@Override
