@@ -9,9 +9,9 @@ public interface IProductDeployer {
 
 	void download(String simpleName, String version);
 
-	Map<String, Boolean> listProducts();
+	Map<String, ProductInfo> listProducts();
 
-	Map<String, Boolean> refreshProducts();
+	Map<String, ProductInfo> refreshProducts();
 
 	List<String> listProductVersions(String simpleName);
 
