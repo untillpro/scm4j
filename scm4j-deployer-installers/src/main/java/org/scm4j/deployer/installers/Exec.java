@@ -35,7 +35,6 @@ public class Exec implements IComponentDeployer {
 	@Setter
 	private Map<String, String> env;
 	@Getter
-	@Setter
 	private String[] args;
 	@Setter
 	private boolean ignoreExitValue;
@@ -115,6 +114,11 @@ public class Exec implements IComponentDeployer {
 		if (!ignoreExitValue && exitValue != 0)
 			return DeploymentResult.FAILED;
 		return DeploymentResult.OK;
+	}
+
+	public Exec setArgs(String... args) {
+		this.args = args;
+		return this;
 	}
 
 	public Exec setNeedRebootExitValue(int needRebootExitValue) {
