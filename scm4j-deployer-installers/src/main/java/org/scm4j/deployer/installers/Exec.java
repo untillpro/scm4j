@@ -19,24 +19,28 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
 @Accessors(chain = true)
 public class Exec implements IComponentDeployer {
 
+	@Setter
 	private String workingDirectory;
-
 	@Setter
 	private String executable;
 	@Setter
 	private String executablePrefix;
+	@Setter
+	private Map<String, String> env;
 	@Getter
+	@Setter
 	private String[] args;
-	private Event event = Event.ON_DEPLOY;
 	@Setter
 	private boolean ignoreExitValue;
 	private int needRebootExitValue;
+	private Event event = Event.ON_DEPLOY;
 
 	public Exec onDeploy() {
 		event = Event.ON_DEPLOY;
@@ -62,15 +66,12 @@ public class Exec implements IComponentDeployer {
 	private String deploymentPath;
 	private File defaultDeployExecutable;
 
-	public Exec setWorkingDirectory(String workingDirectory) {
-		this.workingDirectory = workingDirectory;
-		return this;
-	}
-
 	@SneakyThrows
-	public static int exec(List<String> command, File directory) {
+	public static int exec(List<String> command, Map<String, String> env, File directory) {
 		ProcessBuilder builder = new ProcessBuilder(command)
 				.directory(directory);
+		if (env != null && !env.isEmpty())
+			builder.environment().putAll(env);
 		if (!directory.exists())
 			directory.mkdirs();
 		Process p = builder.start();
@@ -88,12 +89,7 @@ public class Exec implements IComponentDeployer {
 		}).start();
 	}
 
-	public Exec setArgs(String... args) {
-		this.args = args;
-		return this;
-	}
-
-	private DeploymentResult executeCommand(String executable, String[] args) {
+	private DeploymentResult executeCommand(String executable, String[] args, Map<String, String> env) {
 		List<String> command = new ArrayList<>();
 		command.add("cmd");
 		command.add("/c");
@@ -112,7 +108,7 @@ public class Exec implements IComponentDeployer {
 
 		String workingDirectoryName = workingDirectory != null ? workingDirectory : deploymentPath;
 
-		int exitValue = exec(command, new File(workingDirectoryName));
+		int exitValue = exec(command, env, new File(workingDirectoryName));
 
 		if (exitValue == needRebootExitValue)
 			return DeploymentResult.NEED_REBOOT;
@@ -134,7 +130,7 @@ public class Exec implements IComponentDeployer {
 	public DeploymentResult deploy() {
 		if (event != Event.ON_DEPLOY || executable == null && defaultDeployExecutable == null)
 			return DeploymentResult.OK;
-		return executeCommand(executable == null ? defaultDeployExecutable.getPath() : executable, args);
+		return executeCommand(executable == null ? defaultDeployExecutable.getPath() : executable, args, env);
 	}
 
 	@Override
@@ -146,7 +142,7 @@ public class Exec implements IComponentDeployer {
 		} catch (Exception e) {
 			return DeploymentResult.FAILED;
 		}
-		return executeCommand(executable, args);
+		return executeCommand(executable, args, env);
 	}
 
 	private String findLatestUnins(String deploymentPath, String executablePrefix) throws IOException {
@@ -164,14 +160,14 @@ public class Exec implements IComponentDeployer {
 	public DeploymentResult stop() {
 		if (event != Event.ON_STOP || executable == null)
 			return DeploymentResult.OK;
-		return executeCommand(executable, args);
+		return executeCommand(executable, args, env);
 	}
 
 	@Override
 	public DeploymentResult start() {
 		if (event != Event.ON_START || executable == null)
 			return DeploymentResult.OK;
-		return executeCommand(executable, args);
+		return executeCommand(executable, args, env);
 	}
 
 	@Override

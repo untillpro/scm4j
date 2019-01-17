@@ -126,7 +126,7 @@ public class ProcrunDeployer implements IComponentDeployer {
 
 	@SneakyThrows
 	private void execute(List<String> command) {
-		int res = Exec.exec(command, new File(deploymentPath));
+		int res = Exec.exec(command, null, new File(deploymentPath));
 		if (res != 0)
 			throw new Exception(String.format("%s: %d", command.toString(), res));
 	}
