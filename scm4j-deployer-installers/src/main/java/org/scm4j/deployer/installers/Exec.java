@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
@@ -24,6 +25,7 @@ import java.util.Scanner;
 import java.util.stream.Stream;
 
 @Accessors(chain = true)
+@Slf4j
 public class Exec implements IComponentDeployer {
 
 	@Setter
@@ -108,6 +110,8 @@ public class Exec implements IComponentDeployer {
 		String workingDirectoryName = workingDirectory != null ? workingDirectory : deploymentPath;
 
 		int exitValue = exec(command, env, new File(workingDirectoryName));
+
+		log.info("Exit value is " + exitValue);
 
 		if (exitValue == needRebootExitValue)
 			return DeploymentResult.NEED_REBOOT;
