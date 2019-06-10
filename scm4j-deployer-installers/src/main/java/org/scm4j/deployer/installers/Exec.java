@@ -63,6 +63,7 @@ public class Exec implements IComponentDeployer {
 		return this;
 	}
 
+	@Getter
 	private String mainArtifact;
 	private String deploymentPath;
 	private File defaultDeployExecutable;

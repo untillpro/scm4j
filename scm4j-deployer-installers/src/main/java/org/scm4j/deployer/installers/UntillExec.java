@@ -27,4 +27,9 @@ public class UntillExec extends Exec {
 		log.info("untill undeploy returns " + res.toString());
 		return DeploymentResult.OK;
 	}
+
+	@Override
+	public String toString() {
+		return "UntillExec{product=" + super.getMainArtifact() + '}';
+	}
 }
