@@ -7,6 +7,12 @@ import org.scm4j.deployer.api.DeploymentResult;
 public class UntillExec extends Exec {
 
 	@Override
+	public DeploymentResult stop() {
+		super.stop();
+		return DeploymentResult.OK;
+	}
+
+	@Override
 	public DeploymentResult deploy() {
 		DeploymentResult res = super.deploy();
 		if (res == DeploymentResult.FAILED) {
