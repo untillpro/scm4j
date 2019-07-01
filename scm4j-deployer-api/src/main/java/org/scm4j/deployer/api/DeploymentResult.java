@@ -8,4 +8,7 @@ public enum DeploymentResult {
 	@Getter
 	@Setter
 	private String productCoords;
+	@Getter
+	@Setter
+	private String errorMsg;
 }
