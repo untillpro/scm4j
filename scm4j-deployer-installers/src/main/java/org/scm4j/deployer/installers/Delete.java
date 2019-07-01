@@ -30,10 +30,13 @@ public class Delete implements IComponentDeployer {
 		File file = new File(fileToDelete);
 		if (!file.exists())
 			return DeploymentResult.OK;
-		if (file.delete())
+		if (file.delete()) {
 			return DeploymentResult.OK;
-		else
-			return DeploymentResult.FAILED;
+		} else {
+			DeploymentResult dr = DeploymentResult.FAILED;
+			dr.setErrorMsg("File doesn't deleted!");
+			return dr;
+		}
 	}
 
 	@Override

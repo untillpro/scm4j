@@ -82,8 +82,9 @@ public class Shortcut implements IComponentDeployer {
 			String destFile = dest.getPath().replace('\\', '/') + '/' + name + ".lnk";
 			sl.saveTo(destFile);
 		} catch (IOException e) {
-			log.warn(e.getMessage());
-			return FAILED;
+			DeploymentResult dr = FAILED;
+			dr.setErrorMsg(e.toString());
+			return dr;
 		}
 		return OK;
 	}
@@ -96,8 +97,11 @@ public class Shortcut implements IComponentDeployer {
 		File shortcutFile = new File(dest, name + ".lnk");
 		FileUtils.deleteQuietly(shortcutFile);
 		if (shortcutFile.exists()) {
-			log.warn("Can't delete shortcut " + shortcutFile.getPath());
-			return FAILED;
+			String errorMsg = "Can't delete shortcut " + shortcutFile.getPath();
+			log.warn(errorMsg);
+			DeploymentResult dr = FAILED;
+			dr.setErrorMsg(errorMsg);
+			return dr;
 		} else {
 			return OK;
 		}

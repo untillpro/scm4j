@@ -37,8 +37,10 @@ public class Copy implements IComponentDeployer {
 			}
 			return OK;
 		} catch (IOException e) {
-			log.warn(e.getMessage());
-			return REBOOT_CONTINUE;
+			log.warn(e.toString());
+			DeploymentResult dr = REBOOT_CONTINUE;
+			dr.setErrorMsg(e.toString());
+			return dr;
 		}
 	}
 
@@ -52,7 +54,9 @@ public class Copy implements IComponentDeployer {
 			return OK;
 		} catch (IOException e) {
 			log.warn(e.toString());
-			return REBOOT_CONTINUE;
+			DeploymentResult dr = REBOOT_CONTINUE;
+			dr.setErrorMsg(e.toString());
+			return dr;
 		}
 	}
 

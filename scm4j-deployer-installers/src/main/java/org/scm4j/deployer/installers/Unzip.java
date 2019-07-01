@@ -18,6 +18,8 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static org.scm4j.deployer.api.DeploymentResult.REBOOT_CONTINUE;
+
 @Slf4j
 public class Unzip implements IComponentDeployer {
 
@@ -50,7 +52,9 @@ public class Unzip implements IComponentDeployer {
 			return DeploymentResult.OK;
 		} catch (IOException e) {
 			log.warn(e.getMessage());
-			return DeploymentResult.REBOOT_CONTINUE;
+			DeploymentResult dr = REBOOT_CONTINUE;
+			dr.setErrorMsg(e.toString());
+			return dr;
 		}
 	}
 
@@ -69,7 +73,9 @@ public class Unzip implements IComponentDeployer {
 			return DeploymentResult.OK;
 		} catch (IOException e) {
 			log.warn(e.getMessage());
-			return DeploymentResult.REBOOT_CONTINUE;
+			DeploymentResult dr = REBOOT_CONTINUE;
+			dr.setErrorMsg(e.toString());
+			return dr;
 		}
 	}
 

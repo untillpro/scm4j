@@ -10,9 +10,11 @@ import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,7 +71,7 @@ public class Exec implements IComponentDeployer {
 	private File defaultDeployExecutable;
 
 	@SneakyThrows
-	public static int exec(List<String> command, Map<String, String> env, File directory) {
+	public static Process exec(List<String> command, Map<String, String> env, File directory) {
 		ProcessBuilder builder = new ProcessBuilder(command)
 				.directory(directory);
 		if (env != null && !env.isEmpty())
@@ -79,18 +81,22 @@ public class Exec implements IComponentDeployer {
 		Process p = builder.start();
 		realInheritIO(p.getInputStream(), System.out);
 		realInheritIO(p.getErrorStream(), System.err);
-		return p.waitFor();
+		return p;
 	}
 
 	private static void realInheritIO(final InputStream src, final PrintStream dest) {
 		new Thread(() -> {
 			try (Scanner sc = new Scanner(src)) {
-				while (sc.hasNextLine())
-					dest.println(sc.nextLine());
+				while (sc.hasNextLine()) {
+					String line = sc.nextLine();
+					dest.println(line);
+					log.info(line);
+				}
 			}
 		}).start();
 	}
 
+	@SneakyThrows
 	private DeploymentResult executeCommand(String executable, String[] args, Map<String, String> env) {
 		List<String> command = new ArrayList<>();
 		command.add("cmd");
@@ -110,15 +116,30 @@ public class Exec implements IComponentDeployer {
 
 		String workingDirectoryName = workingDirectory != null ? workingDirectory : deploymentPath;
 
-		int exitValue = exec(command, env, new File(workingDirectoryName));
+		Process p = exec(command, env, new File(workingDirectoryName));
+		int exitValue = p.waitFor();
 
 		log.info("Exit value is " + exitValue);
 
 		if (exitValue == needRebootExitValue)
 			return DeploymentResult.NEED_REBOOT;
-		if (!ignoreExitValue && exitValue != 0)
+		if (!ignoreExitValue && exitValue != 0) {
+			DeploymentResult dr = DeploymentResult.FAILED;
+			dr.setErrorMsg(errorStreamToString(p));
 			return DeploymentResult.FAILED;
+		}
 		return DeploymentResult.OK;
+	}
+
+	@SneakyThrows
+	private String errorStreamToString(Process p) {
+		BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+		StringBuilder sb = new StringBuilder();
+		String line;
+		while ((line = br.readLine()) != null) {
+			sb.append(line);
+		}
+		return sb.toString();
 	}
 
 	public Exec setArgs(String... args) {
@@ -160,7 +181,7 @@ public class Exec implements IComponentDeployer {
 					.map(Path::toString)
 					.filter(p -> p.startsWith(executablePrefix))
 					.filter(p -> p.endsWith(".exe"))
-					.min(Comparator.reverseOrder())
+					.max(Comparator.naturalOrder())
 					.orElseThrow(() -> new RuntimeException("Can't find executable file to undeploy product"));
 		}
 	}
