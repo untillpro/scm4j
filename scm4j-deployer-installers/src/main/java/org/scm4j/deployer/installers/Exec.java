@@ -10,12 +10,9 @@ import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,6 +40,7 @@ public class Exec implements IComponentDeployer {
 	@Setter
 	private boolean ignoreExitValue;
 	private int needRebootExitValue;
+	private static String errorMsg;
 	private Event event = Event.ON_DEPLOY;
 
 	public Exec onDeploy() {
@@ -79,19 +77,21 @@ public class Exec implements IComponentDeployer {
 		if (!directory.exists())
 			directory.mkdirs();
 		Process p = builder.start();
-		realInheritIO(p.getInputStream(), System.out);
-		realInheritIO(p.getErrorStream(), System.err);
+		realInheritIO(p.getErrorStream());
 		return p;
 	}
 
-	private static void realInheritIO(final InputStream src, final PrintStream dest) {
+	private static void realInheritIO(final InputStream src) {
 		new Thread(() -> {
+			StringBuilder sb = new StringBuilder();
 			try (Scanner sc = new Scanner(src)) {
 				while (sc.hasNextLine()) {
 					String line = sc.nextLine();
-					dest.println(line);
+					System.err.println(line);
 					log.info(line);
+					sb.append(line);
 				}
+				errorMsg = sb.toString();
 			}
 		}).start();
 	}
@@ -125,21 +125,10 @@ public class Exec implements IComponentDeployer {
 			return DeploymentResult.NEED_REBOOT;
 		if (!ignoreExitValue && exitValue != 0) {
 			DeploymentResult dr = DeploymentResult.FAILED;
-			dr.setErrorMsg(errorStreamToString(p));
+			dr.setErrorMsg(errorMsg);
 			return DeploymentResult.FAILED;
 		}
 		return DeploymentResult.OK;
-	}
-
-	@SneakyThrows
-	private String errorStreamToString(Process p) {
-		BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-		StringBuilder sb = new StringBuilder();
-		String line;
-		while ((line = br.readLine()) != null) {
-			sb.append(line);
-		}
-		return sb.toString();
 	}
 
 	public Exec setArgs(String... args) {
