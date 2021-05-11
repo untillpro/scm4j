@@ -1,12 +1,10 @@
 package org.scm4j.releaser.gradle;
 
-import static org.hamcrest.CoreMatchers.isA;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,13 +18,11 @@ import org.gradle.api.internal.plugins.PluginApplicationException;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class ReleaserGradlePluginTest {
 
 	@Rule public TemporaryFolder testProjectDir = new TemporaryFolder();
-	@Rule public ExpectedException thrown = ExpectedException.none();
 
     private Project createProject() {
     	Project project = ProjectBuilder.builder()
@@ -43,11 +39,16 @@ public class ReleaserGradlePluginTest {
 		Files.write(file.toPath(), fileContent.getBytes());
 	}
 
-	@Test public void noVersionFile() throws Exception {
-		thrown.expect(PluginApplicationException.class);
-		thrown.expectCause(isA(GradleException.class));
-		thrown.expectCause(hasProperty("message", is("version file is not found")));
-		createProject();
+	@Test public void noVersionFile() {
+		Exception e = assertThrows(PluginApplicationException.class, () -> {
+			createProject();
+		});
+		assertThat(e.getCause(),
+				allOf(
+						instanceOf(GradleException.class),
+						hasMessage(containsString("version file is not found"))
+				)
+		);
 	}
 
 	@Test public void version() throws Exception {
@@ -58,11 +59,11 @@ public class ReleaserGradlePluginTest {
 
 	@Test public void simpleMdeps() throws Exception {
 		createFile("version", "1.1");
-		createFile("mdeps", "g.roup:name:version");
+		createFile("mdeps", "gro.up:name:version");
 		Project project = createProject();
 		assertEquals("1.1", project.getVersion());
-		assertThat(project.getConfigurations().getByName("compile").getDependencies(), contains(
-				allOf(hasProperty("group", is("g.roup")),
+		assertThat(project.getConfigurations().getByName("implementation").getDependencies(), contains(
+				allOf(hasProperty("group", is("gro.up")),
 						hasProperty("name", is("name")),
 						hasProperty("version", is("version"))
 				)
@@ -76,7 +77,7 @@ public class ReleaserGradlePluginTest {
 		);
 		Project project = createProject();
 		assertEquals("1.1", project.getVersion());
-		assertThat(project.getConfigurations().getByName("compile").getDependencies(), contains(
+		assertThat(project.getConfigurations().getByName("implementation").getDependencies(), contains(
 				allOf(hasProperty("group", is("group.1")),
 						hasProperty("name", is("name-1")),
 						hasProperty("version", is("version1"))
