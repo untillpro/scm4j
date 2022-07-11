@@ -1,65 +1,34 @@
 plugins {
-	id 'java'
-	id 'maven'
-	id 'eclipse'
-	id 'idea'
-	id 'jacoco'
-	id 'com.github.kt3k.coveralls' version '2.8.1'
-	id 'java-gradle-plugin'
-	id "com.gradle.plugin-publish" version "0.9.10"
+	id 'com.gradle.plugin-publish' version '1.0.0'
 }
-
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
 version = file('version').text.trim()
 
 repositories {
-	jcenter()
+	mavenCentral()
 }
 
 dependencies {
-	testCompile 'junit:junit:4.12'
-	testCompile 'org.hamcrest:hamcrest-all:1.3'
+	testImplementation 'junit:junit:4.13.2'
+	testImplementation 'org.hamcrest:hamcrest-all:1.3'
 }
 
-configurations.all {
-	resolutionStrategy {
-		cacheDynamicVersionsFor 0, 'seconds'
-		cacheChangingModulesFor 0, 'seconds'
-	}
-}
+java {
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
 
-jacocoTestReport {
-	reports {
-		xml.enabled = true // coveralls plugin depends on xml format report
-		html.enabled = true
-	}
+	withJavadocJar()
+	withSourcesJar()
 }
 
 jar {
 	manifest.attributes (
 		'Specification-Title': project.name,
-		'Specification-Version': version.replaceAll(/-SNAPSHOT$/, ''),
+		'Specification-Version': project.version.replaceAll(/-SNAPSHOT$/, ''),
 		'Implementation-Title': project.name,
-		'Implementation-Version': "$version (${new Date().format('yyyy-MM-dd')})",
+		'Implementation-Version': "${project.version} (${new Date().format('yyyy-MM-dd')})",
 	)
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = 'sources'
-	from sourceSets.main.allSource
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-	classifier = 'javadoc'
-	from javadoc.destinationDir
-}
-
-artifacts {
-	archives sourcesJar
-	archives javadocJar
 }
 
 test.testLogging.exceptionFormat 'full'
@@ -70,24 +39,19 @@ test {
 	}
 }
 
-gradlePlugin {
-	plugins {
-		scm4jReleaserGradlePlugin {
-			id = 'org.scm4j.releaser.scm4j-releaser-gradle-plugin'
-			implementationClass = 'org.scm4j.releaser.gradle.ReleaserGradlePlugin'
-		}
-	}
-}
-
 pluginBundle {
 	website = 'https://github.com/scm4j/scm4j-releaser-gradle-plugin'
 	vcsUrl = 'https://github.com/scm4j/scm4j-releaser-gradle-plugin.git'
+	tags = ['scm', 'release-automation', 'release-helper', 'dependencies']
+}
+
+gradlePlugin {
 	plugins {
 		scm4jReleaserGradlePlugin {
 			id = 'org.scm4j.releaser.scm4j-releaser-gradle-plugin'
 			displayName = 'scm4j-releaser Gradle plugin'
 			description = 'This plugin loads version and managable dependencies from external files (version and mdeps)'
-			tags = ['scm', 'release-automation', 'release-helper', 'dependencies']
+			implementationClass = 'org.scm4j.releaser.gradle.ReleaserGradlePlugin'
 		}
 	}
 }

@@ -27,17 +27,17 @@ public class ReleaserGradlePlugin implements Plugin<Project> {
 			String version = new String(Files.readAllBytes(versionFile.toPath())).trim();
 			project.setVersion(version);
 		} catch (IOException e) {
-			new GradleException("Error reading version file", e);
+			throw new GradleException("Error reading version file", e);
 		}
 
 		// mdeps
 		File mdepsFile = project.file("mdeps");
 		if (mdepsFile.exists()) {
 			try (InputStream is = new FileInputStream(mdepsFile)) {
-				for (ManagableDependency mdep : ManagableDependencyParser.parse(is)) {
+				for (ManageableDependency mdep : ManageableDependencyParser.parse(is)) {
 					String configurationName = mdep.getConfiguration();
 					if (configurationName == null)
-						configurationName = "compile";
+						configurationName = "implementation";
 					Configuration configuration = project.getConfigurations().findByName(configurationName);
 					if (configuration == null)
 						configuration = project.getConfigurations().create(configurationName);
@@ -54,7 +54,9 @@ public class ReleaserGradlePlugin implements Plugin<Project> {
 					configuration.getDependencies().add(dependency);
 				}
 			} catch (IOException e) {
-				new GradleException("Error reading mdeps file", e);
+				throw new GradleException("Error reading mdeps file", e);
+			} catch (ManageableDependencyParser.InvalidLineFormatException e) {
+				throw new GradleException("Incorrect mdeps file format in line " + e.getLineNo());
 			}
 		}
 
