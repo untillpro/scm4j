@@ -2,7 +2,7 @@ plugins {
 	id 'com.gradle.plugin-publish' version '1.0.0'
 }
 
-group = 'org.scm4j'
+group = 'io.github.scm4j'
 version = file('version').text.trim()
 
 repositories {
@@ -35,7 +35,7 @@ test.testLogging.exceptionFormat 'full'
 
 test {
 	useJUnit {
-		excludeCategories 'org.scm4j.releaser.gradle.IntegrationTest'
+		excludeCategories 'io.github.scm4j.releaser.gradle.IntegrationTest'
 	}
 }
 
@@ -48,10 +48,10 @@ pluginBundle {
 gradlePlugin {
 	plugins {
 		scm4jReleaserGradlePlugin {
-			id = 'org.scm4j.releaser.scm4j-releaser-gradle-plugin'
+			id = 'io.github.scm4j.scm4j-releaser-gradle-plugin'
 			displayName = 'scm4j-releaser Gradle plugin'
 			description = 'This plugin loads version and managable dependencies from external files (version and mdeps)'
-			implementationClass = 'org.scm4j.releaser.gradle.ReleaserGradlePlugin'
+			implementationClass = 'io.github.scm4j.releaser.gradle.ReleaserGradlePlugin'
 		}
 	}
 }
