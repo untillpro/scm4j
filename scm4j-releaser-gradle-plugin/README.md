@@ -6,4 +6,4 @@ This plugin loads version and managable dependencies from external files (versio
 
 # Usage
 
-See the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/org.scm4j.releaser.scm4j-releaser-gradle-plugin) for instructions on including this plugin in your project.
+See the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.scm4j.scm4j-releaser-gradle-plugin) for instructions on including this plugin in your project.

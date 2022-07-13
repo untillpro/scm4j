@@ -1,4 +1,4 @@
-package org.scm4j.releaser.gradle;
+package io.github.scm4j.releaser.gradle;
 
 import java.io.BufferedReader;
 import java.io.IOException;
