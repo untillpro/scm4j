@@ -48,8 +48,6 @@ public class ReleaserGradlePlugin implements Plugin<Project> {
 							: "latest.integration");
 					paramObject.put("classifier", mdep.getClassifier());
 					paramObject.put("ext", mdep.getExt());
-					if ("tests".equals(mdep.getClassifier()))
-						paramObject.put("configuration", "test");
 					Dependency dependency = project.getDependencies().create(paramObject);
 					configuration.getDependencies().add(dependency);
 				}
