@@ -1,0 +1,74 @@
+plugins {
+	id 'java'
+	id 'maven'
+	id 'eclipse'
+	id 'idea'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+group = 'org.scm4j'
+version = file('version').text.trim()
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+repositories {
+	mavenCentral()
+	maven { 
+		url "https://jitpack.io" 
+	}
+}
+
+dependencies {
+	// load managed dependencies
+	def s = '[ \t]*', w = '[^:#@]+?'
+	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
+			match, group, name, version, classifier, ext, configuration ->
+		add(configuration ?: name.contains('test') ? 'testCompile' : 'compile', "$group:$name:${version?:''}${classifier?:''}${ext?:''}")
+	}
+	compile 'junit:junit:4.12'
+	compile 'org.mockito:mockito-core:2.0.62-beta'
+	compile 'commons-io:commons-io:2.4'
+	compile 'org.apache.commons:commons-lang3:3.5'
+}
+
+configurations.all {
+	resolutionStrategy {
+		cacheDynamicVersionsFor 0, 'seconds'
+		cacheChangingModulesFor 0, 'seconds'
+	}
+}
+
+jar {
+	manifest.attributes (
+			'Specification-Title': project.name,
+			'Specification-Version': version,
+			'Implementation-Title': project.name,
+			'Implementation-Version': "$version (${new Date().format('yyyy-MM-dd')})",
+	)
+}
+
+test {
+    testLogging {
+        events "failed"
+        exceptionFormat "full"
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+	
+task javadocJar(type: Jar, dependsOn: javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
