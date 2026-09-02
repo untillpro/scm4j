@@ -1,0 +1,10 @@
+language: java
+before_install:
+  - chmod +x gradlew
+cache:
+  directories:
+    - $HOME/.gradle/wrapper/
+after_success:
+- ./gradlew jacocoTestReport coveralls
+script:
+ ./gradlew build
