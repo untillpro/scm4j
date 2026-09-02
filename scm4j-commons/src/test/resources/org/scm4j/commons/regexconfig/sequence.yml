@@ -1,0 +1,6 @@
+!!omap
+- ~:
+    defaultProp: defaultValue
+    placeholderedProp: $0
+    intProp: 1
+    booleanProp: true
