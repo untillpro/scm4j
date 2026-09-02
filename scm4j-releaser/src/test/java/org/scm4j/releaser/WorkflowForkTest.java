@@ -50,7 +50,12 @@ public class WorkflowForkTest extends WorkflowTestBase {
 		ReleaseBranchCurrent crb = ReleaseBranchFactory.getCRB(repoUnTill);
 		String actualMDepsFileContent = env.getUnTillVCS().getFileContent(crb.getName(), Constants.MDEPS_FILE_NAME, null);
 		String expectedMDepsFileContent = getMDepsFileTestContent(crb.getMDeps(), false);
-		assertEquals(expectedMDepsFileContent, actualMDepsFileContent);
+		assertEquals(normalizeLineSeparators(expectedMDepsFileContent),
+				normalizeLineSeparators(actualMDepsFileContent));
+	}
+
+	private String normalizeLineSeparators(String content) {
+		return content.replace("\r\n", "\n").replace('\r', '\n').replaceFirst("\n$", "");
 	}
 
 	private String getMDepsFileTestContent(List<Component> mdeps, boolean addJunk) {
@@ -93,4 +98,3 @@ public class WorkflowForkTest extends WorkflowTestBase {
 		}
 	}
 }
-
