@@ -1,0 +1,20 @@
+rootProject.name = 'scm4j'
+
+def moduleNames = [
+        'scm4j-commons',
+        'scm4j-deployer-api',
+        'scm4j-deployer-engine',
+        'scm4j-deployer-installers',
+        'scm4j-installer',
+        'scm4j-jenkins',
+        'scm4j-releaser',
+        'scm4j-releaser-gradle-plugin',
+        'scm4j-template',
+        'scm4j-test-jitpack',
+        'scm4j-vcs-api',
+        'scm4j-vcs-git',
+        'scm4j-vcs-svn',
+        'scm4j-vcs-test',
+]
+
+include(*moduleNames)
