@@ -4,6 +4,25 @@
 # Log file
 *.log
 
+# Gradle-generated files
+.gradle/
+build/
+
+# Eclipse-generated files
+.settings/
+.classpath
+.project
+.apt_generated/
+bin/
+
+# IntelliJ IDEA-generated files
+.idea/
+out/
+*.iml
+*.ipr
+*.iws
+*.wps
+
 # BlueJ files
 *.ctxt
 
@@ -19,6 +38,16 @@
 *.tar.gz
 *.rar
 
+# The wrapper JAR is required to run Gradle without a system installation
+!gradle/wrapper/gradle-wrapper.jar
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Project-generated runtime and release files
+scm4j-installer/repository/
+scm4j-installer/installer.properties
+scm4j-releaser/releases/
+
+problems-report.html

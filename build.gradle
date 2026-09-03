@@ -1,0 +1,434 @@
+plugins {
+    id 'base'
+}
+
+def moduleMetadata = [
+        'scm4j-commons'               : [group: 'org.scm4j',       version: '1.15.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-deployer-api'          : [group: 'org.scm4j',       version: '0.14.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-deployer-engine'       : [group: 'org.scm4j',       version: '0.35.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-deployer-installers'   : [group: 'org.scm4j',       version: '0.30.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-installer'             : [group: 'org.scm4j',       version: '0.44.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-jenkins'               : [group: 'org.scm4j',       version: '2.0-SNAPSHOT',    java: JavaVersion.VERSION_1_7],
+        'scm4j-releaser'              : [group: 'org.scm4j',       version: '34.2.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-releaser-gradle-plugin': [group: 'io.github.scm4j', version: '0.4.0-SNAPSHOT',  java: JavaVersion.VERSION_1_8],
+        'scm4j-template'              : [group: 'org.scm4j',       version: '0.1.0-SNAPSHOT',  java: JavaVersion.VERSION_1_8],
+        'scm4j-test-jitpack'          : [group: '',                version: '1.0.0-SNAPSHOT',  java: JavaVersion.VERSION_1_7],
+        'scm4j-vcs-api'               : [group: 'org.scm4j',       version: '1.17.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-vcs-git'               : [group: 'org.scm4j',       version: '1.19.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-vcs-svn'               : [group: 'org.scm4j',       version: '1.20.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-vcs-test'              : [group: 'org.scm4j',       version: '1.18.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+]
+
+def manifestVersionPolicy = [
+        'scm4j-commons'               : false,
+        'scm4j-deployer-api'          : true,
+        'scm4j-deployer-engine'       : true,
+        'scm4j-deployer-installers'   : true,
+        'scm4j-installer'             : true,
+        'scm4j-releaser'              : false,
+        'scm4j-releaser-gradle-plugin': true,
+        'scm4j-template'              : true,
+        'scm4j-vcs-api'               : false,
+        'scm4j-vcs-git'               : false,
+        'scm4j-vcs-svn'               : false,
+        'scm4j-vcs-test'              : false,
+]
+
+subprojects {
+    apply plugin: 'java-library'
+
+    def metadata = moduleMetadata[project.name]
+    group = metadata.group
+    version = metadata.version
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(8)
+        }
+        sourceCompatibility = metadata.java
+        targetCompatibility = metadata.java
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    repositories {
+        mavenCentral()
+        maven {
+            url = uri('https://jitpack.io')
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnit()
+        testLogging {
+            events 'failed'
+            exceptionFormat 'full'
+        }
+    }
+
+    tasks.named('assemble') {
+        dependsOn(tasks.named('sourcesJar'), tasks.named('javadocJar'))
+    }
+
+    if (manifestVersionPolicy.containsKey(project.name)) {
+        tasks.named('jar', Jar) {
+            def stripSnapshot = manifestVersionPolicy[project.name]
+            def specificationVersion = project.version.toString()
+            if (stripSnapshot) {
+                specificationVersion = specificationVersion.replaceAll(/-SNAPSHOT$/, '')
+            }
+            manifest.attributes(
+                    'Specification-Title': project.name,
+                    'Specification-Version': specificationVersion,
+                    'Implementation-Title': project.name,
+                    'Implementation-Version': "${project.version} (${new Date().format('yyyy-MM-dd')})",
+            )
+        }
+    }
+}
+
+project(':scm4j-commons') {
+    dependencies {
+        api 'com.google.guava:guava:20.0'
+        api 'org.apache.commons:commons-lang3:3.5'
+        api 'commons-io:commons-io:2.5'
+        api 'org.yaml:snakeyaml:1.18'
+
+        testImplementation 'junit:junit:4.12'
+        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
+        testImplementation 'nl.jqno.equalsverifier:equalsverifier:2.3'
+    }
+}
+
+project(':scm4j-deployer-api') {
+    dependencies {
+        api 'org.apache.maven.resolver:maven-resolver-api:1.1.0'
+
+        compileOnly 'org.projectlombok:lombok:1.16.18'
+        annotationProcessor 'org.projectlombok:lombok:1.16.18'
+
+        testImplementation 'junit:junit:4.12'
+    }
+}
+
+project(':scm4j-deployer-engine') {
+    dependencies {
+        api project(':scm4j-deployer-api')
+        api 'com.google.guava:guava:20.0'
+        api 'org.apache.httpcomponents:httpclient:4.5.3'
+        api 'commons-io:commons-io:2.5'
+        api 'com.google.code.gson:gson:2.8.2'
+        api 'commons-cli:commons-cli:1.4'
+        api 'org.slf4j:slf4j-api:1.7.25'
+        api 'org.apache.maven.resolver:maven-resolver-api:1.1.0'
+        api 'org.apache.maven.resolver:maven-resolver-util:1.1.0'
+        api 'org.apache.maven.resolver:maven-resolver-spi:1.1.0'
+        api 'org.apache.maven.resolver:maven-resolver-impl:1.1.0'
+        api 'org.apache.maven.resolver:maven-resolver-connector-basic:1.1.0'
+        api 'org.apache.maven.resolver:maven-resolver-transport-file:1.1.0'
+        api 'org.apache.maven.resolver:maven-resolver-transport-http:1.1.0'
+        api 'org.apache.maven:maven-resolver-provider:3.5.0'
+
+        compileOnly 'org.projectlombok:lombok:1.16.18'
+        annotationProcessor 'org.projectlombok:lombok:1.16.18'
+
+        testImplementation 'junit:junit:4.12'
+        testImplementation 'org.mockito:mockito-all:1.9.5'
+    }
+
+    def generatedResourcesDir = layout.buildDirectory.dir('generated/resources')
+    def apiVersionFile = generatedResourcesDir.map {
+        it.file('org/scm4j/deployer/engine/scm4j-deployer-api-version').asFile
+    }
+
+    tasks.named('jar', Jar) {
+        doFirst {
+            def outputFile = apiVersionFile.get()
+            outputFile.parentFile.mkdirs()
+            outputFile.text = project(':scm4j-deployer-api').version.toString()
+        }
+        from(generatedResourcesDir)
+    }
+}
+
+project(':scm4j-deployer-installers') {
+    dependencies {
+        api project(':scm4j-deployer-api')
+        api project(':scm4j-releaser-gradle-plugin')
+        api 'org.slf4j:slf4j-log4j12:1.7.25'
+        api 'commons-io:commons-io:2.5'
+        api 'org.apache.commons:commons-lang3:3.7'
+        api 'com.github.vatbub:mslinks:1.0.4'
+
+        compileOnly 'org.projectlombok:lombok:1.16.18'
+        annotationProcessor 'org.projectlombok:lombok:1.16.18'
+
+        testImplementation 'junit:junit:4.12'
+    }
+}
+
+project(':scm4j-installer') {
+    dependencies {
+        api project(':scm4j-deployer-engine')
+        api 'ch.qos.logback:logback-classic:1.2.3'
+        api 'commons-cli:commons-cli:1.4'
+
+        def currentOs = org.gradle.internal.os.OperatingSystem.current()
+        def platform = currentOs.windows ? 'win32.win32' : (currentOs.linux ? 'gtk.linux' : (currentOs.macOsX ? 'cocoa.macosx' : 'unknown'))
+        def architecture = System.getProperty('os.arch').contains('64') ? 'x86_64' : 'x86'
+        def swtCoordinates = "org.eclipse.swt:org.eclipse.swt.${platform}.${architecture}:4.3"
+        compileOnly swtCoordinates
+        runtimeOnly swtCoordinates
+
+        testImplementation 'junit:junit:4.12'
+    }
+
+    tasks.named('jar', Jar) {
+        manifest.attributes('Main-Class': 'org.scm4j.installer.Installer')
+    }
+}
+
+project(':scm4j-jenkins') {
+    dependencies {
+        api 'commons-io:commons-io:2.4'
+        api 'com.google.code.gson:gson:2.8.0'
+        api 'org.apache.httpcomponents:httpclient:4.5.2'
+        api 'commons-httpclient:commons-httpclient:3.1'
+
+        testImplementation 'junit:junit:4.12'
+        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
+        testImplementation 'xmlunit:xmlunit:1.6'
+    }
+}
+
+project(':scm4j-releaser') {
+    sourceSets {
+        inv {
+            java.srcDir 'src/inv/java'
+            compileClasspath = sourceSets.test.runtimeClasspath
+            runtimeClasspath = output + compileClasspath
+        }
+    }
+
+    dependencies {
+        api project(':scm4j-vcs-git')
+        api project(':scm4j-vcs-svn')
+        api project(':scm4j-commons')
+        api 'com.google.guava:guava:23.0'
+        api 'org.yaml:snakeyaml:1.18'
+        api 'org.slf4j:slf4j-simple:1.7.21'
+        api 'com.diogonunes:JCDP:2.0.3.1'
+
+        compileOnly 'org.projectlombok:lombok:1.16.18'
+        annotationProcessor 'org.projectlombok:lombok:1.16.18'
+
+        testImplementation 'com.github.stefanbirkner:system-rules:1.16.1'
+        testImplementation 'junit:junit:4.12'
+        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
+        testImplementation 'nl.jqno.equalsverifier:equalsverifier:2.3'
+        testImplementation 'org.hamcrest:hamcrest-all:1.3'
+    }
+
+    tasks.named('test', Test) {
+        jvmArgs '-Xmx128m'
+    }
+
+    tasks.register('fatJar', Jar) {
+        dependsOn(tasks.named('classes'))
+        archiveBaseName.set("fat-${project.name}")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        manifest.attributes(
+                'Specification-Title': project.name,
+                'Specification-Version': project.version,
+                'Implementation-Title': project.name,
+                'Implementation-Version': "${project.version} (${new Date().format('yyyy-MM-dd')})",
+        )
+        from {
+            sourceSets.main.runtimeClasspath.collect { it.directory ? it : zipTree(it) }
+        }
+        exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+    }
+
+    tasks.register('run', JavaExec) {
+        dependsOn(tasks.named('classes'))
+        description = 'Test CLI'
+        mainClass.set('org.scm4j.releaser.cli.CLI')
+        classpath = sourceSets.main.runtimeClasspath
+        if (project.hasProperty('a')) {
+            args(project.property('a').toString().split(','))
+        }
+    }
+}
+
+project(':scm4j-releaser-gradle-plugin') {
+    apply plugin: 'java-gradle-plugin'
+
+    def legacyApiSourceDir = layout.buildDirectory.dir('generated/sources/legacyApi/java/main')
+    def generateLegacyApiSources = tasks.register('generateLegacyApiSources') {
+        outputs.dir(legacyApiSourceDir)
+        doLast {
+            def packageDir = legacyApiSourceDir.get().dir('org/scm4j/releaser/gradle').asFile
+            packageDir.mkdirs()
+
+            new File(packageDir, 'ManagableDependency.java').text = '''package org.scm4j.releaser.gradle;
+
+public class ManagableDependency {
+    private String group;
+    private String name;
+    private String classifier;
+    private String ext;
+    private String version;
+    private String configuration;
+
+    public String getGroup() { return group; }
+    public void setGroup(String group) { this.group = group; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getClassifier() { return classifier; }
+    public void setClassifier(String classifier) { this.classifier = classifier; }
+    public String getExt() { return ext; }
+    public void setExt(String ext) { this.ext = ext; }
+    public String getVersion() { return version; }
+    public void setVersion(String version) { this.version = version; }
+    public String getConfiguration() { return configuration; }
+    public void setConfiguration(String configuration) { this.configuration = configuration; }
+}
+'''
+
+            new File(packageDir, 'ManagableDependencyParser.java').text = '''package org.scm4j.releaser.gradle;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public final class ManagableDependencyParser {
+    private ManagableDependencyParser() {
+    }
+
+    public static List<ManagableDependency> parse(InputStream is) throws IOException {
+        if (is == null) return null;
+        List<ManagableDependency> result = new ArrayList<>();
+        Pattern pattern = Pattern.compile(String.format("%1$s(?<group>%2$s):(?<name>%2$s):(?<ver>%2$s)?"
+                + "(?::(?<clf>%2$s))?(?:@(?<ext>%2$s))?%1$s(?:#%1$s(?<cfg>%2$s)?%1$s)?",
+                "[ \\t]*", "[a-zA-Z0-9._-]+"));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                Matcher matcher = pattern.matcher(line);
+                if (matcher.matches()) {
+                    ManagableDependency dependency = new ManagableDependency();
+                    dependency.setGroup(matcher.group("group"));
+                    dependency.setName(matcher.group("name"));
+                    dependency.setClassifier(matcher.group("clf"));
+                    dependency.setExt(matcher.group("ext"));
+                    dependency.setVersion(matcher.group("ver"));
+                    dependency.setConfiguration(matcher.group("cfg"));
+                    result.add(dependency);
+                }
+            }
+        }
+        return result;
+    }
+}
+'''
+        }
+    }
+
+    sourceSets.main.java.srcDir(generateLegacyApiSources)
+
+    dependencies {
+        testImplementation 'junit:junit:4.13.2'
+        testImplementation 'org.hamcrest:hamcrest-all:1.3'
+    }
+
+    gradlePlugin {
+        plugins {
+            scm4jReleaserGradlePlugin {
+                id = 'io.github.scm4j.scm4j-releaser-gradle-plugin'
+                displayName = 'scm4j-releaser Gradle plugin'
+                description = 'This plugin loads version and manageable dependencies from external files (version and mdeps)'
+                implementationClass = 'io.github.scm4j.releaser.gradle.ReleaserGradlePlugin'
+            }
+            legacyScm4jReleaserGradlePlugin {
+                id = 'io.github.scm4j.releaser.scm4j-releaser-gradle-plugin'
+                displayName = 'scm4j-releaser Gradle plugin (legacy ID)'
+                description = 'Compatibility alias for existing scm4j-releaser Gradle plugin consumers'
+                implementationClass = 'io.github.scm4j.releaser.gradle.ReleaserGradlePlugin'
+            }
+        }
+    }
+}
+
+project(':scm4j-template') {
+    dependencies {
+        testImplementation 'junit:junit:4.12'
+    }
+}
+
+project(':scm4j-test-jitpack') {
+    dependencies {
+        api 'org.apache.commons:commons-lang3:3.5'
+        testImplementation 'junit:junit:4.12'
+    }
+}
+
+project(':scm4j-vcs-api') {
+    dependencies {
+        api 'commons-io:commons-io:2.5'
+
+        testImplementation 'junit:junit:4.12'
+        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
+        testImplementation 'nl.jqno.equalsverifier:equalsverifier:2.3'
+    }
+}
+
+project(':scm4j-vcs-test') {
+    dependencies {
+        api project(':scm4j-vcs-api')
+        api 'junit:junit:4.12'
+        api 'org.mockito:mockito-core:2.0.62-beta'
+        api 'commons-io:commons-io:2.4'
+        api 'org.apache.commons:commons-lang3:3.5'
+    }
+}
+
+project(':scm4j-vcs-git') {
+    dependencies {
+        api project(':scm4j-vcs-api')
+        api 'org.eclipse.jgit:org.eclipse.jgit:4.3.0.201604071810-r'
+        api 'org.apache.commons:commons-lang3:3.5'
+        api 'commons-io:commons-io:2.6'
+
+        testImplementation project(':scm4j-vcs-test')
+        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
+        testImplementation 'junit:junit:4.12'
+    }
+}
+
+project(':scm4j-vcs-svn') {
+    dependencies {
+        api project(':scm4j-vcs-api')
+        api 'org.tmatesoft.svnkit:svnkit:1.8.14'
+        api 'org.apache.commons:commons-lang3:3.5'
+        api 'commons-io:commons-io:2.6'
+
+        testImplementation project(':scm4j-vcs-test')
+        testImplementation 'junit:junit:4.12'
+        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
+    }
+}
+
+tasks.named('build') {
+    dependsOn(':scm4j-releaser:build')
+}
+
+tasks.register('test') {
+    group = 'verification'
+    description = 'Runs every test in every Gradle subproject.'
+    dependsOn(subprojects.collect { it.tasks.named('test') })
+}
