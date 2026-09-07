@@ -185,7 +185,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			esb.getAndCacheStatus(versionedUBL, cache, pc, false);
 			fail();
 		} catch (RuntimeException e) {
-			verify(cache, atLeast(1)).remove(eq(repoUBL.getUrl()));
+			verify(cache, atLeast(1)).remove(eq(repoUBL.getRepositoryId()));
 		}
 	}
 	
@@ -205,7 +205,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			esb.getAndCacheStatus(versionedUBL, cache, pc, true);
 			fail();
 		} catch (RuntimeException e) {
-			verify(cache, atLeast(1)).remove(eq(repoUBL.getUrl()));
+			verify(cache, atLeast(1)).remove(eq(repoUBL.getRepositoryId()));
 		}
 	}
 	
@@ -222,7 +222,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			esb.getAndCacheStatus(compUBL, cache, pc, false);
 			fail();
 		} catch (RuntimeException e) {
-			verify(cache, atLeast(1)).remove(eq(repoUBL.getUrl()));
+			verify(cache, atLeast(1)).remove(eq(repoUBL.getRepositoryId()));
 		}
 	}
 	
@@ -238,7 +238,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			esb.getAndCacheStatus(compUBL, cache, pc, false);
 			fail();
 		} catch (RuntimeException e) {
-			verify(cache, atLeast(1)).remove(eq(repoUnTillDb.getUrl()));
+			verify(cache, atLeast(1)).remove(eq(repoUnTillDb.getRepositoryId()));
 		}
 	}
 }

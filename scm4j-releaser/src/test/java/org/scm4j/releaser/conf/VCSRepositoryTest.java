@@ -25,10 +25,17 @@ public class VCSRepositoryTest {
 	}
 
 	@Test
+	public void testEquivalentSubfoldersHaveTheSameIdentity() {
+		assertEquals(repository(null), repository(""));
+		assertEquals(repository("components/driver"), repository("components/driver/"));
+		assertEquals(repository("components\\driver"), repository("components/driver"));
+	}
+
+	@Test
 	public void testEqualsAndHashCode() {
 		EqualsVerifier
 				.forClass(VCSRepository.class)
-				.withOnlyTheseFields("url", "subfolder")
+				.withOnlyTheseFields("repositoryId")
 				.usingGetClass()
 				.verify();
 	}

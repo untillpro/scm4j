@@ -19,7 +19,7 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 	@Test
 	public void testNoReleaseBranch() {
 		CachedStatuses cache = new CachedStatuses();
-		cache.put(repoUBL.getUrl(), new ExtendedStatus(env.getUblVer(), BuildStatus.BUILD, new LinkedHashMap<>(), compUBL, repoUBL));
+		cache.put(repoUBL.getRepositoryId(), new ExtendedStatus(env.getUblVer(), BuildStatus.BUILD, new LinkedHashMap<>(), compUBL, repoUBL));
 		ISCMProc proc = new SCMProcBuild(compUBL, cache, false, repoUBL);
 		try {
 			proc.execute(new ProgressConsole());

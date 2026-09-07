@@ -1,5 +1,7 @@
 package org.scm4j.releaser.conf;
 
+import java.util.Objects;
+
 import org.scm4j.releaser.builders.IBuilder;
 import org.scm4j.vcs.api.IVCS;
 
@@ -11,6 +13,7 @@ public class VCSRepository {
 	private final String name;
 	private final String url;
 	private final String subfolder;
+	private final VCSRepositoryId repositoryId;
 	private final Credentials credentials;
 	private final VCSType type;
 	private final String developBranch;
@@ -20,11 +23,7 @@ public class VCSRepository {
 	
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((url == null) ? 0 : url.hashCode());
-		result = prime * result + ((subfolder == null) ? 0 : subfolder.hashCode());
-		return result;
+		return Objects.hashCode(repositoryId);
 	}
 
 	@Override
@@ -36,17 +35,7 @@ public class VCSRepository {
 		if (getClass() != obj.getClass())
 			return false;
 		VCSRepository other = (VCSRepository) obj;
-		if (url == null) {
-			if (other.url != null)
-				return false;
-		} else if (!url.equals(other.url))
-			return false;
-		if (subfolder == null) {
-			if (other.subfolder != null)
-				return false;
-		} else if (!subfolder.equals(other.subfolder))
-			return false;
-		return true;
+		return Objects.equals(repositoryId, other.repositoryId);
 	}
 
 	public String getReleaseBranchPrefix() {
@@ -63,6 +52,10 @@ public class VCSRepository {
 
 	public String getSubfolder() {
 		return subfolder;
+	}
+
+	public VCSRepositoryId getRepositoryId() {
+		return repositoryId;
 	}
 
 	public String getName() {
@@ -88,6 +81,7 @@ public class VCSRepository {
 		this.name = name;
 		this.url = url;
 		this.subfolder = subfolder;
+		this.repositoryId = new VCSRepositoryId(url, subfolder);
 		this.credentials = credentials;
 		this.type = type;
 		this.developBranch = developBranch;

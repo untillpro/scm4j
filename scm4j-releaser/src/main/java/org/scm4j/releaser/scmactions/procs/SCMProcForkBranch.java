@@ -24,7 +24,7 @@ public class SCMProcForkBranch implements ISCMProc {
 		db = new DevelopBranch(comp, repo);
 		this.repo = repo;
 		vcs = repo.getVCS();
-		status = cache.get(repo.getUrl());
+		status = cache.get(repo.getRepositoryId());
 		newBranchName = Utils.getReleaseBranchName(repo, status.getNextVersion());
 		this.vcsChangeList = vcsChangeList;
 	}
