@@ -141,10 +141,31 @@ public class SVNVCSTest extends VCSAbstractTest {
 		testSVNException(() -> svn.log("", 0));
 		testSVNException(() -> svn.removeFile("", "", ""));
 		testSVNException(() -> svn.getCommitsRange("", null, WalkDirection.ASC, 0));
+		testSVNException(() -> svn.getCommitsRange("", null, WalkDirection.ASC, 0, "folder"));
 		testSVNException(() -> svn.getCommitsRange("", null, ""));
 		testSVNException(() -> svn.getHeadCommit(""));
 		testSVNException(() -> svn.createTag("", "", "", ""));
 		testSVNException(() -> svn.checkout("", "", ""));
+	}
+
+	@Test
+	public void testCommitsRangeRejectsNonRelativePaths() {
+		// History filtering must remain below the selected branch for Unix, Windows drive,
+		// UNC, and parent-traversal forms instead of passing them to the SVN repository.
+		assertInvalidHistoryPath("/tags");
+		assertInvalidHistoryPath("C:\\tags");
+		assertInvalidHistoryPath("\\\\server\\tags");
+		assertInvalidHistoryPath("../tags");
+		assertInvalidHistoryPath("components/../tags");
+	}
+
+	private void assertInvalidHistoryPath(String path) {
+		try {
+			vcs.getCommitsRange(null, null, WalkDirection.ASC, 0, path);
+			fail("Expected an invalid repository-relative path to be rejected: " + path);
+		} catch (IllegalArgumentException e) {
+			assertTrue(e.getMessage().contains("repositoryRelativePath"));
+		}
 	}
 
 	@Test
@@ -381,10 +402,13 @@ public class SVNVCSTest extends VCSAbstractTest {
 	}
 	
 	@Test
-	public void testGetTagsOnRevisionNoTagsDir() throws SVNException {
+	public void testGetTagsNoTagsDir() throws SVNException {
+		// Recursive namespace discovery starts at tags/. A repository without that root
+		// therefore has no tags for either listing operation rather than being an error.
 		svn.getClientManager()
 				.getCommitClient()
 				.doDelete(new SVNURL[] { SVNURL.parseURIEncoded(svn.getRepoUrl() + "/" + SVNVCS.TAGS_PATH)}, "tags/ deleted");
+		assertTrue(vcs.getTags().isEmpty());
 		assertTrue(vcs.getTagsOnRevision("0").isEmpty());
 	}
 	

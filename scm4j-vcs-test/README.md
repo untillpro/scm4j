@@ -39,6 +39,12 @@ scm4j-vcs-test project provides set of functional tests for implementations of I
   - Mocks are verified. LWC closing is checked if one was obtained
 - Test Base Dir folder deletes.
 
+# Path-filtered history coverage
+- The shared suite verifies directory filters against direct and nested changes while excluding sibling, parent, and root paths.
+- Exact file filters must exclude other files in the same directory.
+- Both walk directions, inclusive and null cursors, post-filter limits, and whole-branch null or empty paths are covered for every implementation.
+- Adapter-specific suites should additionally cover validation or error translation that is unique to their native VCS.
+
 # Implementing VCS test
 - Add github-hosted scm4j-vcs-test project as maven dependency using [jitpack.io](https://jitpack.io/). As a gradle example, add following to gradle.build file:
 ```gradle

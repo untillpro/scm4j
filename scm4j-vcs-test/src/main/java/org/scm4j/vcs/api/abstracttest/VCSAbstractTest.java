@@ -463,6 +463,70 @@ public abstract class VCSAbstractTest {
 	}
 
 	@Test
+	public void testCommitsGetRangeByPath() throws Exception {
+		String componentPath = "components/postgres";
+		String componentFilePath = componentPath + "/schema.sql";
+
+		// Build one linear history containing direct and nested component changes mixed with
+		// changes in a sibling component, the component's parent directory, and the repository root.
+		String componentFirst = vcsTestDataGen.setFileContent(null, componentFilePath,
+				LINE_1, "postgres schema added").getRevision();
+		String sibling = vcsTestDataGen.setFileContent(null, "components/mysql/schema.sql",
+				LINE_1, "mysql schema added").getRevision();
+		String parent = vcsTestDataGen.setFileContent(null, "components/README.md",
+				LINE_1, "components readme added").getRevision();
+		String root = vcsTestDataGen.setFileContent(null, "README.md",
+				LINE_1, "repository readme added").getRevision();
+		String componentNested = vcsTestDataGen.setFileContent(null, componentPath + "/migrations/001.sql",
+				LINE_2, "postgres migration added").getRevision();
+		String componentLast = vcsTestDataGen.setFileContent(null, componentFilePath,
+				LINE_3, "postgres schema changed").getRevision();
+
+		resetMocks();
+
+		// Ascending traversal must include the cursor and retain only commits that affect
+		// the selected component directory, in oldest-to-newest order.
+		List<VCSCommit> commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0, componentPath);
+		verifyMocks();
+		assertCommitIds(commits, componentFirst, componentNested, componentLast);
+
+		// A null cursor must traverse from the branch boundary even though the selected
+		// directory did not exist when the branch was created.
+		commits = vcs.getCommitsRange(null, null, WalkDirection.ASC, 0, componentPath);
+		assertCommitIds(commits, componentFirst, componentNested, componentLast);
+		commits = vcs.getCommitsRange(null, null, WalkDirection.DESC, 0, componentPath);
+		assertCommitIds(commits, componentLast, componentNested, componentFirst);
+
+		// A file path must match only changes to that exact file, excluding even other
+		// files nested below the same component directory.
+		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0, componentFilePath);
+		assertCommitIds(commits, componentFirst, componentLast);
+
+		// The limit applies after path filtering, so unrelated commits do not consume it.
+		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 2, componentPath);
+		assertCommitIds(commits, componentFirst, componentNested);
+
+		// Descending traversal must include its cursor and return the same component-only
+		// history in newest-to-oldest order.
+		commits = vcs.getCommitsRange(null, componentLast, WalkDirection.DESC, 0, componentPath);
+		assertCommitIds(commits, componentLast, componentNested, componentFirst);
+
+		commits = vcs.getCommitsRange(null, componentLast, WalkDirection.DESC, 2, componentPath);
+		assertCommitIds(commits, componentLast, componentNested);
+
+		// A null or empty path keeps the existing whole-repository behavior and therefore
+		// includes the sibling, parent-directory, and root commits filtered out above.
+		String[] allCommitIds = {
+				componentFirst, sibling, parent, root, componentNested, componentLast};
+		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0);
+		assertCommitIds(commits, allCommitIds);
+		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0, null);
+		assertCommitIds(commits, allCommitIds);
+		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0, "");
+		assertCommitIds(commits, allCommitIds);
+	}
+
+	@Test
 	public void testCommitGetHead() throws Exception {
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		VCSCommit commit2 = vcsTestDataGen.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
@@ -613,6 +677,52 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.getTagsOnRevision(c3.getRevision()).containsAll(Arrays.asList(
 				tag3)));
 	}
+
+	@Test
+	public void testNamespacedBranchAndTagLifecycle() throws Exception {
+		String namespace = "release/postgres/";
+		String branchName = namespace + "1.0";
+		String tagName = namespace + "1.0.0";
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+
+		// A slash-delimited branch name represents one branch. Its parent path segments
+		// are namespace containers and must not replace the full branch in enumeration.
+		resetMocks();
+		vcs.createBranch(null, branchName, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		verifyMocks();
+		assertTrue(vcs.getBranches(namespace).contains(branchName));
+		verifyMocks();
+
+		// Create a commit on that branch and tag the exact revision with another
+		// slash-delimited name, proving both resources remain usable through their full names.
+		VCSCommit branchCommit = vcs.setFileContent(branchName, FILE2_NAME, LINE_2,
+				FILE2_ADDED_COMMIT_MESSAGE);
+		verifyMocks();
+		VCSTag createdTag = vcs.createTag(branchName, tagName, TAG_MESSAGE_1, branchCommit.getRevision());
+		verifyMocks();
+		assertEquals(tagName, createdTag.getTagName());
+
+		// Enumeration must expose only the actual tag, not intermediate namespace folders,
+		// and revision lookup must retain the complete slash-delimited name.
+		List<VCSTag> tags = vcs.getTags();
+		verifyMocks();
+		assertEquals(1, tags.size());
+		assertTrue(containsTagName(tags, tagName));
+		tags = vcs.getTagsOnRevision(branchCommit.getRevision());
+		verifyMocks();
+		assertEquals(1, tags.size());
+		assertTrue(containsTagName(tags, tagName));
+
+		// Removing the leaf tag and branch must remove those resources even when their
+		// namespace containers remain in a directory-based VCS such as SVN.
+		vcs.removeTag(tagName);
+		verifyMocks();
+		assertFalse(containsTagName(vcs.getTags(), tagName));
+		verifyMocks();
+		vcs.deleteBranch(branchName, DELETE_BRANCH_COMMIT_MESSAGE);
+		verifyMocks();
+		assertFalse(vcs.getBranches(namespace).contains(branchName));
+	}
 	
 	private boolean containsTagName(List<VCSTag> tags, String tagName) {
 		for (VCSTag tag : tags) {
@@ -637,6 +747,14 @@ public abstract class VCSAbstractTest {
 			}
 		}
 		return count == ids.length;
+	}
+
+	private void assertCommitIds(List<VCSCommit> commits, String... expectedIds) {
+		List<String> ids = new ArrayList<>();
+		for (VCSCommit commit : commits) {
+			ids.add(commit.getRevision());
+		}
+		assertEquals(Arrays.asList(expectedIds), ids);
 	}
 
 	private Boolean commitsContainsSequenceOfIds(List<VCSCommit> commits,String... ids) {

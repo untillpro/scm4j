@@ -12,6 +12,7 @@ Features:
 - Branches list
 - File content getting and setting
 - File create and remove
+- Directional commit history for the whole branch or a selected repository-relative file or directory
 
 Use cases
 - VCS server hooks
@@ -58,6 +59,8 @@ Use cases
 	IVCS vcs = new SVNVCS(repoWorkspace, "username", "pass");
 	```
 - Use methods of `IVCS` interface. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+- Path-filtered history uses the `IVCS.getCommitsRange` repository-relative path contract. Absolute, drive, UNC, and parent-traversal paths are rejected before querying SVN.
+- `getTags()` and `getTagsOnRevision()` return an empty list when the repository has no `tags/` root because the absence of that conventional SVN directory means that no tags exist.
 - Use `vcs.setProxy()` and `vcs.setCredentials()` if necessary
 
 # Implementation details
