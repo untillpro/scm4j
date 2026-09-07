@@ -8,11 +8,16 @@ import org.scm4j.releaser.branch.ReleaseBranchCurrent;
 import org.scm4j.releaser.branch.ReleaseBranchFactory;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.MDepsFile;
+import org.scm4j.releaser.conf.TagDesc;
 import org.scm4j.releaser.exceptions.EBuildOnNotForkedRelease;
 import org.scm4j.releaser.exceptions.ENoBuilder;
+import org.scm4j.vcs.api.VCSCommit;
+import org.scm4j.vcs.api.VCSTag;
+import org.scm4j.vcs.api.WalkDirection;
 import org.yaml.snakeyaml.Yaml;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,6 +53,25 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		env.generateFeatureCommit(env.getUnTillDbVCS(), repoUnTillDb.getDevelopBranch(), "feature commit added");
 
 		forkAndBuild(compUnTillDb, 2);
+	}
+
+	@Test
+	public void testBuildCreatesSubfolderTag() throws Exception {
+		configureRepositorySubfolder("$1");
+
+		forkAndBuild(compUnTillDb);
+
+		List<VCSTag> tags = repoUnTillDb.getVCS().getTags();
+		assertEquals(1, tags.size());
+		VCSTag tag = tags.get(0);
+		TagDesc expectedTag = Utils.getTagDesc(repoUnTillDb, env.getUnTillDbVer().toReleaseZeroPatch().toString());
+		assertEquals("unTillDb/" + env.getUnTillDbVer().toReleaseZeroPatch(), expectedTag.getName());
+		assertEquals(expectedTag.getName(), tag.getTagName());
+
+		ReleaseBranchCurrent releaseBranch = ReleaseBranchFactory.getCRB(repoUnTillDb);
+		List<VCSCommit> commits = repoUnTillDb.getVCS().getCommitsRange(
+				releaseBranch.getName(), null, WalkDirection.DESC, 2);
+		assertEquals(commits.get(1), tag.getRelatedCommit());
 	}
 	
 	@Test

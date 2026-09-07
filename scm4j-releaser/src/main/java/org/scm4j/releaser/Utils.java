@@ -67,11 +67,15 @@ public final class Utils {
 
 	public static String getReleaseBranchName(VCSRepository repo, Version forVersion) {
 		String releaseBranchName = repo.getReleaseBranchPrefix() + forVersion.getReleaseNoPatchString();
+		return addSubfolder(repo, releaseBranchName);
+	}
+
+	private static String addSubfolder(VCSRepository repo, String name) {
 		String subfolder = repo.getSubfolder();
 		if (subfolder == null || subfolder.isEmpty()) {
-			return releaseBranchName;
+			return name;
 		}
-		return subfolder + (subfolder.endsWith("/") ? "" : "/") + releaseBranchName;
+		return subfolder.replaceFirst("/+$", "") + "/" + name;
 	}
 
 	public static File getBuildDir(VCSRepository repo, Version forVersion) {
@@ -83,6 +87,19 @@ public final class Utils {
 	public static TagDesc getTagDesc(String verStr) {
 		String tagMessage = verStr + " release";
 		return new TagDesc(verStr, tagMessage);
+	}
+
+	public static TagDesc getTagDesc(VCSRepository repo, String verStr) {
+		TagDesc tagDesc = getTagDesc(verStr);
+		return new TagDesc(addSubfolder(repo, tagDesc.getName()), tagDesc.getMessage());
+	}
+
+	public static boolean isTagForRepository(VCSRepository repo, String tagName) {
+		String subfolder = repo.getSubfolder();
+		if (subfolder == null || subfolder.isEmpty()) {
+			return true;
+		}
+		return tagName != null && tagName.startsWith(addSubfolder(repo, ""));
 	}
 
 	public static Version getDevVersion(VCSRepository repo) {

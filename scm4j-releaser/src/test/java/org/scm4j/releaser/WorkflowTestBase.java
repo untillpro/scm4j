@@ -1,5 +1,6 @@
 package org.scm4j.releaser;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -23,10 +24,14 @@ import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
 import org.scm4j.vcs.api.WalkDirection;
+import org.yaml.snakeyaml.Yaml;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -62,6 +67,21 @@ public class WorkflowTestBase {
 		TestBuilder.setBuilders(new HashMap<>());
 		new DelayedTagsFile().delete();
 		Utils.waitForDeleteDir(Constants.RELEASES_DIR);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void configureRepositorySubfolder(String subfolder) throws IOException {
+		Yaml yaml = new Yaml();
+		Map<String, ?> content = (Map<String, ?>) yaml.load(
+				FileUtils.readFileToString(env.getCcFile(), StandardCharsets.UTF_8));
+		Map<String, Object> repositoryConfig = (Map<String, Object>) content.get("eu.untill:(.*)");
+		repositoryConfig.put("subfolder", subfolder);
+		FileUtils.writeStringToFile(env.getCcFile(), yaml.dumpAsMap(content), StandardCharsets.UTF_8);
+
+		repoFactory = env.getRepoFactory();
+		repoUnTill = repoFactory.getVCSRepository(compUnTill);
+		repoUnTillDb = repoFactory.getVCSRepository(compUnTillDb);
+		repoUBL = repoFactory.getVCSRepository(compUBL);
 	}
 
 	@After
@@ -106,7 +126,9 @@ public class WorkflowTestBase {
 		assertEquals(expectedPatch, latestVersion.getPatch());
 
 		// check tags
-		List<VCSTag> tags = vcs.getTags();
+		List<VCSTag> tags = vcs.getTags().stream()
+				.filter(tag -> Utils.isTagForRepository(repo, tag.getTagName()))
+				.collect(Collectors.toList());
 		assertEquals(tagDelayed ? times - 1 : times, tags.size());
 
 		// check has tags for each built version
@@ -114,14 +136,14 @@ public class WorkflowTestBase {
 		for (int i = 0; i < times; i++) {
 			expectedCompReleaseVer = expectedCompReleaseVer.toNextMinor();
 			if (!tagDelayed) {
-				assertTrue(hasTagForVersion(tags, expectedCompReleaseVer));
+				assertTrue(hasTagForVersion(repo, tags, expectedCompReleaseVer));
 			}
 		}
 
 		// check if the pre-last commit of each release branch is tagged
 		for (VCSTag tag : tags) {
 			List<VCSCommit> commits = vcs.getCommitsRange(Utils.getReleaseBranchName(
-					repo, new Version(tag.getTagName())), null, WalkDirection.DESC, 2);
+					repo, getVersionFromTagName(tag.getTagName())), null, WalkDirection.DESC, 2);
 			assertEquals(commits.get(1), tag.getRelatedCommit());
 		}
 
@@ -188,13 +210,17 @@ public class WorkflowTestBase {
 		assertEquals(expectedDevVer, Utils.getDevVersion(repo));
 	}
 
-	private boolean hasTagForVersion(List<VCSTag> tags, Version expectedUBLReleaseVer) {
+	private boolean hasTagForVersion(VCSRepository repo, List<VCSTag> tags, Version expectedUBLReleaseVer) {
 		for (VCSTag tag : tags) {
-			if (tag.getTagName().equals(Utils.getTagDesc(expectedUBLReleaseVer.toString()).getName())) {
+			if (tag.getTagName().equals(Utils.getTagDesc(repo, expectedUBLReleaseVer.toString()).getName())) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	private Version getVersionFromTagName(String tagName) {
+		return new Version(tagName.substring(tagName.lastIndexOf('/') + 1));
 	}
 
 	protected void checkUBLBuilt() {
@@ -217,8 +243,8 @@ public class WorkflowTestBase {
 
 	private void checkCompForked(int times, Component comp, Version initialVer, VCSRepository repo) {
 		Version latestVersion = getCrbVersion(comp);
-		assertTrue(repo.getVCS().getBranches(repo.getReleaseBranchPrefix()).contains(
-				Utils.getReleaseBranchName(repo, latestVersion)));
+		String releaseBranchName = Utils.getReleaseBranchName(repo, latestVersion);
+		assertTrue(repo.getVCS().getBranches(releaseBranchName).contains(releaseBranchName));
 		checkCompMinorVersions(times, latestVersion, initialVer, repo);
 	}
 

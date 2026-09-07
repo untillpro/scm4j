@@ -86,7 +86,7 @@ public class SCMProcBuild implements ISCMProc {
 			delayedTagsFile.writeDelayedTag(repo.getRepositoryId(), versionToBuild, headCommit.getRevision());
 			progress.reportStatus("build commit " + headCommit.getRevision() + " is saved for delayed tagging");
 		} else {
-			TagDesc tagDesc = Utils.getTagDesc(versionToBuild.toString());
+			TagDesc tagDesc = Utils.getTagDesc(repo, versionToBuild.toString());
 			Utils.reportDuration(() -> vcs.createTag(releaseBranchName, tagDesc.getName(), tagDesc.getMessage(), headCommit.getRevision()),
 					String.format("tag head of %s: %s", releaseBranchName, tagDesc.getName()), null, progress);
 		}

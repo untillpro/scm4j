@@ -51,11 +51,11 @@ public class SCMActionTag extends ActionAbstract {
 	}
 
 	private void tagRevision(IProgress progress, IVCS vcs, DelayedTag delayedTag, String branchName) {
-		TagDesc tagDesc = Utils.getTagDesc(delayedTag.getVersion().toString());
+		TagDesc tagDesc = Utils.getTagDesc(repo, delayedTag.getVersion().toString());
 		try {
 			Utils.reportDuration(() -> vcs.createTag(branchName, tagDesc.getName(), tagDesc.getMessage(), delayedTag.getRevision()),
 					String.format("tag revision %s of %s: %s", delayedTag.getRevision(), branchName,
-							delayedTag.getVersion()), null, progress);
+							tagDesc.getName()), null, progress);
 		} catch (EVCSTagExists e) {
 			progress.reportStatus(String.format("tag %s already exists", tagDesc.getName()));
 		}

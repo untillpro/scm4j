@@ -191,7 +191,7 @@ public class ExtendedStatusBuilder {
 		return false;
 	}
 
-	private boolean noValueableCommitsAfterLastTag(VCSRepository repo, ReleaseBranchPatch rb) {
+	boolean noValueableCommitsAfterLastTag(VCSRepository repo, ReleaseBranchPatch rb) {
 		IVCS vcs = repo.getVCS();
 		DelayedTagsFile dtf = new DelayedTagsFile();
 		DelayedTag delayedTag = dtf.getDelayedTag(repo.getRepositoryId());
@@ -200,10 +200,12 @@ public class ExtendedStatusBuilder {
 				return true;
 			}
 			List<VCSTag> tags = vcs.getTagsOnRevision(commit.getRevision());
+			boolean hasRepositoryTag = tags.stream()
+					.anyMatch(tag -> Utils.isTagForRepository(repo, tag.getTagName()));
 			if (!commit.getLogMessage().contains(Constants.SCM_VER) && !commit.getLogMessage().contains(Constants.SCM_IGNORE)) {
-				return !tags.isEmpty();
+				return hasRepositoryTag;
 			}
-			if (!tags.isEmpty()) {
+			if (hasRepositoryTag) {
 				// tested by testDelayedTagOnPatch
 				return true;
 			}
