@@ -43,6 +43,7 @@ public class VCSRepositoryFactoryTest {
 		VCSRepository rep = repoFactory.getVCSRepository("myDiskFormatter");
 		assertEquals("myDiskFormatter", rep.getName());
 		assertEquals("http://localhost/git/myProjDiskFormatter", rep.getUrl());
+		assertEquals("components/DiskFormatter", rep.getSubfolder());
 		assertEquals(VCSType.GIT, rep.getType());
 		assertEquals("B", rep.getReleaseBranchPrefix());
 		assertEquals("gradlew", rep.getBuilder().getCommand());
@@ -54,6 +55,7 @@ public class VCSRepositoryFactoryTest {
 	@Test
 	public void get1() {
 		VCSRepository rep = repoFactory.getVCSRepository("artA1");
+		assertEquals("components/artifacts", rep.getSubfolder());
 		assertThat(new Object[] { rep.getName(), rep.getUrl(), rep.getType(), rep.getDevelopBranch(), rep.getReleaseBranchPrefix() },
 				is(new Object[] { "artA1", "http://url.com/svn/prjA", VCSType.SVN, "branches/", "release/" }));
 		assertThat(new Object[] { rep.getCredentials().getName(), rep.getCredentials().getPassword() },
@@ -63,6 +65,7 @@ public class VCSRepositoryFactoryTest {
 	@Test
 	public void get2() {
 		VCSRepository rep = repoFactory.getVCSRepository("abyrvalg");
+		assertNull(rep.getSubfolder());
 		assertThat(new Object[] { rep.getName(), rep.getUrl(), rep.getType(), rep.getDevelopBranch(), rep.getReleaseBranchPrefix() },
 				is(new Object[] { "abyrvalg", "https://github.com/qwerty/abyrvalg", VCSType.SVN, "branches/", "release/" }));
 		assertThat(new Object[] { rep.getCredentials().getName(), rep.getCredentials().getPassword() },

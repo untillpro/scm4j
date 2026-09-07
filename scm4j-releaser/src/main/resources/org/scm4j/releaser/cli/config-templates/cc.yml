@@ -9,6 +9,13 @@
 #org.scm4j:(.*):
 #  url: https://github.com/scm4j/$1\.git
 
+# Components stored in subfolders of the same repository can declare an optional `subfolder`.
+# Capture groups from the component-coordinate pattern are substituted in `subfolder` as they are in `url`.
+
+#eu\.untill\.sdk\.drivers:(.*):
+#  url: https://dev.untill.com/git/untill/untill-drivers
+#  subfolder: components/$1
+
 # Two components in the same repository
 
 #component1|component2:

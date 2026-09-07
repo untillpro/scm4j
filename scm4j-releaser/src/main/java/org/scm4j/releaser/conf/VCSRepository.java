@@ -10,6 +10,7 @@ public class VCSRepository {
 	
 	private final String name;
 	private final String url;
+	private final String subfolder;
 	private final Credentials credentials;
 	private final VCSType type;
 	private final String developBranch;
@@ -54,6 +55,10 @@ public class VCSRepository {
 		return url;
 	}
 
+	public String getSubfolder() {
+		return subfolder;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -69,8 +74,14 @@ public class VCSRepository {
 	
 	public VCSRepository(String name, String url, Credentials credentials,
 						 VCSType type, String developBranch, String releaseBranchPrefix, IVCS vcs, IBuilder builder) {
+		this(name, url, null, credentials, type, developBranch, releaseBranchPrefix, vcs, builder);
+	}
+
+	public VCSRepository(String name, String url, String subfolder, Credentials credentials,
+						 VCSType type, String developBranch, String releaseBranchPrefix, IVCS vcs, IBuilder builder) {
 		this.name = name;
 		this.url = url;
+		this.subfolder = subfolder;
 		this.credentials = credentials;
 		this.type = type;
 		this.developBranch = developBranch;

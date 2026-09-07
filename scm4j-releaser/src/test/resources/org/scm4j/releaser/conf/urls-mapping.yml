@@ -1,7 +1,9 @@
 artA1|artA2:
     url: http://url.com/svn/prjA
+    subfolder: components/artifacts
 my(.*):
     url: http://localhost/git/myProj$1
+    subfolder: components/$1
     type: git
     releaseBranchPrefix: B
     developBranch: dev
