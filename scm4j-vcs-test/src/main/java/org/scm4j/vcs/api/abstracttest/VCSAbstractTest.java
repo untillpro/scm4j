@@ -465,10 +465,11 @@ public abstract class VCSAbstractTest {
 	@Test
 	public void testCommitsGetRangeByPath() throws Exception {
 		String componentPath = "components/postgres";
+		String componentFilePath = componentPath + "/schema.sql";
 
 		// Build one linear history containing direct and nested component changes mixed with
 		// changes in a sibling component, the component's parent directory, and the repository root.
-		String componentFirst = vcsTestDataGen.setFileContent(null, componentPath + "/schema.sql",
+		String componentFirst = vcsTestDataGen.setFileContent(null, componentFilePath,
 				LINE_1, "postgres schema added").getRevision();
 		String sibling = vcsTestDataGen.setFileContent(null, "components/mysql/schema.sql",
 				LINE_1, "mysql schema added").getRevision();
@@ -478,7 +479,7 @@ public abstract class VCSAbstractTest {
 				LINE_1, "repository readme added").getRevision();
 		String componentNested = vcsTestDataGen.setFileContent(null, componentPath + "/migrations/001.sql",
 				LINE_2, "postgres migration added").getRevision();
-		String componentLast = vcsTestDataGen.setFileContent(null, componentPath + "/schema.sql",
+		String componentLast = vcsTestDataGen.setFileContent(null, componentFilePath,
 				LINE_3, "postgres schema changed").getRevision();
 
 		resetMocks();
@@ -488,6 +489,11 @@ public abstract class VCSAbstractTest {
 		List<VCSCommit> commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0, componentPath);
 		verifyMocks();
 		assertCommitIds(commits, componentFirst, componentNested, componentLast);
+
+		// A file path must match only changes to that exact file, excluding even other
+		// files nested below the same component directory.
+		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0, componentFilePath);
+		assertCommitIds(commits, componentFirst, componentLast);
 
 		// The limit applies after path filtering, so unrelated commits do not consume it.
 		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 2, componentPath);
