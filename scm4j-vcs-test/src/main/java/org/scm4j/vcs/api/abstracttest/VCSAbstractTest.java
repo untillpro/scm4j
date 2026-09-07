@@ -490,6 +490,13 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertCommitIds(commits, componentFirst, componentNested, componentLast);
 
+		// A null cursor must traverse from the branch boundary even though the selected
+		// directory did not exist when the branch was created.
+		commits = vcs.getCommitsRange(null, null, WalkDirection.ASC, 0, componentPath);
+		assertCommitIds(commits, componentFirst, componentNested, componentLast);
+		commits = vcs.getCommitsRange(null, null, WalkDirection.DESC, 0, componentPath);
+		assertCommitIds(commits, componentLast, componentNested, componentFirst);
+
 		// A file path must match only changes to that exact file, excluding even other
 		// files nested below the same component directory.
 		commits = vcs.getCommitsRange(null, componentFirst, WalkDirection.ASC, 0, componentFilePath);
