@@ -6,9 +6,11 @@ import org.scm4j.commons.progress.ProgressConsole;
 import org.scm4j.releaser.WorkflowTestBase;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
+import org.scm4j.releaser.conf.VCSRepositoryId;
 import org.scm4j.releaser.exceptions.EReleaserException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -63,12 +65,30 @@ public class ActionAbstractTest extends WorkflowTestBase {
 	public void testSkipNonExecutableChildActions() {
 		IAction doneAction = mock(ActionAbstract.class);
 		doReturn(false).when(doneAction).isExecutable();
-		doReturn(false).when(doneAction).isUrlProcessed(anyString());
+		doReturn(false).when(doneAction).isRepositoryProcessed(any(VCSRepositoryId.class));
 
 		ActionAbstract aa = spy(new TestAction(compUnTill, Collections.singletonList(doneAction), repoUnTill));
 		IProgress progress = mock(IProgress.class);
 		aa.execute(progress);
 		verify(progress, never()).createNestedProgress(anyString());
 		verify(doneAction, never()).execute(any(IProgress.class));
+	}
+
+	@Test
+	public void testExecutesComponentsInDifferentRepositorySubfolders() throws Exception {
+		TestAction first = spy(new TestAction(new Component("test:first"), new ArrayList<>(),
+				repository("first")));
+		TestAction second = spy(new TestAction(new Component("test:second"), new ArrayList<>(),
+				repository("second")));
+		TestAction root = new TestAction(new Component("test:root"), Arrays.asList(first, second), repository("root"));
+
+		root.execute(mock(IProgress.class));
+
+		verify(first).executeAction(any(IProgress.class));
+		verify(second).executeAction(any(IProgress.class));
+	}
+
+	private VCSRepository repository(String subfolder) {
+		return new VCSRepository("name", "url", subfolder, null, null, null, null, null, null);
 	}
 }

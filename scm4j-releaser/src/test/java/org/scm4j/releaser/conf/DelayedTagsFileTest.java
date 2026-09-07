@@ -14,6 +14,7 @@ public class DelayedTagsFileTest {
 
 	private static final String TEST_REVISION = "test revision";
 	private static final Version TEST_VERSION = new Version("1.0");
+	private static final Version SECOND_VERSION = new Version("2.0");
 	private static final String TEST_URL = "test url";
 	
 	@Before
@@ -34,6 +35,31 @@ public class DelayedTagsFileTest {
 		
 		dtf.removeTagByUrl(TEST_URL);
 		assertNull(dtf.getDelayedTagByUrl(TEST_URL));
+	}
+
+	@Test
+	public void testDelayedTagsAreScopedByRepositorySubfolder() throws IOException {
+		DelayedTagsFile dtf = new DelayedTagsFile();
+		VCSRepositoryId first = new VCSRepositoryId(TEST_URL, "components/first");
+		VCSRepositoryId second = new VCSRepositoryId(TEST_URL, "components/second");
+
+		dtf.writeDelayedTag(first, TEST_VERSION, TEST_REVISION);
+		dtf.writeDelayedTag(second, SECOND_VERSION, "second revision");
+
+		assertEquals(TEST_VERSION, dtf.getDelayedTag(first).getVersion());
+		assertEquals(SECOND_VERSION, dtf.getDelayedTag(second).getVersion());
+
+		dtf.removeTag(first);
+		assertNull(dtf.getDelayedTag(first));
+		assertEquals(SECOND_VERSION, dtf.getDelayedTag(second).getVersion());
+	}
+
+	@Test
+	public void testLegacyUrlOnlyContentIsReadable() throws IOException {
+		DelayedTagsFile dtf = new DelayedTagsFile();
+		dtf.saveContent(TEST_URL + ":\n  revision: " + TEST_REVISION + "\n  version: '" + TEST_VERSION + "'\n");
+
+		assertEquals(TEST_VERSION, dtf.getDelayedTagByUrl(TEST_URL).getVersion());
 	}
 	
 	

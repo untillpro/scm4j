@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import org.scm4j.commons.progress.IProgress;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
+import org.scm4j.releaser.conf.VCSRepositoryId;
 import org.scm4j.releaser.exceptions.EReleaserException;
 import org.scm4j.vcs.api.IVCS;
 
@@ -14,7 +15,7 @@ public abstract class ActionAbstract implements IAction {
 
 	protected final List<IAction> childActions;
 	protected final Component comp;
-	protected final List<String> processedUrls = new ArrayList<>();
+	protected final List<VCSRepositoryId> processedRepositories = new ArrayList<>();
 	protected IAction parent = null;
 	protected final VCSRepository repo;
 
@@ -31,16 +32,16 @@ public abstract class ActionAbstract implements IAction {
 		}
 	}
 
-	protected boolean isUrlProcessed_(String url) {
+	protected boolean isRepositoryProcessed_(VCSRepositoryId repositoryId) {
 		if(null == parent){
-			return processedUrls.contains(url.toLowerCase());
+			return processedRepositories.contains(repositoryId);
 		}
-		return parent.isUrlProcessed(url);
+		return parent.isRepositoryProcessed(repositoryId);
 		
 	}
 	
-	public boolean isUrlProcessed(String url) {
-		return isUrlProcessed_(url);
+	public boolean isRepositoryProcessed(VCSRepositoryId repositoryId) {
+		return isRepositoryProcessed_(repositoryId);
 	}
 
 	@Override
@@ -49,11 +50,11 @@ public abstract class ActionAbstract implements IAction {
 	}
 
 	@Override
-	public void addProcessedUrl(String url) {
+	public void addProcessedRepository(VCSRepositoryId repositoryId) {
 		if(null != parent){
-			parent.addProcessedUrl(url);
+			parent.addProcessedRepository(repositoryId);
 		} else {
-			processedUrls.add(url.toLowerCase());
+			processedRepositories.add(repositoryId);
 		}
 	}
 
@@ -80,7 +81,7 @@ public abstract class ActionAbstract implements IAction {
 	
 	@Override
 	public void execute(IProgress progress) {
-		if (isUrlProcessed(repo.getUrl())) {
+		if (isRepositoryProcessed(repo.getRepositoryId())) {
 			progress.reportStatus("already executed");
 			return;
 		}
@@ -89,7 +90,7 @@ public abstract class ActionAbstract implements IAction {
 		
 		try {
 			executeAction(progress);
-			addProcessedUrl(repo.getUrl());
+			addProcessedRepository(repo.getRepositoryId());
 		} catch (Exception e) {
 			progress.error("execution error: " + e.toString());
 			if (!(e instanceof EReleaserException)) {

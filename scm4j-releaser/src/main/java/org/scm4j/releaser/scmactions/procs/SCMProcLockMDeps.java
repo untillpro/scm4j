@@ -28,7 +28,7 @@ public class SCMProcLockMDeps implements ISCMProc {
 							List<VCSChangeListNode> vcsChangeList) {
 		this.repo = repo;
 		this.vcsChangeList = vcsChangeList;
-		status = cache.get(repo.getUrl());
+		status = cache.get(repo.getRepositoryId());
 		vcs = repo.getVCS();
 		this.cache = cache;
 		this.repoFactory = repoFactory;
@@ -51,7 +51,7 @@ public class SCMProcLockMDeps implements ISCMProc {
 		StringBuilder sb = new StringBuilder();
 		Version newVersion;
 		for (Component currentMDep : currentMDepsFile.getMDeps()) {
-			newVersion = cache.get(repoFactory.getUrl(currentMDep)).getNextVersion();
+			newVersion = cache.get(repoFactory.getVCSRepositoryId(currentMDep)).getNextVersion();
 			if (!newVersion.getPatch().equals(Constants.ZERO_PATCH)) {
 				newVersion = newVersion.toPreviousPatch();
 			}

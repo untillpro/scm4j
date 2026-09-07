@@ -41,7 +41,7 @@ public class ActionTreeBuilder {
 		List<IAction> childActions = new ArrayList<>();
 		VCSRepository repo = repoFactory.getVCSRepository(node.getComp());
 
-		if (delayedTag && alreadyDelayed(repo.getUrl())) {
+		if (delayedTag && alreadyDelayed(repo.getRepositoryId())) {
 			throw new EDelayingDelayed(repo.getUrl());
 		}
 
@@ -56,15 +56,15 @@ public class ActionTreeBuilder {
 		return new SCMActionRelease(node.getComp(), childActions, cache, repoFactory, actionSet, delayedTag, repo);
 	}
 
-	private boolean alreadyDelayed(String url) {
+	private boolean alreadyDelayed(VCSRepositoryId repositoryId) {
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		return dtf.getDelayedTagByUrl(url) != null;
+		return dtf.getDelayedTag(repositoryId) != null;
 	}
 
 	public IAction getTagAction(Component comp) {
 		VCSRepository repo = repoFactory.getVCSRepository(comp);
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		DelayedTag delayedTag = dtf.getDelayedTagByUrl(repo.getUrl());
+		DelayedTag delayedTag = dtf.getDelayedTag(repo.getRepositoryId());
 		if (delayedTag == null) {
 			throw new ENoDelayedTags(repo.getUrl());
 		}
