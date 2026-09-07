@@ -660,6 +660,9 @@ public class SVNVCS implements IVCS {
 	
 	List<VCSTag> getTags(String onRevision) throws SVNException {
 		List<VCSTag> res = new ArrayList<>();
+		if (repository.checkPath(TAGS_PATH, -1) == SVNNodeKind.NONE) {
+			return res;
+		}
 		Long revision = onRevision == null ? null : Long.parseLong(onRevision);
 		collectTags(TAGS_PATH, revision, res);
 		return res;
@@ -708,9 +711,6 @@ public class SVNVCS implements IVCS {
 		try {
 			return getTags(revision);
 		} catch (SVNException e) {
-			if (e.getErrorMessage().getErrorCode().getCode() == SVN_FILE_NOT_FOUND_ERROR_CODE) {
-				return new ArrayList<>();
-			}
 			throw new EVCSException(e);
 		}
 	}

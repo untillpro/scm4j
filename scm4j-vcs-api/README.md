@@ -133,13 +133,13 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 - `VCSTag createTag(String branchName, String tagName, String tagMessage) throws EVCSTagExists`
     - Creates a tag named `tagName` with log message `tagMessage` on a Head of branch `branchName`
 - `List<VCSTag> getTags()`
-    - Returns list of all tags
+    - Returns list of all tags, or an empty list when the repository has no tags
 - `void removeTag(String tagName)`
     - Removes tag with name `tagName`
 - `void checkout(String branchName, String targetPath, String revision)`
     - Checks out a branch `branchName` on a revision `revision` into a local folder `targetPath`
 - `List<VCSTag> getTagsOnRevision(String revision)`
-    - returns list of all tags which are related to commit specified by `revision`    
+    - Returns list of all tags which are related to the commit specified by `revision`, or an empty list when the repository has no tags
     
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
