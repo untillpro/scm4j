@@ -14,21 +14,6 @@ scm4j-jenkins is a tiny framework used to manage basic Jenkins tasks:
   - A Jenkins build queue element. Represents a separate build of a Job. Contains such fields as color, state(running, finished, stuck etc) etc 
   
 # Using scm4j-jenkins Api
-- Add github-hosted scm4j-jenkins project as maven dependency using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
-	```gradle
-	allprojects {
-		repositories {
-			maven { url "https://jitpack.io" }
-		}
-	}
-	
-	dependencies {
-		// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
-		compile 'com.github.scm4j:scm4j-jenkins:+'
-	}
-	```
-	This will include scm4j-jenkins library to your project.
-    Also you can download release jars from https://github.com/scm4j/scm4j-jenkins/releases
 - Create IJenkinsApi implementation class providing Jenkins server url, username and password
 ```java
 	IJenkinsApi jenkins = new JenkinsApi("http://localhost:8080", "user", "password");

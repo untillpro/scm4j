@@ -43,20 +43,6 @@ scm4j-vcs-test project provides set of functional tests for implementations of I
 - Adapter-specific suites should additionally cover validation or error translation that is unique to their native VCS.
 
 # Implementing VCS test
-- Add github-hosted scm4j-vcs-test project as maven dependency using [jitpack.io](https://jitpack.io/). As a gradle example, add following to gradle.build file:
-```gradle
-allprojects {
-	repositories {
-		maven { url "https://jitpack.io" }
-	}
-}
-
-dependencies {
-	// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
-	testCompile 'com.github.scm4j:scm4j-vcs-test:+'
-}
-```
-Or download release jars from https://github.com/scm4j/scm4j-vcs-test/releases
 - Create VCSAbstractTest subclass within test package
 - Override `setUp()` method
   - Call `super.setUp()`

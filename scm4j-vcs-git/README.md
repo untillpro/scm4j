@@ -32,20 +32,6 @@ Use cases
   - Named randomly (uuid is used) 
 
 # Using scm4j-vcs-git
-- Add github-hosted scm4j-vcs-git project as maven dependency using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
-	```gradle
-	allprojects {
-		repositories {
-			maven { url "https://jitpack.io" }
-		}
-	}
-	
-	dependencies {
-	 	// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.1)
-		compile 'com.github.scm4j:scm4j-vcs-git:+'
-	}
-	```
-	Or download release jars from https://github.com/scm4j/scm4j-vcs-git/releases
 - Code snippet
 	```java
 	final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "git-workspaces";

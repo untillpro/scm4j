@@ -204,22 +204,6 @@ So actually a Lock File is locked, not the LWC folder itself.
 Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 
 # Developing IVCS implementation
-- Add github-hosted scm4j-vcs-api and scm4j-vcs-test projects as maven artifacts using [jitpack.io](https://jitpack.io/). As an example, add following to gradle.build file:
-	```gradle
-	allprojects {
-		repositories {
-			maven { url "https://jitpack.io" }
-		}
-	}
-	
-	dependencies {
-		// versioning: master-SNAPSHOT (lastest build, unstable), + (lastest release, stable) or certain version (e.g. 1.0)
-		compile 'com.github.scm4j:scm4j-vcs-api:+'
-		testCompile 'com.github.scm4j:scm4j-vcs-test:+'
-	}
-	```
-	This will include VCS API (IVCS, LWC) and Abstract Test to your project.
-	Also you can download release jars from https://github.com/scm4j/scm4j-vcs-api/releases, https://github.com/scm4j/scm4j-vcs-test/releases
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
 	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
