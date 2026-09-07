@@ -117,9 +117,14 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- If `startRevision` is null then all commits up to commit specified by `endRevision` inclusively are fetched
 	- If `endRevision` is null then all commits starting from commit specified by `startRevision` are fetched
 	- If `startRevision` and `endRevision` are null then all commits are fetched
+- `List<VCSCommit> getCommitsRange(String branchName, String startRevision, WalkDirection direction, int limit, String repositoryRelativePath)`
+    - Returns commits affecting `repositoryRelativePath`, which is resolved from the root of `branchName`. The path can identify a file or directory; a directory matches changes at any depth below it.
+    - `startRevision` is an inclusive cursor. `ASC` walks from that revision toward the branch head and returns commits from older to newer; `DESC` walks toward the branch origin and returns commits from newer to older.
+    - If `startRevision` is null, traversal starts at the boundary selected by `direction`: the branch origin for `ASC` or the branch head for `DESC`.
+    - A positive `limit` is applied after path filtering, so unrelated commits do not consume the result limit. A limit of `0` returns all matching commits in the requested direction.
+    - A null or empty `repositoryRelativePath` selects whole-branch history.
 - `List<VCSCommit> getCommitsRange(String branchName, String startRevision, WalkDirection direction, int limit)`
-    - Returns ordered list of `limit` commits (0 is unlimited) starting from commit specified by `startRevision` in direction specified by `direction`
-    - If `startRevision` is null then all commits are fetched
+    - Convenience overload for whole-branch history. It delegates to the path-filtered operation with an empty path.
 - `VCSCommit getHeadCommit(String branchName)`
     - Returns `VCSCommit` instance pointing to the head (last) commit of the branch `branchName` or `null` if the requested branch does not exists  
 - `Boolean fileExists(String branchName, String filePath)`

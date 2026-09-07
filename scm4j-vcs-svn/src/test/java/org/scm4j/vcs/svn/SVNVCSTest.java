@@ -141,6 +141,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		testSVNException(() -> svn.log("", 0));
 		testSVNException(() -> svn.removeFile("", "", ""));
 		testSVNException(() -> svn.getCommitsRange("", null, WalkDirection.ASC, 0));
+		testSVNException(() -> svn.getCommitsRange("", null, WalkDirection.ASC, 0, "folder"));
 		testSVNException(() -> svn.getCommitsRange("", null, ""));
 		testSVNException(() -> svn.getHeadCommit(""));
 		testSVNException(() -> svn.createTag("", "", "", ""));
@@ -382,6 +383,8 @@ public class SVNVCSTest extends VCSAbstractTest {
 	
 	@Test
 	public void testGetTagsOnRevisionNoTagsDir() throws SVNException {
+		// Recursive namespace discovery starts at tags/. A repository without that root
+		// therefore has no matching tags rather than an exceptional lookup failure.
 		svn.getClientManager()
 				.getCommitClient()
 				.doDelete(new SVNURL[] { SVNURL.parseURIEncoded(svn.getRepoUrl() + "/" + SVNVCS.TAGS_PATH)}, "tags/ deleted");

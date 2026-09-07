@@ -28,7 +28,9 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.scm4j.vcs.api.*;
 import org.scm4j.vcs.api.exceptions.*;
 import org.scm4j.vcs.api.workingcopy.IVCSLockedWorkingCopy;
@@ -626,7 +628,7 @@ public class GitVCS implements IVCS {
 
 	@Override
 	public List<VCSCommit> getCommitsRange(String branchName, String startRevision, WalkDirection direction,
-										   int limit) {
+										   int limit, String repositoryRelativePath) {
 		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
 			 Git git = getLocalGit(wc);
 			 Repository gitRepo = git.getRepository();
@@ -636,32 +638,33 @@ public class GitVCS implements IVCS {
 			String bn = getRealBranchName(branchName);
 
 			List<VCSCommit> res = new ArrayList<>();
-			RevCommit startCommit;
-			RevCommit endCommit;
+			RevCommit traversalStart;
 			if (direction == WalkDirection.ASC) {
 				ObjectId headCommitId = gitRepo.exactRef(REFS_REMOTES_ORIGIN + bn).getObjectId();
-				startCommit = rw.parseCommit( headCommitId );
-				ObjectId startCommitObjectId = startRevision == null ?
-						getInitialCommit(gitRepo, bn).getId() :
-						ObjectId.fromString(startRevision);
-				endCommit = rw.parseCommit(startCommitObjectId);
+				traversalStart = rw.parseCommit(headCommitId);
+				if (startRevision != null) {
+					RevCommit cursor = rw.parseCommit(ObjectId.fromString(startRevision));
+					for (RevCommit parent : cursor.getParents()) {
+						rw.markUninteresting(parent);
+					}
+				}
 			} else {
-				ObjectId endCommitObjectId = startRevision == null ?
+				ObjectId traversalStartId = startRevision == null ?
 						gitRepo.exactRef(REFS_REMOTES_ORIGIN + bn).getObjectId() :
 						ObjectId.fromString(startRevision);
-				startCommit = rw.parseCommit( endCommitObjectId );
-				endCommit = getInitialCommit(gitRepo, bn);
+				traversalStart = rw.parseCommit(traversalStartId);
 			}
 
-			rw.markStart(startCommit);
+			if (repositoryRelativePath != null && !repositoryRelativePath.isEmpty()) {
+				rw.setTreeFilter(AndTreeFilter.create(
+						PathFilter.create(repositoryRelativePath), TreeFilter.ANY_DIFF));
+			}
+			rw.markStart(traversalStart);
 
 			RevCommit commit = rw.next();
 			while (commit != null) {
 				VCSCommit vcsCommit = getVCSCommit(commit);
 				res.add(vcsCommit);
-				if (commit.getName().equals(endCommit.getName())) {
-					break;
-				}
 				commit = rw.next();
 			}
 
