@@ -1,5 +1,3 @@
-[![Release](https://jitpack.io/v/scm4j/scm4j-jenkins.svg)](https://jitpack.io/#scm4j/scm4j-jenkins)	
-
 # Overview
 scm4j-jenkins is a tiny framework used to manage basic Jenkins tasks:
 - Jobs copy, create, read, update, delete
