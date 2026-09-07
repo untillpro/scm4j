@@ -665,6 +665,9 @@ public class GitVCS implements IVCS {
 			while (commit != null) {
 				VCSCommit vcsCommit = getVCSCommit(commit);
 				res.add(vcsCommit);
+				if (direction == WalkDirection.DESC && limit > 0 && res.size() >= limit) {
+					break;
+				}
 				commit = rw.next();
 			}
 
