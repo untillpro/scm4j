@@ -56,6 +56,7 @@ public class VCSRepositoryFactory {
 
 	public VCSRepository getVCSRepository(String componentName) {
 		String url = getUrl(componentName);
+		String subfolder = cc.getPlaceholderedStringByName(componentName, "subfolder", null);
 
 		Credentials credentials;
 		String user = creds.getPropByName(url, "name", null);
@@ -72,7 +73,7 @@ public class VCSRepositoryFactory {
 				VCSRepository.DEFAULT_RELEASE_BRANCH_PREFIX);
 		String releaseCommand = cc.getPropByName(componentName, "releaseCommand", null);
 		IVCSWorkspace ws = new VCSWorkspace(DEFAULT_VCS_WORKSPACE_DIR);
-		return new VCSRepository(componentName, url, credentials, type, developBranch, releaseBranchPrefix,
+		return new VCSRepository(componentName, url, subfolder, credentials, type, developBranch, releaseBranchPrefix,
 				VCSFactory.getVCS(type, credentials, url, ws), BuilderFactory.getBuilder(releaseCommand));
 	}
 	
