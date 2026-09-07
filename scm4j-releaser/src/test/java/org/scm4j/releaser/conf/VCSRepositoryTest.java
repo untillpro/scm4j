@@ -5,6 +5,7 @@ import org.junit.Test;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class VCSRepositoryTest {
 
@@ -16,19 +17,18 @@ public class VCSRepositoryTest {
 	}
 
 	@Test
-	public void testSubfolderDoesNotAffectEquality() {
+	public void testSubfolderAffectsEquality() {
 		VCSRepository first = repository("components/first");
 		VCSRepository second = repository("components/second");
 
-		assertEquals(first, second);
-		assertEquals(first.hashCode(), second.hashCode());
+		assertNotEquals(first, second);
 	}
 
 	@Test
 	public void testEqualsAndHashCode() {
 		EqualsVerifier
 				.forClass(VCSRepository.class)
-				.withOnlyTheseFields("url")
+				.withOnlyTheseFields("url", "subfolder")
 				.usingGetClass()
 				.verify();
 	}

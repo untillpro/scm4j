@@ -23,6 +23,7 @@ public class VCSRepository {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((url == null) ? 0 : url.hashCode());
+		result = prime * result + ((subfolder == null) ? 0 : subfolder.hashCode());
 		return result;
 	}
 
@@ -39,6 +40,11 @@ public class VCSRepository {
 			if (other.url != null)
 				return false;
 		} else if (!url.equals(other.url))
+			return false;
+		if (subfolder == null) {
+			if (other.subfolder != null)
+				return false;
+		} else if (!subfolder.equals(other.subfolder))
 			return false;
 		return true;
 	}

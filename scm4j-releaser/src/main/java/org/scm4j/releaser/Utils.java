@@ -66,7 +66,12 @@ public final class Utils {
 	}
 
 	public static String getReleaseBranchName(VCSRepository repo, Version forVersion) {
-		return repo.getReleaseBranchPrefix() + forVersion.getReleaseNoPatchString();
+		String releaseBranchName = repo.getReleaseBranchPrefix() + forVersion.getReleaseNoPatchString();
+		String subfolder = repo.getSubfolder();
+		if (subfolder == null || subfolder.isEmpty()) {
+			return releaseBranchName;
+		}
+		return subfolder + (subfolder.endsWith("/") ? "" : "/") + releaseBranchName;
 	}
 
 	public static File getBuildDir(VCSRepository repo, Version forVersion) {
