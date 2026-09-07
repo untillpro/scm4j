@@ -11,7 +11,7 @@
 
 if the coords of a component relies on a repository that has `subfolder` specified then the release branch name for that component should include its name. E.g. :
 
-cc.yaml content:  
+cc.yaml content:
 
 ```
 - eu\.untill\.sdk\.drivers:(.*):
@@ -19,6 +19,6 @@ cc.yaml content:
     subfolder: $1
 ```
 
-and coords of a compoent is `eu.untill.sdk.drivers:vmax-fiscal-printer-driver:`
+and coords of a component is `eu.untill.sdk.drivers:vmax-fiscal-printer-driver:`
 
 then the release branch name for that component should be `vmax-fiscal-printer-driver/release/<ver>`
