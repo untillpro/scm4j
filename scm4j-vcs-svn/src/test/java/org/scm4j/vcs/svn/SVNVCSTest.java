@@ -149,6 +149,26 @@ public class SVNVCSTest extends VCSAbstractTest {
 	}
 
 	@Test
+	public void testCommitsRangeRejectsNonRelativePaths() {
+		// History filtering must remain below the selected branch for Unix, Windows drive,
+		// UNC, and parent-traversal forms instead of passing them to the SVN repository.
+		assertInvalidHistoryPath("/tags");
+		assertInvalidHistoryPath("C:\\tags");
+		assertInvalidHistoryPath("\\\\server\\tags");
+		assertInvalidHistoryPath("../tags");
+		assertInvalidHistoryPath("components/../tags");
+	}
+
+	private void assertInvalidHistoryPath(String path) {
+		try {
+			vcs.getCommitsRange(null, null, WalkDirection.ASC, 0, path);
+			fail("Expected an invalid repository-relative path to be rejected: " + path);
+		} catch (IllegalArgumentException e) {
+			assertTrue(e.getMessage().contains("repositoryRelativePath"));
+		}
+	}
+
+	@Test
 	public void testCommonExceptions() throws IOException {
 		IVCSRepositoryWorkspace mockedRepo = mock(IVCSRepositoryWorkspace.class);
 		svn.setRepo(mockedRepo);

@@ -11,6 +11,7 @@ Features:
 - File content getting and setting
 - File create and remove
 - Working with tags: create, remove, browse
+- Directional commit history for the whole branch or a selected repository-relative file or directory
 
 Use cases
 - VCS server hooks
@@ -59,6 +60,7 @@ Use cases
 	vcs.setCredentials("user", "password"); // if necessary
 	```
 - Use methods of `IVCS` interface. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+- Path-filtered history uses the `IVCS.getCommitsRange` repository-relative path contract. Use `/` separators and keep the path within the selected branch.
 - Use `vcs.setProxy()` and `vcs.setCredentials()` if necessary
 - Use `VCSTag createUnannotatedTag(String branchName, String tagName, String revisionToTag)` to create git unannontated tag with name `tagName` on `revisionToTag` commit of branch `branchName`. If `branchName` is null then master branch is used. If `revisionToTag` is null then head of branch `branchName` is used.
 

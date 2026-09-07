@@ -119,6 +119,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- If `startRevision` and `endRevision` are null then all commits are fetched
 - `List<VCSCommit> getCommitsRange(String branchName, String startRevision, WalkDirection direction, int limit, String repositoryRelativePath)`
     - Returns commits affecting `repositoryRelativePath`, which is resolved from the root of `branchName`. The path can identify a file or directory; a directory matches changes at any depth below it.
+    - A non-empty `repositoryRelativePath` must remain relative: use `/` as the portable separator, do not start with `/` or `\`, do not use a drive or UNC path, and do not include a `..` path segment.
     - `startRevision` is an inclusive cursor. `ASC` walks from that revision toward the branch head and returns commits from older to newer; `DESC` walks toward the branch origin and returns commits from newer to older.
     - If `startRevision` is null, traversal starts at the boundary selected by `direction`: the branch origin for `ASC` or the branch head for `DESC`.
     - A positive `limit` is applied after path filtering, so unrelated commits do not consume the result limit. A limit of `0` returns all matching commits in the requested direction.

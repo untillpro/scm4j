@@ -494,6 +494,7 @@ public class SVNVCS implements IVCS {
 			String repositoryRelativePath) {
 		final List<VCSCommit> res = new ArrayList<>();
 		try {
+			String historyPath = getHistoryPath(branchName, repositoryRelativePath);
 			Long startRevisionLong;
 			Long endRevisionLong;
 			if (direction == WalkDirection.ASC) {
@@ -505,10 +506,6 @@ public class SVNVCS implements IVCS {
 					Long.parseLong(startRevision);
 				endRevisionLong = getBranchFirstCommit(branchName).getRevision();
 			}
-			String historyPath = getBranchName(branchName);
-			if (repositoryRelativePath != null && !repositoryRelativePath.isEmpty()) {
-				historyPath = new File(historyPath, repositoryRelativePath).getPath().replace("\\", "/");
-			}
 			repository.log(new String[] { historyPath }, startRevisionLong, endRevisionLong, true, true, limit,
 					logEntry -> {
 						VCSCommit commit = svnLogEntryToVCSCommit(logEntry);
@@ -518,6 +515,26 @@ public class SVNVCS implements IVCS {
 		} catch (SVNException e) {
 			throw new EVCSException(e);
 		}
+	}
+
+	private String getHistoryPath(String branchName, String repositoryRelativePath) {
+		String branchPath = getBranchName(branchName);
+		if (repositoryRelativePath == null || repositoryRelativePath.isEmpty()) {
+			return branchPath;
+		}
+
+		String relativePath = repositoryRelativePath.replace("\\", "/");
+		boolean hasDrivePrefix = relativePath.length() >= 2
+				&& Character.isLetter(relativePath.charAt(0)) && relativePath.charAt(1) == ':';
+		if (relativePath.startsWith("/") || hasDrivePrefix) {
+			throw new IllegalArgumentException("repositoryRelativePath must not be absolute");
+		}
+		for (String pathSegment : relativePath.split("/")) {
+			if (pathSegment.equals("..")) {
+				throw new IllegalArgumentException("repositoryRelativePath must not contain parent traversal");
+			}
+		}
+		return StringUtils.appendIfMissing(branchPath, "/") + relativePath;
 	}
 	
 	private VCSCommit svnLogEntryToVCSCommit(SVNLogEntry logEntry) {
