@@ -9,7 +9,7 @@
 
 ## Description
 
-if the coords of a component relies on a repository that has `subfolder` specified then tags nams for that component should include its name. E.g. :
+If the coords of a component rely on a repository that has `subfolder` specified, then tag names for that component should include its name. E.g.:
 
 cc.yaml content:  
 
