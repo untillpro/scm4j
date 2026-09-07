@@ -49,13 +49,17 @@ References:
 
 ### Tests
 
-- [x] update: [abstracttest/VCSAbstractTest.java](../../../../../scm4j-vcs-test/src/main/java/org/scm4j/vcs/api/abstracttest/VCSAbstractTest.java)
-  - verify path-filtered history includes changes below the selected directory and excludes sibling directories, direct parent-directory files, and unrelated root paths
-  - cover both walk directions, inclusive cursors, result limits, and unchanged null/empty-path behavior
+- [x] update: [abstracttest/VCSAbstractTest.java](../../../../../scm4j-vcs-test/src/main/java/org/scm4j/vcs/api/abstracttest/VCSAbstractTest.java) and [scm4j-vcs-test/README.md](../../../../../scm4j-vcs-test/README.md)
+  - verify directory filters include direct and nested changes while excluding sibling directories, direct parent-directory files, and unrelated root paths
+  - verify exact-file filters exclude other files below the same component directory
+  - cover both walk directions, inclusive and null cursors, result limits applied after filtering, and unchanged null/empty-path behavior
   - verify slash-delimited branch and tag creation, enumeration, revision lookup, and removal through the shared adapter contract
+  - document the shared path-filtered history coverage expected from every adapter
 
 - [x] update: [vcs/svn/SVNVCSTest.java](../../../../../scm4j-vcs-svn/src/test/java/org/scm4j/vcs/svn/SVNVCSTest.java)
-  - retain SVN-specific exception and missing-tag-directory coverage with recursive tag namespaces
+  - retain SVN-specific exception coverage for path-filtered history calls
+  - verify absolute, drive, UNC, and parent-traversal history paths are rejected
+  - verify both tag-listing operations return an empty list when the conventional `tags/` root is absent
 
 ### API contract
 
@@ -63,16 +67,21 @@ References:
   - add the required repository-relative path parameter to directional history
   - retain the existing four-argument call as a default whole-branch convenience method delegating with an empty path
   - document filtered-history, null/empty-path, ordering, cursor, direction, and limit semantics
+  - document that tag-listing operations return an empty list when the repository has no tags
 
 ### Adapters
 
-- [x] update: [scm4j/vcs/GitVCS.java](../../../../../scm4j-vcs-git/src/main/java/org/scm4j/vcs/GitVCS.java)
+- [x] update: [scm4j/vcs/GitVCS.java](../../../../../scm4j-vcs-git/src/main/java/org/scm4j/vcs/GitVCS.java) and [scm4j-vcs-git/README.md](../../../../../scm4j-vcs-git/README.md)
   - use native JGit path history while preserving existing range traversal, ordering, cursor, and limit behavior
+  - stop descending traversal after the positive post-filter limit is satisfied while retaining full ascending traversal before reversal
   - keep existing slash-delimited branch and tag mechanics unchanged
+  - document repository-relative path-filtered history support
 
-- [x] update: [vcs/svn/SVNVCS.java](../../../../../scm4j-vcs-svn/src/main/java/org/scm4j/vcs/svn/SVNVCS.java)
+- [x] update: [vcs/svn/SVNVCS.java](../../../../../scm4j-vcs-svn/src/main/java/org/scm4j/vcs/svn/SVNVCS.java) and [scm4j-vcs-svn/README.md](../../../../../scm4j-vcs-svn/README.md)
   - query history at the selected path below the resolved branch
+  - reject absolute, drive, UNC, and parent-traversal paths before querying SVN and document the path constraint
   - create intermediate directories for slash-delimited tags and recursively enumerate only actual tag copies
+  - treat an absent `tags/` root as no tags for both listing operations and document that behavior
   - preserve existing exception wrapping and nested-branch behavior
 
 ## Quick start
