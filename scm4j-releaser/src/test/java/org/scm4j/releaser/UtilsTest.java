@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import org.scm4j.commons.Version;
 import org.scm4j.releaser.conf.Component;
+import org.scm4j.releaser.conf.TagDesc;
 import org.scm4j.releaser.conf.VCSRepository;
 
 public class UtilsTest {
@@ -35,6 +36,29 @@ public class UtilsTest {
 		assertEquals("B1.2", Utils.getReleaseBranchName(repository("", "B"), TEST_VERSION));
 	}
 
+	@Test
+	public void testTagDescWithSubfolder() {
+		TagDesc tagDesc = Utils.getTagDesc(repository("components/driver", "release/"), TEST_VERSION.toString());
+
+		assertEquals("components/driver/1.2.3", tagDesc.getName());
+		assertEquals("1.2.3 release", tagDesc.getMessage());
+	}
+
+	@Test
+	public void testTagDescWithTrailingSubfolderSeparator() {
+		TagDesc tagDesc = Utils.getTagDesc(repository("components/driver/", "release/"), TEST_VERSION.toString());
+
+		assertEquals("components/driver/1.2.3", tagDesc.getName());
+		assertEquals("1.2.3 release", tagDesc.getMessage());
+	}
+
+	@Test
+	public void testTagDescWithoutSubfolder() {
+		assertTagDesc(Utils.getTagDesc(repository(null, "release/"), TEST_VERSION.toString()), "1.2.3", "1.2.3 release");
+		assertTagDesc(Utils.getTagDesc(repository("", "release/"), TEST_VERSION.toString()), "1.2.3", "1.2.3 release");
+		assertTagDesc(Utils.getTagDesc(TEST_VERSION.toString()), "1.2.3", "1.2.3 release");
+	}
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testReportDurationNoIProgress() {
@@ -46,5 +70,10 @@ public class UtilsTest {
 
 	private VCSRepository repository(String subfolder, String releaseBranchPrefix) {
 		return new VCSRepository("name", "url", subfolder, null, null, null, releaseBranchPrefix, null, null);
+	}
+
+	private void assertTagDesc(TagDesc tagDesc, String name, String message) {
+		assertEquals(name, tagDesc.getName());
+		assertEquals(message, tagDesc.getMessage());
 	}
 }

@@ -1,6 +1,8 @@
 package org.scm4j.releaser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -8,15 +10,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.junit.Test;
 import org.scm4j.commons.Version;
 import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.branch.ReleaseBranchPatch;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.DelayedTag;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSRepositoryFactory;
+import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.VCSCommit;
+import org.scm4j.vcs.api.VCSTag;
+import org.scm4j.vcs.api.WalkDirection;
 
 public class ExtendedStatusBuilderTest {
 
@@ -46,11 +56,46 @@ public class ExtendedStatusBuilderTest {
 		assertEquals(2, cache.size());
 	}
 
+	@Test
+	public void testOwnSubfolderTagMarksReleaseBoundary() {
+		assertTrue(noValueableCommitsAfterLastTag("components/driver", "components/driver/1.2.3"));
+	}
+
+	@Test
+	public void testOtherSubfolderTagsDoNotMarkReleaseBoundary() {
+		assertFalse(noValueableCommitsAfterLastTag("components/driver",
+				"components/sibling/1.2.3", "1.2.3"));
+	}
+
+	@Test
+	public void testAnyTagRemainsReleaseBoundaryWithoutSubfolder() {
+		assertTrue(noValueableCommitsAfterLastTag(null, "other-tag"));
+	}
+
 	private VCSRepository repository(String subfolder) {
 		return new VCSRepository("name", "url", subfolder, null, null, null, null, null, null);
 	}
 
 	private ExtendedStatus status(String version, Component component, VCSRepository repository) {
 		return new ExtendedStatus(new Version(version), BuildStatus.BUILD, new LinkedHashMap<>(), component, repository);
+	}
+
+	private boolean noValueableCommitsAfterLastTag(String subfolder, String... tagNames) {
+		IVCS vcs = mock(IVCS.class);
+		VCSRepository repository = new VCSRepository("name", "status-test-url", subfolder,
+				null, null, null, "release/", vcs, null);
+		ReleaseBranchPatch releaseBranch = mock(ReleaseBranchPatch.class);
+		VCSCommit commit = new VCSCommit("revision", "valuable change", "author");
+		List<VCSTag> tags = new ArrayList<>();
+		for (String tagName : tagNames) {
+			tags.add(new VCSTag(tagName, tagName + " message", "author", commit));
+		}
+		when(releaseBranch.getName()).thenReturn("release-branch");
+		when(vcs.getCommitsRange("release-branch", null, WalkDirection.DESC, 10))
+				.thenReturn(Collections.singletonList(commit));
+		when(vcs.getTagsOnRevision(commit.getRevision())).thenReturn(tags);
+
+		ExtendedStatusBuilder builder = new ExtendedStatusBuilder(mock(VCSRepositoryFactory.class));
+		return builder.noValueableCommitsAfterLastTag(repository, releaseBranch);
 	}
 }
