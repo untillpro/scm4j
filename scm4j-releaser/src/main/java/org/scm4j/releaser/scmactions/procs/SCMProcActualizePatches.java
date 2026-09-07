@@ -27,12 +27,12 @@ public class SCMProcActualizePatches implements ISCMProc {
 	public void execute(IProgress progress) {
 		IVCS vcs = repo.getVCS();
 		MDepsFile currentMDepsFile = new MDepsFile(vcs.getFileContent(
-				Utils.getReleaseBranchName(repo, cache.get(repo.getUrl()).getNextVersion()),
+				Utils.getReleaseBranchName(repo, cache.get(repo.getRepositoryId()).getNextVersion()),
 				Constants.MDEPS_FILE_NAME, null));
 		StringBuilder sb = new StringBuilder();
 		Version newVersion;
 		for (Component currentMDep : currentMDepsFile.getMDeps()) {
-			newVersion = cache.get(repoFactory.getUrl(currentMDep)).getNextVersion();
+			newVersion = cache.get(repoFactory.getVCSRepositoryId(currentMDep)).getNextVersion();
 			if (!newVersion.getPatch().equals(Constants.ZERO_PATCH)) {
 				newVersion = newVersion.toPreviousPatch();
 			}
@@ -44,7 +44,7 @@ public class SCMProcActualizePatches implements ISCMProc {
 		if (sb.length() > 0) {
 			sb.setLength(sb.length() - 2);
 			progress.reportStatus("patches to actualize:\r\n" + sb.toString());
-			Utils.reportDuration(() -> vcs.setFileContent(Utils.getReleaseBranchName(repo, cache.get(repo.getUrl()).getNextVersion()), Constants.MDEPS_FILE_NAME, currentMDepsFile.toFileContent(), Constants.SCM_MDEPS),
+			Utils.reportDuration(() -> vcs.setFileContent(Utils.getReleaseBranchName(repo, cache.get(repo.getRepositoryId()).getNextVersion()), Constants.MDEPS_FILE_NAME, currentMDepsFile.toFileContent(), Constants.SCM_MDEPS),
 					"writting mdeps", null, progress);
 		} else {
 			progress.reportStatus("mdeps patches are actual already");

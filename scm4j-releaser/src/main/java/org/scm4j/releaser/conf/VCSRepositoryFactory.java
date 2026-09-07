@@ -54,6 +54,15 @@ public class VCSRepositoryFactory {
 		return getVCSRepository(comp.getName());
 	}
 
+	public VCSRepositoryId getVCSRepositoryId(Component comp) {
+		return getVCSRepositoryId(comp.getName());
+	}
+
+	public VCSRepositoryId getVCSRepositoryId(String componentName) {
+		return new VCSRepositoryId(getUrl(componentName),
+				cc.getPlaceholderedStringByName(componentName, "subfolder", null));
+	}
+
 	public VCSRepository getVCSRepository(String componentName) {
 		String url = getUrl(componentName);
 		String subfolder = cc.getPlaceholderedStringByName(componentName, "subfolder", null);

@@ -33,7 +33,7 @@ public class SCMActionRelease extends ActionAbstract {
 	public SCMActionRelease(Component comp, List<IAction> childActions, CachedStatuses cache, VCSRepositoryFactory repoFactory,
 							ActionSet actionSet, boolean delayedTag, VCSRepository repo) {
 		super(comp, childActions, repo);
-		ExtendedStatus status = cache.get(repo.getUrl());
+		ExtendedStatus status = cache.get(repo.getRepositoryId());
 		bsFrom = status.getStatus();
 		targetVersion = status.getNextVersion();
 		List<VCSChangeListNode> vcsChangeList = new ArrayList<>();

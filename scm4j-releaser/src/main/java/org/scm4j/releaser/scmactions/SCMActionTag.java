@@ -26,7 +26,7 @@ public class SCMActionTag extends ActionAbstract {
 	protected void executeAction(IProgress progress) {
 		IVCS vcs = getVCS();
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		DelayedTag delayedTag = dtf.getDelayedTagByUrl(repo.getUrl());
+		DelayedTag delayedTag = dtf.getDelayedTag(repo.getRepositoryId());
 		if (delayedTag == null) {
 			throw new ENoDelayedTags(repo.getUrl());
 		}
@@ -37,7 +37,7 @@ public class SCMActionTag extends ActionAbstract {
 
 		bumpPatch(progress, vcs, delayedTag, branchName);
 
-		new DelayedTagsFile().removeTagByUrl(repo.getUrl());
+		new DelayedTagsFile().removeTag(repo.getRepositoryId());
 	}
 
 	private void bumpPatch(IProgress progress, IVCS vcs, DelayedTag delayedTag, String branchName) {

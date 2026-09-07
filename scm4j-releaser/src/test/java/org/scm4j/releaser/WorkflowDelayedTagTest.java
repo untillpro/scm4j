@@ -62,7 +62,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 				compUnTillVersioned.getCoords().toString(), Option.DELAYED_TAG.getCmdLineStr());
 
 		// check Delayed Tags file
-		DelayedTag delayedTag = dtf.getDelayedTagByUrl(repoUnTill.getUrl());
+		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTill.getRepositoryId());
 		assertEquals(env.getUnTillVer().toReleaseZeroPatch().toNextPatch(), delayedTag.getVersion());
 		ReleaseBranchPatch patchRB = ReleaseBranchFactory.getReleaseBranchPatch(compUnTillVersioned.getVersion(), repoUnTill);
 		VCSCommit commitToTag = env.getUnTillVCS().getHeadCommit(patchRB.getName());
@@ -101,12 +101,12 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 				compUnTill.getCoords().toString(), Option.DELAYED_TAG.getCmdLineStr());
 
 		// check Delayed Tags file
-		assertNull(dtf.getDelayedTagByUrl(repoUnTillDb.getUrl()));
-		assertNotNull(dtf.getDelayedTagByUrl(repoUnTill.getUrl()));
-		assertNull(dtf.getDelayedTagByUrl(repoUBL.getUrl()));
+		assertNull(dtf.getDelayedTag(repoUnTillDb.getRepositoryId()));
+		assertNotNull(dtf.getDelayedTag(repoUnTill.getRepositoryId()));
+		assertNull(dtf.getDelayedTag(repoUBL.getRepositoryId()));
 
 		// check delayed tag
-		DelayedTag delayedTag = dtf.getDelayedTagByUrl(repoUnTill.getUrl());
+		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTill.getRepositoryId());
 		assertEquals(env.getUnTillVer().toReleaseZeroPatch(), delayedTag.getVersion());
 		ReleaseBranchCurrent crb = ReleaseBranchFactory.getCRB(repoUnTill);
 		VCSCommit commitToTag = env.getUnTillVCS().getHeadCommit(crb.getName());
@@ -202,7 +202,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		IAction action = execAndGetActionBuildDelayedTag(compUnTillDb);
 		assertActionDoesBuildDelayedTag(action, compUnTillDb);
 
-		DelayedTag delayedTag = dtf.getDelayedTagByUrl(repoUnTillDb.getUrl());
+		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTillDb.getRepositoryId());
 		String branchName = Utils.getReleaseBranchName(repoUnTillDb, delayedTag.getVersion());
 		env.getUnTillDbVCS().createTag(branchName, "other-tag", "other tag message", delayedTag.getRevision());
 		

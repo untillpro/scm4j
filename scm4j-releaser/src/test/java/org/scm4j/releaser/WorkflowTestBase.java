@@ -99,7 +99,7 @@ public class WorkflowTestBase {
 		assertTrue(Utils.getBuildDir(repo, latestVersion).exists());
 
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		DelayedTag dt = dtf.getDelayedTagByUrl(repo.getUrl());
+		DelayedTag dt = dtf.getDelayedTag(repo.getRepositoryId());
 		Boolean tagDelayed = dt != null && crb.getName().equals(Utils.getReleaseBranchName(repo, dt.getVersion()));
 		String expectedPatch = tagDelayed ? "0" : "1";
 
