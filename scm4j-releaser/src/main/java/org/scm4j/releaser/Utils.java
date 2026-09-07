@@ -75,7 +75,7 @@ public final class Utils {
 		if (subfolder == null || subfolder.isEmpty()) {
 			return name;
 		}
-		return subfolder + (subfolder.endsWith("/") ? "" : "/") + name;
+		return subfolder.replaceFirst("/+$", "") + "/" + name;
 	}
 
 	public static File getBuildDir(VCSRepository repo, Version forVersion) {

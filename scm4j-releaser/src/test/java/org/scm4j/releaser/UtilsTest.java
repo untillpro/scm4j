@@ -24,8 +24,8 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testReleaseBranchNameWithTrailingSubfolderSeparator() {
-		VCSRepository repository = repository("components/driver/", "release/");
+	public void testReleaseBranchNameWithTrailingSubfolderSeparators() {
+		VCSRepository repository = repository("components/driver///", "release/");
 
 		assertEquals("components/driver/release/1.2", Utils.getReleaseBranchName(repository, TEST_VERSION));
 	}
@@ -45,8 +45,8 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testTagDescWithTrailingSubfolderSeparator() {
-		TagDesc tagDesc = Utils.getTagDesc(repository("components/driver/", "release/"), TEST_VERSION.toString());
+	public void testTagDescWithTrailingSubfolderSeparators() {
+		TagDesc tagDesc = Utils.getTagDesc(repository("components/driver///", "release/"), TEST_VERSION.toString());
 
 		assertEquals("components/driver/1.2.3", tagDesc.getName());
 		assertEquals("1.2.3 release", tagDesc.getMessage());
