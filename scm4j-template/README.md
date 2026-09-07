@@ -42,3 +42,7 @@ How it works: interactions of core classes/modules
 # Under the Hood: Testing
 
 Ideas of testing
+
+# Historical version
+
+[scm4j-template standalone repository](https://github.com/scm4j/scm4j-template)

@@ -1,5 +1,5 @@
 # Overview
-scm4j-vcs-git is lightweight library for execute basic Git VCS operations (merge, branch create etc). It uses [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) exposing IVCS implementation for Git repositories and [JGit](https://eclipse.org/jgit/) as framework to work with Git repositories.
+scm4j-vcs-git is lightweight library for execute basic Git VCS operations (merge, branch create etc). It uses [scm4j-vcs-api](../scm4j-vcs-api) exposing IVCS implementation for Git repositories and [JGit](https://eclipse.org/jgit/) as framework to work with Git repositories.
 Features:
 - Working wit branches: create, remove, browse
 - Branch merge with result return (success or list of conflicted files)
@@ -17,14 +17,14 @@ Use cases
   - Create own branches from GUI, browse commits, product versions management, etc
 - Product release automation
   - automatic merging, forking, tagging, version bumping, etc
-  - Example: [scm4j-releaser](https://github.com/scm4j/scm4j-releaser)
+  - Example: [scm4j-releaser](../scm4j-releaser)
 
 
 # Terms
 - Workspace Home
-  - Home local folder of all folders used by vcs-related operations. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+  - Home local folder of all folders used by vcs-related operations. See [scm4j-vcs-api](../scm4j-vcs-api) for details
 - Locked Working Copy, LWC
-  - Local folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+  - Local folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](../scm4j-vcs-api) for details
 - Test Repository
   - Git repository which is used to execute functional tests
   - File-based repository is used
@@ -41,7 +41,7 @@ Use cases
 	IVCS vcs = new GitVCS(repoWorkspace);
 	vcs.setCredentials("user", "password"); // if necessary
 	```
-- Use methods of `IVCS` interface. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+- Use methods of `IVCS` interface. See [scm4j-vcs-api](../scm4j-vcs-api) for details
 - Path-filtered history uses the `IVCS.getCommitsRange` repository-relative path contract. Use `/` separators and keep the path within the selected branch.
 - Use `vcs.setProxy()` and `vcs.setCredentials()` if necessary
 - Use `VCSTag createUnannotatedTag(String branchName, String tagName, String revisionToTag)` to create git unannontated tag with name `tagName` on `revisionToTag` commit of branch `branchName`. If `branchName` is null then master branch is used. If `revisionToTag` is null then head of branch `branchName` is used.
@@ -55,8 +55,12 @@ Use cases
 
 # Functional testing
 - New local file-based Test Repository is created before each test and deletes automatically after each test
-- To execute tests just run GitVCSTest class as JUnit test. Tests from VCSAbstractTest class will be executed. See [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test) for details
+- To execute tests just run GitVCSTest class as JUnit test. Tests from VCSAbstractTest class will be executed. See [scm4j-vcs-test](../scm4j-vcs-test) for details
 - Or run `gradle test` to execute tests
 
 # Limitations
 - Commit messages can not be attached to branch create and delete operations because Git does not expose these operations as separate commits
+
+# Historical version
+
+[scm4j-vcs-git standalone repository](https://github.com/scm4j/scm4j-vcs-git)

@@ -9,7 +9,7 @@
 # Usage
 
 1. Add [`version`](docs/data-structure.md#version-file) file to your repository, optionally [`mdeps`](docs/data-structure.md#mdeps-file)
-1. Clone https://github.com/scm4j/scm4j-releaser-shell
+1. Use [scm4j-releaser-shell](../scm4j-releaser-shell)
 1. Execute `releaser`, it will create `cc`, `cc.yml`, `credentials.yml` files in $user.home/.scm4j folder. Edit these files (ref. comments there)
 1. Run `releaser (status|fork|build) com.mycompany:my-root-component`
 
@@ -41,19 +41,19 @@ For version definitions ref. [semantic Versioning 2.0.0](http://semver.org/).
 
 # Features
 
-- [delayed tagging](/../../issues/2)
-- [exact versions in `develop`/`mdeps`](/../../issues/4)
-- [postTag hooks](/../../issues/8)
+- [delayed tagging](https://github.com/scm4j/scm4j-releaser/issues/2)
+- [exact versions in `develop`/`mdeps`](https://github.com/scm4j/scm4j-releaser/issues/4)
+- [postTag hooks](https://github.com/scm4j/scm4j-releaser/issues/8)
 
 # Related repositories
   
-  - [scm4j-vcs-api](../../../scm4j-vcs-api)
-  - [scm4j-vcs-git](../../../scm4j-vcs-git)
-  - [scm4j-vcs-svn](../../../scm4j-vcs-svn)
-
-# See also
-
-[Historical version](https://github.com/scm4j/scm4j-releaser/blob/d540cb00674d485846117dbd68df19bdad306e56/README.md)
+  - [scm4j-vcs-api](../scm4j-vcs-api)
+  - [scm4j-vcs-git](../scm4j-vcs-git)
+  - [scm4j-vcs-svn](../scm4j-vcs-svn)
 
 # Problems
 - Subversion is very slow on VMs if network type is `NAT`. `Bridge` type gives  much better  perfomance. See similar problem  [here](https://blog.inventic.eu/2012/08/very-slow-svn-updates-from-virtual-machines-vmware/)
+
+# Historical version
+
+[scm4j-releaser standalone repository](https://github.com/scm4j/scm4j-releaser)

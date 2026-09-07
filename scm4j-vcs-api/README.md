@@ -24,7 +24,7 @@ scm4j-vcs-api provides:
 	- named as "lock_" + <LWC folder name>
 - Abstract Test
 	- Base functional tests of VCS-related functions which are exposed by IVCS. To implement functional test for a certain IVCS implementation (Git, SVN, etc) just implement VCSAbstractTest subclass
-	- Implemented as [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test) separate project
+	- Implemented by the [scm4j-vcs-test](../scm4j-vcs-test) subproject
 - `VCSMergeResult`, Merge Result
 	- Result of vcs merge operation. Could be successful or failed. Provides list of conflicting files if failed.
 - `VCSDiffEntry`, Diff Entry
@@ -155,7 +155,7 @@ LWC usage scenario:
 ```
 - Obtain Repository Workspace from Workspace Home providing a certain Repository's url. The obtained Repository Workspace will represent a folder within Workspace Home dir which will contain all Working Copies relating to the provided VCS Repository  
 ```java
-	String repoUrl = "https://github.com/scm4j/scm4j-vcs-api";
+	String repoUrl = "https://github.com/untillpro/scm4j";
 	IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
 ```
 - Obtain Locked Working Copy from Repository Workspace when necessary. The obtained LWC will represent a locked folder within Workspace Repository. The folder is protected from simultaneously execute different vcs-related operations by another thread or even process. Use try-with-resources or try...finally to release Working Copy after vcs-related operations will be completed
@@ -177,7 +177,7 @@ LWC usage scenario:
 public static final String WORKSPACE_DIR = System.getProperty("java.io.tmpdir") + "scm4j-vcs-workspaces";
 public static void main(String[] args) {
     IVCSWorkspace workspace = new VCSWorkspace(WORKSPACE_DIR);
-    String repoUrl = "https://github.com/scm4j/scm4j-vcs-api";
+    String repoUrl = "https://github.com/untillpro/scm4j";
     IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
     try (IVCSLockedWorkingCopy wc = repoWorkspace.getVCSLockedWorkingCopy()) {
         // wc.getFolder() is locked folder
@@ -235,7 +235,7 @@ Lock way: `new FileOutputStream(lockFile, false).getChannel.lock()`
 - Implement functional tests
 	- Create VCSAbstractTest subclass within test package, implement all abstract methods
 	- Normally test class should not include any test, just @After and @Before methods. All necessary functional testing is implemented within VCSAbstractTest
-	- See [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test) for details
+	- See [scm4j-vcs-test](../scm4j-vcs-test) for details
 - Example of gradle usage to export IVCS implementation, its sources and javadoc as separate single JARs:
 ```gradle
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -256,6 +256,10 @@ artifacts {
 After that the `gralde build` command will produce 3 JARs.
 
 # See also
-- [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test)
-- [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git)
-- [scm4j-vcs-svn](https://github.com/scm4j/scm4j-vcs-svn)
+- [scm4j-vcs-test](../scm4j-vcs-test)
+- [scm4j-vcs-git](../scm4j-vcs-git)
+- [scm4j-vcs-svn](../scm4j-vcs-svn)
+
+# Historical version
+
+[scm4j-vcs-api standalone repository](https://github.com/scm4j/scm4j-vcs-api)

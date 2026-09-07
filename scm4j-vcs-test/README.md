@@ -1,5 +1,5 @@
 # Overview
-scm4j-vcs-test project provides set of functional tests for implementations of IVCS interface declared in [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api). It used as maven dependency for [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git), [scm4j-vcs-svn](https://github.com/scm4j/scm4j-vcs-svn).
+scm4j-vcs-test provides a set of functional tests for implementations of the IVCS interface declared in [scm4j-vcs-api](../scm4j-vcs-api). It is shared by [scm4j-vcs-git](../scm4j-vcs-git) and [scm4j-vcs-svn](../scm4j-vcs-svn).
 
 # Terms
 - Test Base Dir
@@ -7,7 +7,7 @@ scm4j-vcs-test project provides set of functional tests for implementations of I
 - Test Workspace Dir
   - Home folder of all LWCs which are used by Test VCS
 - Locked Working Copy, LWC
-  - Folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+  - Folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](../scm4j-vcs-api) for details
 - Test Repository
   - A VCS Repository which is used to execute vcs operations which are being tested.
   - New Test Repository is generated before and deleted after each test
@@ -60,11 +60,15 @@ scm4j-vcs-test project provides set of functional tests for implementations of I
 - Use `repoName` field to get current testing repository name. It generates new for each test randomly (uuid is used)
 - Use `repoUrl` field to get url to current Test Repository.
 - Use `vcs` field as current IVCS implementation which is being testing
-- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If necessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git)
+- `mockedLWC` returns each time as a result of `mockedVCSRepo.getLockedWoringCopy()` call. If necessary it could be used for additional testing. See `setMakeFailureOnVCSReset()` in [scm4j-vcs-git](../scm4j-vcs-git)
 
 # Examples
-- [scm4j-vcs-git](https://github.com/scm4j/scm4j-vcs-git)
-- [scm4j-vcs-svn](https://github.com/scm4j/scm4j-vcs-svn)
+- [scm4j-vcs-git](../scm4j-vcs-git)
+- [scm4j-vcs-svn](../scm4j-vcs-svn)
 
 # See also
-- [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api)
+- [scm4j-vcs-api](../scm4j-vcs-api)
+
+# Historical version
+
+[scm4j-vcs-test standalone repository](https://github.com/scm4j/scm4j-vcs-test)

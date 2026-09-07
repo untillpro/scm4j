@@ -32,6 +32,7 @@ Related:
 - [ITIL, Information Technology Infrastructure Library](https://en.wikipedia.org/wiki/ITIL)  
   - ru: [wikipedia ITIL](https://ru.wikipedia.org/wiki/ITIL)
   - ru: [ITIL books](http://www.wikiitil.ru/books.html)
-  
-  
-  
+
+# Historical version
+
+[scm4j-doc standalone repository](https://github.com/scm4j/scm4j-doc)

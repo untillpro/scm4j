@@ -146,3 +146,6 @@ The following are experimental or use not recommended:
  * https_proxy - Set by original `https_proxy` passthrough, or same as `ChocolateyProxyLocation` if explicitly set. (0.10.4+)
  * no_proxy- Set by original `no_proxy` passthrough, or same as `ChocolateyProxyBypassList` if explicitly set. (0.10.4+)
 
+# Historical version
+
+[scm4j-releaser-choco standalone repository](https://github.com/scm4j/scm4j-releaser-choco)

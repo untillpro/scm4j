@@ -86,6 +86,10 @@ We create a repository in temporary folder and write test artifacts there. After
 
 # Related Components
 
-  - [scm4j-deployer-engine](../../../scm4j-deployer-engine/blob/master/README.md)
-  - [scm4j-deployer-api](../../../scm4j-deployer-api/blob/master/README.md)
-  - [scm4j-deployer-installers](../../../scm4j-deployer-installers/blob/master/README.md)
+  - [scm4j-deployer-engine](README.md)
+  - [scm4j-deployer-api](../scm4j-deployer-api/README.md)
+  - [scm4j-deployer-installers](../scm4j-deployer-installers/README.md)
+
+# Historical version
+
+[scm4j-deployer-engine standalone repository](https://github.com/scm4j/scm4j-deployer-engine)

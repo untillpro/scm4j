@@ -49,3 +49,7 @@ Also following environment vars or JVM vars must be defined:
   
 To run functional tests just execute JenkinsApiTest class as JUnit test or run `gradle test`. All jobs created during testing are deleted after automatically.
 Note: All tests are ignored if SCM4J_TEST_JENKINS_URL environment var is not defined.
+
+# Historical version
+
+[scm4j-jenkins standalone repository](https://github.com/scm4j/scm4j-jenkins)

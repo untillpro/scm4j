@@ -1,5 +1,5 @@
 # Overview
-scm4j-vcs-svn is lightweight library for execute basic SVN VCS operations (merge, branch create etc). It uses [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) exposing IVCS implementation for SVN repositories and [SVNKit](https://svnkit.com/) as framework to work with SVN repositories.
+scm4j-vcs-svn is lightweight library for execute basic SVN VCS operations (merge, branch create etc). It uses [scm4j-vcs-api](../scm4j-vcs-api) exposing IVCS implementation for SVN repositories and [SVNKit](https://svnkit.com/) as framework to work with SVN repositories.
 Features:
 - Branch create and remove
 - Branch merge returning result(success or list of conflicted files)
@@ -18,14 +18,14 @@ Use cases
   - Create own branches from GUI, browse commits, product versions management, etc
 - Product release automation
   - automatic merging, forking, tagging, version bumping, etc
-  - Example: [scm4j-releaser](https://github.com/scm4j/scm4j-releaser)
+  - Example: [scm4j-releaser](../scm4j-releaser)
 
 
 # Terms
 - Workspace Home
-  - Local home folder of all folders used by vcs-related operations. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+  - Local home folder of all folders used by vcs-related operations. See [scm4j-vcs-api](../scm4j-vcs-api) for details
 - Locked Working Copy, LWC
-  - Local folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+  - Local folder where vcs-related operations are executed. Provides thread- and process-safe repository of working folders. See [scm4j-vcs-api](../scm4j-vcs-api) for details
 - Test Repository
   - A local file-based SVN repository used for functional testing
   - Creates new before and deletes after each test automatically
@@ -40,7 +40,7 @@ Use cases
 	IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
 	IVCS vcs = new SVNVCS(repoWorkspace, "username", "pass");
 	```
-- Use methods of `IVCS` interface. See [scm4j-vcs-api](https://github.com/scm4j/scm4j-vcs-api) for details
+- Use methods of `IVCS` interface. See [scm4j-vcs-api](../scm4j-vcs-api) for details
 - Path-filtered history uses the `IVCS.getCommitsRange` repository-relative path contract. Absolute, drive, UNC, and parent-traversal paths are rejected before querying SVN.
 - `getTags()` and `getTagsOnRevision()` return an empty list when the repository has no `tags/` root because the absence of that conventional SVN directory means that no tags exist.
 - Use `vcs.setProxy()` and `vcs.setCredentials()` if necessary
@@ -50,7 +50,7 @@ Use cases
 - LWC is obtained automatically when necessary
 
 # Functional testing
-- To execute tests just run SVNVCSTest class as JUnit test. Tests from VCSAbstractTest class will be executed. See  [scm4j-vcs-test](https://github.com/scm4j/scm4j-vcs-test) for details
+- To execute tests just run SVNVCSTest class as JUnit test. Tests from VCSAbstractTest class will be executed. See [scm4j-vcs-test](../scm4j-vcs-test) for details
 - Or run `gradle test`
 
 # Limitations
@@ -61,3 +61,7 @@ Use cases
 		- Trunk/Folder/file.txt
 		- Tags/Tag1/
 	- Then `SVNVCS.getBranches()` method will return [Br1, Br2, Trunk]
+
+# Historical version
+
+[scm4j-vcs-svn standalone repository](https://github.com/scm4j/scm4j-vcs-svn)
