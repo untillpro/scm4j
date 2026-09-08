@@ -4,6 +4,7 @@ import com.google.common.io.Resources;
 import org.junit.Before;
 import org.junit.Test;
 import org.scm4j.commons.URLContentLoader;
+import org.scm4j.commons.regexconfig.RegexConfig;
 import org.scm4j.releaser.exceptions.EComponentConfigNoUrl;
 
 import java.io.File;
@@ -11,11 +12,15 @@ import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class VCSRepositoryFactoryTest {
 
 	private VCSRepositoryFactory repoFactory;
-	
+
 	@Before
 	public void setUp() throws Exception {
 		File urlsMapping = new File(Resources.getResource(this.getClass(), "urls-mapping.yml").toURI());
@@ -40,7 +45,7 @@ public class VCSRepositoryFactoryTest {
 
 	@Test
 	public void getMy() {
-		VCSRepository rep = repoFactory.getVCSRepository("myDiskFormatter");
+		VCSRepository rep = getRepositoryForConfigName("myDiskFormatter");
 		assertEquals("myDiskFormatter", rep.getName());
 		assertEquals("http://localhost/git/myProjDiskFormatter", rep.getUrl());
 		assertEquals("components/DiskFormatter", rep.getSubfolder());
@@ -53,8 +58,32 @@ public class VCSRepositoryFactoryTest {
 	}
 
 	@Test
+	public void getFromComponentUsesArtifactIdAsRepositoryName() {
+		Component component = new Component(
+				"eu.untill.sdk.drivers:vmax-fiscal-printer-driver:7.0@zip # drivers");
+		String componentName = component.getName();
+		String url = "http://localhost/git/untill-drivers";
+		RegexConfig cc = mock(RegexConfig.class);
+		RegexConfig creds = mock(RegexConfig.class);
+		when(cc.getPlaceholderedStringByName(componentName, "url", null)).thenReturn(url);
+		when(cc.getPlaceholderedStringByName(componentName, "subfolder", null))
+				.thenReturn("components/vmax-fiscal-printer-driver");
+		VCSRepositoryFactory factory = new VCSRepositoryFactory(cc, creds);
+
+		VCSRepository rep = factory.getVCSRepository(component);
+
+		assertEquals("vmax-fiscal-printer-driver", rep.getName());
+		assertEquals(url, rep.getUrl());
+		assertEquals("components/vmax-fiscal-printer-driver", rep.getSubfolder());
+		verify(cc).getPlaceholderedStringByName(componentName, "url", null);
+		verify(cc).getPlaceholderedStringByName(componentName, "subfolder", null);
+		verify(cc).getPropByName(componentName, "releaseBranchPrefix",
+				VCSRepository.DEFAULT_RELEASE_BRANCH_PREFIX);
+	}
+
+	@Test
 	public void get1() {
-		VCSRepository rep = repoFactory.getVCSRepository("artA1");
+		VCSRepository rep = getRepositoryForConfigName("artA1");
 		assertEquals("components/artifacts", rep.getSubfolder());
 		assertThat(new Object[] { rep.getName(), rep.getUrl(), rep.getType(), rep.getDevelopBranch(), rep.getReleaseBranchPrefix() },
 				is(new Object[] { "artA1", "http://url.com/svn/prjA", VCSType.SVN, "branches/", "release/" }));
@@ -63,27 +92,35 @@ public class VCSRepositoryFactoryTest {
 	}
 
 	@Test
-	public void get2() {
+	public void getFromNameUsesFullCoordinatesForFallbackUrl() {
 		VCSRepository rep = repoFactory.getVCSRepository("abyrvalg");
 		assertNull(rep.getSubfolder());
 		assertThat(new Object[] { rep.getName(), rep.getUrl(), rep.getType(), rep.getDevelopBranch(), rep.getReleaseBranchPrefix() },
-				is(new Object[] { "abyrvalg", "https://github.com/qwerty/abyrvalg", VCSType.SVN, "branches/", "release/" }));
+				is(new Object[] { "abyrvalg", "https://github.com/qwerty/abyrvalg:abyrvalg", VCSType.SVN, "branches/", "release/" }));
 		assertThat(new Object[] { rep.getCredentials().getName(), rep.getCredentials().getPassword() },
 				is(new Object[] { "guest", "guest" }));
 	}
 
 	@Test
 	public void testGitVCSTypeDetermination() {
-		VCSRepository repo = repoFactory.getVCSRepository("git1");
+		VCSRepository repo = getRepositoryForConfigName("git1");
 		assertEquals(VCSType.GIT, repo.getType());
-		repo = repoFactory.getVCSRepository("git2");
+		repo = getRepositoryForConfigName("git2");
 		assertEquals(VCSRepositoryFactory.DEFAULT_VCS_TYPE, repo.getType());
 	}
 
 	@Test
 	public void testSVNAlternativeDetermination() {
-		VCSRepository repo = repoFactory.getVCSRepository("svn1");
+		VCSRepository repo = getRepositoryForConfigName("svn1");
 		assertEquals(VCSType.SVN, repo.getType());
+		assertEquals("http://localhost/myProj", repo.getUrl());
+	}
+
+	private VCSRepository getRepositoryForConfigName(String componentName) {
+		// The YAML fixtures use bare names as configuration keys.
+		Component component = spy(new Component(componentName + ":" + componentName));
+		when(component.getName()).thenReturn(componentName);
+		return repoFactory.getVCSRepository(component);
 	}
 
 	@Test

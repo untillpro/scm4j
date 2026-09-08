@@ -221,7 +221,8 @@ public class ExtendedStatusBuilder {
 		List<VCSCommit> commits;
 		String branchName = rb.getName();
 		do {
-			commits = vcs.getCommitsRange(branchName, startingFromRevision, WalkDirection.DESC, COMMITS_RANGE_LIMIT);
+			commits = vcs.getCommitsRange(branchName, startingFromRevision, WalkDirection.DESC, COMMITS_RANGE_LIMIT,
+					repo.getSubfolder());
 			for (VCSCommit commit : commits) {
 				T res = func.apply(commit);
 				if (res != null) {

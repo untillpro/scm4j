@@ -66,16 +66,15 @@ public final class Utils {
 	}
 
 	public static String getReleaseBranchName(VCSRepository repo, Version forVersion) {
-		String releaseBranchName = repo.getReleaseBranchPrefix() + forVersion.getReleaseNoPatchString();
-		return addSubfolder(repo, releaseBranchName);
+		return getComponentNamespace(repo) + repo.getReleaseBranchPrefix() + forVersion.getReleaseNoPatchString();
 	}
 
-	private static String addSubfolder(VCSRepository repo, String name) {
+	private static String getComponentNamespace(VCSRepository repo) {
 		String subfolder = repo.getSubfolder();
 		if (subfolder == null || subfolder.isEmpty()) {
-			return name;
+			return "";
 		}
-		return subfolder.replaceFirst("/+$", "") + "/" + name;
+		return repo.getName() + "/";
 	}
 
 	public static File getBuildDir(VCSRepository repo, Version forVersion) {
@@ -91,15 +90,17 @@ public final class Utils {
 
 	public static TagDesc getTagDesc(VCSRepository repo, String verStr) {
 		TagDesc tagDesc = getTagDesc(verStr);
-		return new TagDesc(addSubfolder(repo, tagDesc.getName()), tagDesc.getMessage());
+		return new TagDesc(getComponentNamespace(repo) + tagDesc.getName(), tagDesc.getMessage());
 	}
 
 	public static boolean isTagForRepository(VCSRepository repo, String tagName) {
-		String subfolder = repo.getSubfolder();
-		if (subfolder == null || subfolder.isEmpty()) {
+		String namespace = getComponentNamespace(repo);
+		if (namespace.isEmpty()) {
 			return true;
 		}
-		return tagName != null && tagName.startsWith(addSubfolder(repo, ""));
+		return tagName != null && tagName.startsWith(namespace)
+				&& tagName.length() > namespace.length()
+				&& tagName.indexOf('/', namespace.length()) < 0;
 	}
 
 	public static Version getDevVersion(VCSRepository repo) {
