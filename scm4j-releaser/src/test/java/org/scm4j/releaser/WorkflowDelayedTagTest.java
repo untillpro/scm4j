@@ -131,7 +131,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 
 	@Test
 	public void testDelayedTagUsesSubfolderName() throws Exception {
-		configureRepositorySubfolder("$1");
+		configureRepositorySubfolder("components/$1");
 		fork(compUnTillDb);
 		IAction action = execAndGetActionBuildDelayedTag(compUnTillDb);
 		assertActionDoesBuildDelayedTag(action, compUnTillDb);
@@ -148,7 +148,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 
 	@Test
 	public void testExistingSubfolderTagIsSkipped() throws Exception {
-		configureRepositorySubfolder("$1");
+		configureRepositorySubfolder("components/$1");
 		fork(compUnTillDb);
 		IAction action = execAndGetActionBuildDelayedTag(compUnTillDb);
 		assertActionDoesBuildDelayedTag(action, compUnTillDb);
@@ -156,6 +156,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTillDb.getRepositoryId());
 		String branchName = Utils.getReleaseBranchName(repoUnTillDb, delayedTag.getVersion());
 		TagDesc tagDesc = Utils.getTagDesc(repoUnTillDb, delayedTag.getVersion().toString());
+		assertEquals("unTillDb/" + delayedTag.getVersion(), tagDesc.getName());
 		repoUnTillDb.getVCS().createTag(
 				branchName, tagDesc.getName(), tagDesc.getMessage(), delayedTag.getRevision());
 		Thread.sleep(1000);

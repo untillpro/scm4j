@@ -18,16 +18,30 @@ public class UtilsTest {
 
 	@Test
 	public void testReleaseBranchNameWithSubfolder() {
-		VCSRepository repository = repository("components/driver", "release/");
+		VCSRepository repository = repository("driver", "components/driver", "release/");
 
-		assertEquals("components/driver/release/1.2", Utils.getReleaseBranchName(repository, TEST_VERSION));
+		assertEquals("driver/release/1.2", Utils.getReleaseBranchName(repository, TEST_VERSION));
 	}
 
 	@Test
 	public void testReleaseBranchNameWithTrailingSubfolderSeparators() {
-		VCSRepository repository = repository("components/driver///", "release/");
+		VCSRepository repository = repository("driver", "components/driver///", "release/");
 
-		assertEquals("components/driver/release/1.2", Utils.getReleaseBranchName(repository, TEST_VERSION));
+		assertEquals("driver/release/1.2", Utils.getReleaseBranchName(repository, TEST_VERSION));
+	}
+
+	@Test
+	public void testReleaseBranchNameWithCustomPrefixAndSubfolder() {
+		VCSRepository repository = repository("vmax", "components/vmax", "B");
+
+		assertEquals("vmax/B1", Utils.getReleaseBranchName(repository, new Version("1.4")));
+	}
+
+	@Test
+	public void testReleaseBranchNameWithSlashTerminatedCustomPrefixAndSubfolder() {
+		VCSRepository repository = repository("vmax", "components/vmax", "B/");
+
+		assertEquals("vmax/B/1", Utils.getReleaseBranchName(repository, new Version("1.4")));
 	}
 
 	@Test
@@ -38,18 +52,26 @@ public class UtilsTest {
 
 	@Test
 	public void testTagDescWithSubfolder() {
-		TagDesc tagDesc = Utils.getTagDesc(repository("components/driver", "release/"), TEST_VERSION.toString());
+		TagDesc tagDesc = Utils.getTagDesc(repository("driver", "components/driver", "release/"), TEST_VERSION.toString());
 
-		assertEquals("components/driver/1.2.3", tagDesc.getName());
+		assertEquals("driver/1.2.3", tagDesc.getName());
 		assertEquals("1.2.3 release", tagDesc.getMessage());
 	}
 
 	@Test
 	public void testTagDescWithTrailingSubfolderSeparators() {
-		TagDesc tagDesc = Utils.getTagDesc(repository("components/driver///", "release/"), TEST_VERSION.toString());
+		TagDesc tagDesc = Utils.getTagDesc(repository("driver", "components/driver///", "release/"), TEST_VERSION.toString());
 
-		assertEquals("components/driver/1.2.3", tagDesc.getName());
+		assertEquals("driver/1.2.3", tagDesc.getName());
 		assertEquals("1.2.3 release", tagDesc.getMessage());
+	}
+
+	@Test
+	public void testTagDescWithSubfolderIgnoresReleaseBranchPrefix() {
+		assertTagDesc(Utils.getTagDesc(repository("vmax", "components/vmax", "B"), "1.4"),
+				"vmax/1.4", "1.4 release");
+		assertTagDesc(Utils.getTagDesc(repository("vmax", "components/vmax", "B/"), "1.4"),
+				"vmax/1.4", "1.4 release");
 	}
 
 	@Test
@@ -69,7 +91,11 @@ public class UtilsTest {
 	}
 
 	private VCSRepository repository(String subfolder, String releaseBranchPrefix) {
-		return new VCSRepository("name", "url", subfolder, null, null, null, releaseBranchPrefix, null, null);
+		return repository("name", subfolder, releaseBranchPrefix);
+	}
+
+	private VCSRepository repository(String name, String subfolder, String releaseBranchPrefix) {
+		return new VCSRepository(name, "url", subfolder, null, null, null, releaseBranchPrefix, null, null);
 	}
 
 	private void assertTagDesc(TagDesc tagDesc, String name, String message) {

@@ -8,6 +8,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -58,31 +59,65 @@ public class ExtendedStatusBuilderTest {
 
 	@Test
 	public void testOwnSubfolderTagMarksReleaseBoundary() {
-		assertTrue(noValueableCommitsAfterLastTag("components/driver", "components/driver/1.2.3"));
+		assertTrue(noValueableCommitsAfterLastTag("driver", "components/driver", "driver/1.2.3"));
 	}
 
 	@Test
 	public void testOtherSubfolderTagsDoNotMarkReleaseBoundary() {
-		assertFalse(noValueableCommitsAfterLastTag("components/driver",
+		assertFalse(noValueableCommitsAfterLastTag("driver", "components/driver",
 				"components/sibling/1.2.3", "1.2.3"));
 	}
 
 	@Test
+	public void testNestedComponentTagDoesNotMarkReleaseBoundary() {
+		assertFalse(noValueableCommitsAfterLastTag("components", "components",
+				"components/driver/1.2.3"));
+	}
+
+	@Test
 	public void testAnyTagRemainsReleaseBoundaryWithoutSubfolder() {
-		assertTrue(noValueableCommitsAfterLastTag(null, "other-tag"));
+		assertTrue(noValueableCommitsAfterLastTag("name", null, "other-tag"));
+	}
+
+	@Test
+	public void testCommitTraversalUsesSubfolderForEveryPage() {
+		String branchName = "driver/release/1.2";
+		String subfolder = "components/driver";
+		IVCS vcs = mock(IVCS.class);
+		VCSRepository repository = repository("driver", subfolder, vcs);
+		ReleaseBranchPatch releaseBranch = mock(ReleaseBranchPatch.class);
+		when(releaseBranch.getName()).thenReturn(branchName);
+		List<VCSCommit> firstPage = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			firstPage.add(new VCSCommit("revision-" + i, Constants.SCM_IGNORE, "author"));
+		}
+		when(vcs.getCommitsRange(branchName, null, WalkDirection.DESC, 10, subfolder)).thenReturn(firstPage);
+		when(vcs.getCommitsRange(branchName, "revision-9", WalkDirection.DESC, 10, subfolder))
+				.thenReturn(Collections.emptyList());
+		when(vcs.getTagsOnRevision(any(String.class))).thenReturn(Collections.emptyList());
+
+		assertTrue(new ExtendedStatusBuilder(mock(VCSRepositoryFactory.class))
+				.noValueableCommitsAfterLastTag(repository, releaseBranch));
+
+		verify(vcs).getCommitsRange(branchName, null, WalkDirection.DESC, 10, subfolder);
+		verify(vcs).getCommitsRange(branchName, "revision-9", WalkDirection.DESC, 10, subfolder);
 	}
 
 	private VCSRepository repository(String subfolder) {
-		return new VCSRepository("name", "url", subfolder, null, null, null, null, null, null);
+		return repository("name", subfolder, null);
+	}
+
+	private VCSRepository repository(String name, String subfolder, IVCS vcs) {
+		return new VCSRepository(name, "url", subfolder, null, null, null, "release/", vcs, null);
 	}
 
 	private ExtendedStatus status(String version, Component component, VCSRepository repository) {
 		return new ExtendedStatus(new Version(version), BuildStatus.BUILD, new LinkedHashMap<>(), component, repository);
 	}
 
-	private boolean noValueableCommitsAfterLastTag(String subfolder, String... tagNames) {
+	private boolean noValueableCommitsAfterLastTag(String name, String subfolder, String... tagNames) {
 		IVCS vcs = mock(IVCS.class);
-		VCSRepository repository = new VCSRepository("name", "status-test-url", subfolder,
+		VCSRepository repository = new VCSRepository(name, "status-test-url", subfolder,
 				null, null, null, "release/", vcs, null);
 		ReleaseBranchPatch releaseBranch = mock(ReleaseBranchPatch.class);
 		VCSCommit commit = new VCSCommit("revision", "valuable change", "author");
@@ -91,7 +126,7 @@ public class ExtendedStatusBuilderTest {
 			tags.add(new VCSTag(tagName, tagName + " message", "author", commit));
 		}
 		when(releaseBranch.getName()).thenReturn("release-branch");
-		when(vcs.getCommitsRange("release-branch", null, WalkDirection.DESC, 10))
+		when(vcs.getCommitsRange("release-branch", null, WalkDirection.DESC, 10, subfolder))
 				.thenReturn(Collections.singletonList(commit));
 		when(vcs.getTagsOnRevision(commit.getRevision())).thenReturn(tags);
 

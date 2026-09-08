@@ -57,7 +57,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 
 	@Test
 	public void testBuildCreatesSubfolderTag() throws Exception {
-		configureRepositorySubfolder("$1");
+		configureRepositorySubfolder("components/$1");
 
 		forkAndBuild(compUnTillDb);
 
@@ -69,6 +69,8 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		assertEquals(expectedTag.getName(), tag.getTagName());
 
 		ReleaseBranchCurrent releaseBranch = ReleaseBranchFactory.getCRB(repoUnTillDb);
+		assertEquals("unTillDb/release/B" + env.getUnTillDbVer().getReleaseNoPatchString(),
+				releaseBranch.getName());
 		List<VCSCommit> commits = repoUnTillDb.getVCS().getCommitsRange(
 				releaseBranch.getName(), null, WalkDirection.DESC, 2);
 		assertEquals(commits.get(1), tag.getRelatedCommit());
