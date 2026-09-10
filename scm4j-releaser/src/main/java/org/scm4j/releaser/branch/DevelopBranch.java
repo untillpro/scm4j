@@ -6,6 +6,7 @@ import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.exceptions.ENoVersionFile;
 import org.scm4j.vcs.api.VCSCommit;
+import org.scm4j.vcs.api.WalkDirection;
 import org.scm4j.vcs.api.exceptions.EVCSFileNotFound;
 
 import java.util.List;
@@ -19,9 +20,18 @@ public class DevelopBranch {
 		this.comp = comp;
 		this.repo = repo;
 	}
-	
+
 	public boolean isModified() {
-		List<VCSCommit> log = repo.getVCS().log(repo.getDevelopBranch(), 1);
+		String subfolder = repo.getRepositoryId().getSubfolder();
+		List<VCSCommit> log;
+		if (subfolder.isEmpty()) {
+			// Keep the optimized repository-wide query. For Git, getCommitsRange performs a pull, fetch,
+			// and checkout; for SVN, it resolves both history boundaries before requesting the range.
+			log = repo.getVCS().log(repo.getDevelopBranch(), 1);
+		} else {
+			// Component history requires the repository-relative path filter provided by getCommitsRange.
+			log = repo.getVCS().getCommitsRange(repo.getDevelopBranch(), null, WalkDirection.DESC, 1, subfolder);
+		}
 		if (log.isEmpty()) {
 			return false;
 		}
@@ -31,7 +41,11 @@ public class DevelopBranch {
 	
 	public Version getVersion() {
 		try {
-			String verFileContent = repo.getVCS().getFileContent(repo.getDevelopBranch(), Constants.VER_FILE_NAME, null);
+			String subfolder = repo.getRepositoryId().getSubfolder();
+			String versionFilePath = subfolder.isEmpty()
+					? Constants.VER_FILE_NAME
+					: subfolder + "/" + Constants.VER_FILE_NAME;
+			String verFileContent = repo.getVCS().getFileContent(repo.getDevelopBranch(), versionFilePath, null);
 			return new Version(verFileContent.trim());
 		} catch (EVCSFileNotFound e) {
 			throw new ENoVersionFile(comp);
