@@ -82,6 +82,15 @@ public class WorkflowTestBase {
 		repoUnTill = repoFactory.getVCSRepository(compUnTill);
 		repoUnTillDb = repoFactory.getVCSRepository(compUnTillDb);
 		repoUBL = repoFactory.getVCSRepository(compUBL);
+		writeComponentVersion(repoUnTill, env.getUnTillVer());
+		writeComponentVersion(repoUnTillDb, env.getUnTillDbVer());
+		writeComponentVersion(repoUBL, env.getUblVer());
+	}
+
+	private void writeComponentVersion(VCSRepository repo, Version version) {
+		String versionFilePath = repo.getRepositoryId().getSubfolder() + "/" + Constants.VER_FILE_NAME;
+		repo.getVCS().setFileContent(repo.getDevelopBranch(), versionFilePath, version.toString(),
+				Constants.SCM_IGNORE + " component version file added");
 	}
 
 	@After

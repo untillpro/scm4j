@@ -41,7 +41,7 @@ public class TestEnvironment implements AutoCloseable {
 
 	public final String RANDOM_VCS_NAME_SUFFIX;
 
-	private static final VCSType TESTING_VCS = VCSType.GIT;
+	private final VCSType testingVCS;
 	private IVCS unTillVCS;
 	private IVCS ublVCS;
 	private IVCS unTillDbVCS;
@@ -54,7 +54,12 @@ public class TestEnvironment implements AutoCloseable {
 	private final EnvironmentVariables ev = new EnvironmentVariables();
 
 	public TestEnvironment() {
+		this(VCSType.GIT);
+	}
+
+	public TestEnvironment(VCSType testingVCS) {
 		RANDOM_VCS_NAME_SUFFIX = UUID.randomUUID().toString();
+		this.testingVCS = testingVCS;
 	}
 
 	public void generateTestEnvironment() throws Exception {
@@ -79,7 +84,7 @@ public class TestEnvironment implements AutoCloseable {
 		ccFile = new File(TEST_ENVIRONMENT_DIR, TEST_CC_FILE_NAME);
 		ccFile.createNewFile();
 		String url = new File(TEST_REMOTE_REPO_DIR, "$1-" + RANDOM_VCS_NAME_SUFFIX).toURI().toURL().toString();
-		if (TESTING_VCS == VCSType.SVN) {
+		if (testingVCS == VCSType.SVN) {
 			url = url.replace("file:/", "file://");
 		}
 		FileUtils.writeLines(ccFile, Arrays.asList(
@@ -87,7 +92,7 @@ public class TestEnvironment implements AutoCloseable {
 				"- eu.untill:(.*):", 
 				"   url: " + url,
 				"   releaseCommand: " + BuilderFactory.SCM4J_BUILDER_CLASS_STRING + TestBuilder.class.getName(),
-				"   type: " + TESTING_VCS.toString().toLowerCase(),
+				"   type: " + testingVCS.toString().toLowerCase(),
 				"   releaseBranchPrefix: release/B"));
 	}
 
@@ -122,7 +127,7 @@ public class TestEnvironment implements AutoCloseable {
 		IVCSRepositoryWorkspace unTillVCSRepoWS;
 		IVCSRepositoryWorkspace ublVCSRepoWS;
 		IVCSRepositoryWorkspace unTillDbVCSRepoWS;
-		switch (TESTING_VCS) {
+		switch (testingVCS) {
 		case GIT:
 			GitVCSUtils.createRepository(unTillRemoteRepoDir);
 			GitVCSUtils.createRepository(ublRemoteRepoDir);
@@ -158,7 +163,7 @@ public class TestEnvironment implements AutoCloseable {
 			SVNVCSUtils.createFolderStructure((SVNVCS) unTillDbVCS, "initial commit");
 			break;
 		default:
-			throw new IllegalStateException("unsupported testing vcs type: " + TESTING_VCS.toString());
+			throw new IllegalStateException("unsupported testing vcs type: " + testingVCS.toString());
 		}
 	}
 
