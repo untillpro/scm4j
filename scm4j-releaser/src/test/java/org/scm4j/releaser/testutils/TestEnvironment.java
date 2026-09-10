@@ -83,10 +83,7 @@ public class TestEnvironment implements AutoCloseable {
 	private void createCCFile() throws IOException {
 		ccFile = new File(TEST_ENVIRONMENT_DIR, TEST_CC_FILE_NAME);
 		ccFile.createNewFile();
-		String url = new File(TEST_REMOTE_REPO_DIR, "$1-" + RANDOM_VCS_NAME_SUFFIX).toURI().toURL().toString();
-		if (testingVCS == VCSType.SVN) {
-			url = url.replace("file:/", "file://");
-		}
+		String url = getRepositoryUrl(new File(TEST_REMOTE_REPO_DIR, "$1-" + RANDOM_VCS_NAME_SUFFIX));
 		FileUtils.writeLines(ccFile, Arrays.asList(
 				"!!omap", 
 				"- eu.untill:(.*):", 
@@ -132,12 +129,9 @@ public class TestEnvironment implements AutoCloseable {
 			GitVCSUtils.createRepository(unTillRemoteRepoDir);
 			GitVCSUtils.createRepository(ublRemoteRepoDir);
 			GitVCSUtils.createRepository(unTillRemoteDbRepoDir);
-			unTillVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(
-					StringUtils.removeEndIgnoreCase(unTillRemoteRepoDir.toURI().toURL().toString(), "/"));
-			ublVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(
-					StringUtils.removeEndIgnoreCase(ublRemoteRepoDir.toURI().toURL().toString(), "/"));
-			unTillDbVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(
-					StringUtils.removeEndIgnoreCase(unTillRemoteDbRepoDir.toURI().toURL().toString(), "/"));
+			unTillVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(unTillRemoteRepoDir));
+			ublVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(ublRemoteRepoDir));
+			unTillDbVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(unTillRemoteDbRepoDir));
 			unTillVCS = new GitVCS(unTillVCSRepoWS);
 			ublVCS = new GitVCS(ublVCSRepoWS);
 			unTillDbVCS = new GitVCS(unTillDbVCSRepoWS);
@@ -146,15 +140,9 @@ public class TestEnvironment implements AutoCloseable {
 			SVNVCSUtils.createRepository(unTillRemoteRepoDir);
 			SVNVCSUtils.createRepository(ublRemoteRepoDir);
 			SVNVCSUtils.createRepository(unTillRemoteDbRepoDir);
-			unTillVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(
-					StringUtils.removeEndIgnoreCase(unTillRemoteRepoDir.toURI().toURL().toString(), "/")
-							.replace("file:/", "file://"));
-			ublVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(
-					StringUtils.removeEndIgnoreCase(ublRemoteRepoDir.toURI().toURL().toString(), "/").replace("file:/",
-							"file://"));
-			unTillDbVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(
-					StringUtils.removeEndIgnoreCase(unTillRemoteDbRepoDir.toURI().toURL().toString(), "/")
-							.replace("file:/", "file://"));
+			unTillVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(unTillRemoteRepoDir));
+			ublVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(ublRemoteRepoDir));
+			unTillDbVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(unTillRemoteDbRepoDir));
 			unTillVCS = new SVNVCS(unTillVCSRepoWS, null, null);
 			SVNVCSUtils.createFolderStructure((SVNVCS) unTillVCS, "initial commit");
 			ublVCS = new SVNVCS(ublVCSRepoWS, null, null);
@@ -165,6 +153,11 @@ public class TestEnvironment implements AutoCloseable {
 		default:
 			throw new IllegalStateException("unsupported testing vcs type: " + testingVCS.toString());
 		}
+	}
+
+	private String getRepositoryUrl(File repositoryDir) throws IOException {
+		String url = StringUtils.removeEndIgnoreCase(repositoryDir.toURI().toURL().toString(), "/");
+		return testingVCS == VCSType.SVN ? url.replaceFirst("^file:/+", "file:///") : url;
 	}
 
 	private void createTestEnvironmentFolder() throws Exception {
