@@ -50,12 +50,12 @@ public class VCSRepositoryFactory {
 		return url;
 	}
 
-	public VCSRepositoryId getVCSRepositoryId(Component comp) {
-		return getVCSRepositoryId(comp.getName());
+	public VCSComponentLocation getVCSComponentLocation(Component comp) {
+		return getVCSComponentLocation(comp.getName());
 	}
 
-	public VCSRepositoryId getVCSRepositoryId(String componentName) {
-		return new VCSRepositoryId(getUrl(componentName),
+	public VCSComponentLocation getVCSComponentLocation(String componentName) {
+		return new VCSComponentLocation(getUrl(componentName),
 				cc.getPlaceholderedStringByName(componentName, "subfolder", null));
 	}
 
@@ -65,8 +65,8 @@ public class VCSRepositoryFactory {
 
 	public VCSRepository getVCSRepository(Component comp) {
 		String componentName = comp.getName();
-		String url = getUrl(componentName);
-		String subfolder = cc.getPlaceholderedStringByName(componentName, "subfolder", null);
+		VCSComponentLocation componentLocation = getVCSComponentLocation(componentName);
+		String url = componentLocation.getUrl();
 
 		Credentials credentials;
 		String user = creds.getPropByName(url, "name", null);
@@ -83,7 +83,8 @@ public class VCSRepositoryFactory {
 				VCSRepository.DEFAULT_RELEASE_BRANCH_PREFIX);
 		String releaseCommand = cc.getPropByName(componentName, "releaseCommand", null);
 		IVCSWorkspace ws = new VCSWorkspace(DEFAULT_VCS_WORKSPACE_DIR);
-		return new VCSRepository(comp.getCoords().getArtifactId(), url, subfolder, credentials, type, developBranch, releaseBranchPrefix,
+		return new VCSRepository(comp.getCoords().getArtifactId(), componentLocation, credentials, type,
+				developBranch, releaseBranchPrefix,
 				VCSFactory.getVCS(type, credentials, url, ws), BuilderFactory.getBuilder(releaseCommand));
 	}
 	

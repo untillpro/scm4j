@@ -6,7 +6,7 @@ import org.scm4j.commons.progress.ProgressConsole;
 import org.scm4j.releaser.WorkflowTestBase;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
-import org.scm4j.releaser.conf.VCSRepositoryId;
+import org.scm4j.releaser.conf.VCSComponentLocation;
 import org.scm4j.releaser.exceptions.EReleaserException;
 
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public class ActionAbstractTest extends WorkflowTestBase {
 	public void testSkipNonExecutableChildActions() {
 		IAction doneAction = mock(ActionAbstract.class);
 		doReturn(false).when(doneAction).isExecutable();
-		doReturn(false).when(doneAction).isRepositoryProcessed(any(VCSRepositoryId.class));
+		doReturn(false).when(doneAction).isRepositoryProcessed(any(VCSComponentLocation.class));
 
 		ActionAbstract aa = spy(new TestAction(compUnTill, Collections.singletonList(doneAction), repoUnTill));
 		IProgress progress = mock(IProgress.class);

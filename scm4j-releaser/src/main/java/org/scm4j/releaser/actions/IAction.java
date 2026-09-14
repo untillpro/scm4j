@@ -2,7 +2,7 @@ package org.scm4j.releaser.actions;
 
 import org.scm4j.commons.progress.IProgress;
 import org.scm4j.releaser.conf.Component;
-import org.scm4j.releaser.conf.VCSRepositoryId;
+import org.scm4j.releaser.conf.VCSComponentLocation;
 
 import java.util.List;
 
@@ -14,9 +14,9 @@ public interface IAction {
 
 	void setParent(IAction parent);
 
-	void addProcessedRepository(VCSRepositoryId repositoryId);
+	void addProcessedRepository(VCSComponentLocation componentLocation);
 
-	boolean isRepositoryProcessed(VCSRepositoryId repositoryId);
+	boolean isRepositoryProcessed(VCSComponentLocation componentLocation);
 
 	Component getComp();
 

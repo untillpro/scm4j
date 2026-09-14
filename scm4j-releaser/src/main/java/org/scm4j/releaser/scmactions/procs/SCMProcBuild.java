@@ -32,8 +32,8 @@ public class SCMProcBuild implements ISCMProc {
 		this.repo = repo;
 		vcs = repo.getVCS();
 		this.cache = cache;
-		releaseBranchName = Utils.getReleaseBranchName(repo, cache.get(repo.getRepositoryId()).getNextVersion());
-		versionToBuild = cache.get(repo.getRepositoryId()).getNextVersion();
+		releaseBranchName = Utils.getReleaseBranchName(repo, cache.get(repo.getComponentLocation()).getNextVersion());
+		versionToBuild = cache.get(repo.getComponentLocation()).getNextVersion();
 		this.delayedTag = delayedTag;
 	}
 
@@ -56,8 +56,8 @@ public class SCMProcBuild implements ISCMProc {
 			raisePatchVersion(progress);
 		}
 		
-		ExtendedStatus existing = cache.get(repo.getRepositoryId());
-		cache.replace(repo.getRepositoryId(), new ExtendedStatus(versionToBuild.toNextPatch(), existing.getStatus(),
+		ExtendedStatus existing = cache.get(repo.getComponentLocation());
+		cache.replace(repo.getComponentLocation(), new ExtendedStatus(versionToBuild.toNextPatch(), existing.getStatus(),
 				existing.getSubComponents(), comp, repo));
 		
 		progress.reportStatus(comp.getName() + " " + versionToBuild + " is built in " + releaseBranchName);
@@ -83,7 +83,7 @@ public class SCMProcBuild implements ISCMProc {
 	private void tagBuild(IProgress progress, VCSCommit headCommit) {
 		if (delayedTag) {
 			DelayedTagsFile delayedTagsFile = new DelayedTagsFile();
-			delayedTagsFile.writeDelayedTag(repo.getRepositoryId(), versionToBuild, headCommit.getRevision());
+			delayedTagsFile.writeDelayedTag(repo.getComponentLocation(), versionToBuild, headCommit.getRevision());
 			progress.reportStatus("build commit " + headCommit.getRevision() + " is saved for delayed tagging");
 		} else {
 			TagDesc tagDesc = Utils.getTagDesc(repo, versionToBuild.toString());
