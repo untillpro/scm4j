@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 public class WorkflowTestBase {
-	// unreachable version and mdeps for tests that uses monorepo repositories
+	// unreachable version and mdeps for tests that use monorepo repositories
 	// stored in the root of the monorepo to make test fail on try to read version or mdeps from the root, not from the subfolder
 	protected static final String MONOREPO_ROOT_UNREACHABLE_VERSION = "99.99.99-SNAPSHOT";
 	protected static final String MONOREPO_ROOT_UNREACHABLE_MDEPS = "# root metadata sentinel";
@@ -96,14 +96,14 @@ public class WorkflowTestBase {
 		protectMonorepoFromRootRead(repoUnTill, repoUnTillDb, repoUBL);
 	}
 
-	private void writeComponentFiles(VCSRepository repo, Version version) {
-		String rootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME)
-				? repo.getVCS().getFileContent(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME, null)
-				: null;
-		repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.VER_FILE_NAME), version.toString(),
+	private void writeComponentFiles(VCSRepository repo, Version version) {
+		String rootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME)
+				? repo.getVCS().getFileContent(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME, null)
+				: null;
+		repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.VER_FILE_NAME), version.toString(),
 				Constants.SCM_IGNORE + " component version file added");
 		if (rootMDeps != null) {
-			repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.MDEPS_FILE_NAME),
+			repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.MDEPS_FILE_NAME),
 					rootMDeps, Constants.SCM_IGNORE + " component mdeps file added");
 		}
 	}
@@ -119,46 +119,46 @@ public class WorkflowTestBase {
 		}
 	}
 
-	protected String getComponentFileContent(VCSRepository repo, String branchName, String relativePath) {
-		return repo.getVCS().getFileContent(branchName, repo.getComponentPath(relativePath), null);
+	protected String getComponentFileContent(VCSRepository repo, String branchName, String relativePath) {
+		return repo.getVCS().getFileContent(branchName, repo.getComponentPath(relativePath), null);
 	}
 
-	@After
-	public void tearDown() throws Exception {
-		try {
-			assertMonorepoRootFilesUnchanged();
-		} finally {
-			if (env != null) {
-				env.close();
-			}
-			TestBuilder.setBuilders(null);
-			Utils.waitForDeleteDir(Constants.RELEASES_DIR);
-		}
-	}
+	@After
+	public void tearDown() throws Exception {
+		try {
+			assertMonorepoRootFilesUnchanged();
+		} finally {
+			if (env != null) {
+				env.close();
+			}
+			TestBuilder.setBuilders(null);
+			Utils.waitForDeleteDir(Constants.RELEASES_DIR);
+		}
+	}
 
-	private void assertMonorepoRootFilesUnchanged() {
-		for (VCSRepository repo : new VCSRepository[] {repoUnTill, repoUnTillDb, repoUBL}) {
-			if (repo == null || repo.getSubfolder().isEmpty()) {
-				continue;
-			}
-			boolean hasRootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME);
-			for (String branchName : repo.getVCS().getBranches(null)) {
-				assertEquals(MONOREPO_ROOT_UNREACHABLE_VERSION,
-						repo.getVCS().getFileContent(branchName, Constants.VER_FILE_NAME, null));
-				if (hasRootMDeps) {
-					assertEquals(MONOREPO_ROOT_UNREACHABLE_MDEPS,
-							repo.getVCS().getFileContent(branchName, Constants.MDEPS_FILE_NAME, null));
-				}
-			}
-		}
-	}
-
+	private void assertMonorepoRootFilesUnchanged() {
+		for (VCSRepository repo : new VCSRepository[] {repoUnTill, repoUnTillDb, repoUBL}) {
+			if (repo == null || repo.getSubfolder().isEmpty()) {
+				continue;
+			}
+			boolean hasRootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME);
+			for (String branchName : repo.getVCS().getBranches(null)) {
+				assertEquals(MONOREPO_ROOT_UNREACHABLE_VERSION,
+						repo.getVCS().getFileContent(branchName, Constants.VER_FILE_NAME, null));
+				if (hasRootMDeps) {
+					assertEquals(MONOREPO_ROOT_UNREACHABLE_MDEPS,
+							repo.getVCS().getFileContent(branchName, Constants.MDEPS_FILE_NAME, null));
+				}
+			}
+		}
+	}
+
 	protected Version getCrbVersion(Component comp) {
 		VCSRepository repo = repoFactory.getVCSRepository(comp);
 		Version crbFirstVersion = Utils.getDevVersion(repo).toPreviousMinor().toReleaseZeroPatch();
-		return new Version(getComponentFileContent(repo, Utils.getReleaseBranchName(repo, crbFirstVersion),
-				Constants.VER_FILE_NAME));
-	}
+		return new Version(getComponentFileContent(repo, Utils.getReleaseBranchName(repo, crbFirstVersion),
+				Constants.VER_FILE_NAME));
+	}
 
 	protected void checkCompBuilt(int times, Component comp) {
 		if (comp.getName().equals(compUnTill.getName())) {
@@ -180,7 +180,7 @@ public class WorkflowTestBase {
 		assertTrue(Utils.getBuildDir(repo, latestVersion).exists());
 
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		DelayedTag dt = dtf.getDelayedTag(repo.getComponentLocation());
+		DelayedTag dt = dtf.getDelayedTag(repo.getComponentLocation());
 		Boolean tagDelayed = dt != null && crb.getName().equals(Utils.getReleaseBranchName(repo, dt.getVersion()));
 		String expectedPatch = tagDelayed ? "0" : "1";
 
