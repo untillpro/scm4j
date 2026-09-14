@@ -37,6 +37,10 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 public class WorkflowTestBase {
+	// unreachable version and mdeps for tests that uses monorepo repositories
+	// stored in the root of the monorepo to make test fail on try to read version or mdeps from the root, not from the subfolder
+	protected static final String MONOREPO_ROOT_UNREACHABLE_VERSION = "99.99.99-SNAPSHOT";
+	protected static final String MONOREPO_ROOT_UNREACHABLE_MDEPS = "# root metadata sentinel";
 	protected TestEnvironment env;
 	protected static final String UNTILL = TestEnvironment.PRODUCT_UNTILL;
 	protected static final String UNTILLDB = TestEnvironment.PRODUCT_UNTILLDB;
@@ -51,7 +55,7 @@ public class WorkflowTestBase {
 
 	@Rule
 	public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
-	
+
 	@Before
 	public void setUp() throws Exception {
 		env = new TestEnvironment();
@@ -82,30 +86,78 @@ public class WorkflowTestBase {
 		repoUnTill = repoFactory.getVCSRepository(compUnTill);
 		repoUnTillDb = repoFactory.getVCSRepository(compUnTillDb);
 		repoUBL = repoFactory.getVCSRepository(compUBL);
-		writeComponentVersion(repoUnTill, env.getUnTillVer());
-		writeComponentVersion(repoUnTillDb, env.getUnTillDbVer());
-		writeComponentVersion(repoUBL, env.getUblVer());
+		writeComponentFiles(repoUnTill, env.getUnTillVer());
+		writeComponentFiles(repoUnTillDb, env.getUnTillDbVer());
+		writeComponentFiles(repoUBL, env.getUblVer());
+
+		// write version and mdeps file to the monorepo root
+		// if he code is broken and it reads mdeps or version from the monorepo root, not from a subfolder,
+		// then we're expecting that a corresponding test will because root files contains unexpected content
+		protectMonorepoFromRootRead(repoUnTill, repoUnTillDb, repoUBL);
 	}
 
-	private void writeComponentVersion(VCSRepository repo, Version version) {
-		String versionFilePath = repo.getComponentPath(Constants.VER_FILE_NAME);
-		repo.getVCS().setFileContent(repo.getDevelopBranch(), versionFilePath, version.toString(),
+	private void writeComponentFiles(VCSRepository repo, Version version) {
+		String rootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME)
+				? repo.getVCS().getFileContent(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME, null)
+				: null;
+		repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.VER_FILE_NAME), version.toString(),
 				Constants.SCM_IGNORE + " component version file added");
+		if (rootMDeps != null) {
+			repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.MDEPS_FILE_NAME),
+					rootMDeps, Constants.SCM_IGNORE + " component mdeps file added");
+		}
+	}
+
+	private void protectMonorepoFromRootRead(VCSRepository... repositories) {
+		for (VCSRepository repo : repositories) {
+			repo.getVCS().setFileContent(repo.getDevelopBranch(), Constants.VER_FILE_NAME,
+					MONOREPO_ROOT_UNREACHABLE_VERSION, Constants.SCM_IGNORE + " root version sentinel added");
+			if (repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME)) {
+				repo.getVCS().setFileContent(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME,
+						MONOREPO_ROOT_UNREACHABLE_MDEPS, Constants.SCM_IGNORE + " root mdeps sentinel added");
+			}
+		}
+	}
+
+	protected String getComponentFileContent(VCSRepository repo, String branchName, String relativePath) {
+		return repo.getVCS().getFileContent(branchName, repo.getComponentPath(relativePath), null);
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		if (env != null) {
-			env.close();
+		try {
+			assertMonorepoRootFilesUnchanged();
+		} finally {
+			if (env != null) {
+				env.close();
+			}
+			TestBuilder.setBuilders(null);
+			Utils.waitForDeleteDir(Constants.RELEASES_DIR);
 		}
-		TestBuilder.setBuilders(null);
-		Utils.waitForDeleteDir(Constants.RELEASES_DIR);
+	}
+
+	private void assertMonorepoRootFilesUnchanged() {
+		for (VCSRepository repo : new VCSRepository[] {repoUnTill, repoUnTillDb, repoUBL}) {
+			if (repo == null || repo.getSubfolder().isEmpty()) {
+				continue;
+			}
+			boolean hasRootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME);
+			for (String branchName : repo.getVCS().getBranches(null)) {
+				assertEquals(MONOREPO_ROOT_UNREACHABLE_VERSION,
+						repo.getVCS().getFileContent(branchName, Constants.VER_FILE_NAME, null));
+				if (hasRootMDeps) {
+					assertEquals(MONOREPO_ROOT_UNREACHABLE_MDEPS,
+							repo.getVCS().getFileContent(branchName, Constants.MDEPS_FILE_NAME, null));
+				}
+			}
+		}
 	}
 
 	protected Version getCrbVersion(Component comp) {
 		VCSRepository repo = repoFactory.getVCSRepository(comp);
 		Version crbFirstVersion = Utils.getDevVersion(repo).toPreviousMinor().toReleaseZeroPatch();
-		return new Version(repo.getVCS().getFileContent(Utils.getReleaseBranchName(repo, crbFirstVersion), Constants.VER_FILE_NAME, null));
+		return new Version(getComponentFileContent(repo, Utils.getReleaseBranchName(repo, crbFirstVersion),
+				Constants.VER_FILE_NAME));
 	}
 
 	protected void checkCompBuilt(int times, Component comp) {
@@ -168,7 +220,7 @@ public class WorkflowTestBase {
 			assertEquals(btevEntry.getValue(), btevActual.get(btevEntry.getKey()));
 		}
 	}
-	
+
 	public void checkUnTillDbBuilt(int times) {
 		checkCompBuilt(times, compUnTillDb);
 	}
@@ -262,7 +314,7 @@ public class WorkflowTestBase {
 		checkCompForked(times, compUBL);
 		checkUBLMDepsVersions(times);
 	}
-	
+
 	public void checkUnTillDbForked(int times) {
 		checkCompForked(times, compUnTillDb);
 	}
@@ -324,7 +376,7 @@ public class WorkflowTestBase {
 	protected void assertActionDoesBuild(IAction action, Component comp, BuildStatus fromStatus) {
 		assertThatAction(action, getBuildMatcher(fromStatus, BuildStatus.BUILD, false), comp);
 	}
-	
+
 	protected void assertActionDoesBuild(IAction action, Component... comps) {
 		assertThatAction(action, getBuildMatcher(BuildStatus.BUILD, BuildStatus.BUILD, false), comps);
 	}
@@ -361,7 +413,7 @@ public class WorkflowTestBase {
 
 	protected void assertActionDoesTag(IAction action, Component comp) {
 		assertThatAction(action, allOf(
-				instanceOf(SCMActionTag.class), 
+				instanceOf(SCMActionTag.class),
 				hasProperty("childActions", empty())), comp);
 	}
 
@@ -380,11 +432,11 @@ public class WorkflowTestBase {
 	protected IAction execAndGetActionFork(Component comp) {
 		return execAndGetAction(CLICommand.FORK.getCmdLineStr(), comp.getCoords().toString());
 	}
-	
+
 	protected IAction execAndGetActionBuild(Component comp) {
 		return execAndGetAction(CLICommand.BUILD.getCmdLineStr(), comp.getCoords().toString());
 	}
-	
+
 	private CLI execAndGetCLI(Runnable preExec, String... args) {
 		CLI cli = new CLI();
 		cli.setPreExec(preExec);
@@ -394,7 +446,7 @@ public class WorkflowTestBase {
 		}
 		return cli;
 	}
-	
+
 	private IAction execAndGetAction(Runnable preExec, String... args)  {
 		CLI cli = execAndGetCLI(preExec, args);
 		IAction action = cli.getAction();
@@ -403,7 +455,7 @@ public class WorkflowTestBase {
 		}
 		return action;
 	}
-	
+
 	protected ExtendedStatus execAndGetNode(Runnable preExec, String... args) {
 		CLI cli = execAndGetCLI(preExec, args);
 		return cli.getNode();
@@ -412,31 +464,31 @@ public class WorkflowTestBase {
 	private IAction execAndGetAction(String... args) {
 		return execAndGetAction(null, args);
 	}
-	
+
 	protected IAction execAndGetActionTag(Component comp, Runnable preExec) {
 		return execAndGetAction(preExec, CLICommand.TAG.getCmdLineStr(), comp.getCoords().toString());
 	}
-	
+
 	protected IAction execAndGetActionBuildDelayedTag(Component comp) {
 		return execAndGetAction(CLICommand.BUILD.getCmdLineStr(), comp.getCoords().toString(), Option.DELAYED_TAG.getCmdLineStr());
 	}
-	
+
 	protected void status(Component comp) {
 		execAndGetAction(CLICommand.STATUS.getCmdLineStr(), comp.getCoords().toString());
 	}
-	
+
 	protected void forkAndBuild(Component comp) {
 		forkAndBuild(comp, 1);
 	}
-	
+
 	protected void fork(Component comp) {
 		fork(comp, 1);
 	}
-	
+
 	protected void build(Component comp) {
 		build(comp, 1);
 	}
-	
+
 	protected void fork(Component comp, int times) {
 		IAction action = execAndGetActionFork(comp);
 		if (TestEnvironment.PRODUCT_UNTILL.contains(comp.getCoords().toString(""))) {
@@ -458,7 +510,7 @@ public class WorkflowTestBase {
 			fail("unexpected coords: " + comp.getCoords());
 		}
 	}
-	
+
 	protected void build(Component comp, int times) {
 		IAction action = execAndGetActionBuild(comp);
 		if (TestEnvironment.PRODUCT_UNTILL.contains(comp.getCoords().toString(""))) {
@@ -481,7 +533,7 @@ public class WorkflowTestBase {
 			fail("unexpected coords: " + comp.getCoords());
 		}
 	}
-	
+
 	protected void forkAndBuild(Component comp, int times) {
 		fork(comp, times);
 		build(comp, times);

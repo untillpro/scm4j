@@ -27,38 +27,49 @@ public class DevelopBranchTest {
 
 	private static final String DEVELOP_BRANCH = "component-develop";
 	private static final String COMPONENT_SUBFOLDER = "components/driver";
+	private static final String NON_NORMALIZED_COMPONENT_SUBFOLDER = "components\\driver///";
 	private static final String SIBLING_SUBFOLDER = "components/sibling";
 
 	@Test
 	public void testSubfolderBehavior() throws Exception {
+		// Exercise the same component-isolation contract against both supported VCS implementations.
 		for (VCSType vcsType : VCSType.values()) {
 			try (TestEnvironment env = new TestEnvironment(vcsType)) {
+				// Use a custom develop branch and a deliberately non-normalized subfolder to prove repository
+				// identity normalization produces a valid component-relative path for content and history operations.
 				env.generateTestEnvironment();
 				IVCS vcs = env.getUnTillVCS();
 				vcs.createBranch(null, DEVELOP_BRANCH, "component develop branch created");
+				VCSRepository repo = repository(vcsType, vcs, NON_NORMALIZED_COMPONENT_SUBFOLDER);
 
+				// Seed the component version with a version-only commit, then add a newer sibling change.
+				// DevelopBranch must read the component version and ignore sibling history when deciding modification status.
 				Version componentVersion = new Version("2.4.0-SNAPSHOT");
-				vcs.setFileContent(DEVELOP_BRANCH, COMPONENT_SUBFOLDER + "/" + Constants.VER_FILE_NAME,
+				vcs.setFileContent(DEVELOP_BRANCH, repo.getComponentPath(Constants.VER_FILE_NAME),
 						componentVersion.toString(), Constants.SCM_VER + " component version initialized");
 				vcs.setFileContent(DEVELOP_BRANCH, SIBLING_SUBFOLDER + "/feature.txt", "sibling feature",
 						"sibling feature");
 
-				DevelopBranch developBranch = new DevelopBranch(component(), repository(vcsType, vcs, COMPONENT_SUBFOLDER));
+				DevelopBranch developBranch = new DevelopBranch(component(), repo);
 				assertEquals(vcsType.toString(), componentVersion, developBranch.getVersion());
 				assertFalse(vcsType.toString(), developBranch.isModified());
 
-				vcs.setFileContent(DEVELOP_BRANCH, COMPONENT_SUBFOLDER + "/feature.txt", "component feature",
+				// A real component change must remain visible even when a newer sibling commit carries #scm-ver.
+				vcs.setFileContent(DEVELOP_BRANCH, repo.getComponentPath("feature.txt"), "component feature",
 						"component feature");
 				vcs.setFileContent(DEVELOP_BRANCH, SIBLING_SUBFOLDER + "/feature.txt", "sibling version",
 						Constants.SCM_VER + " sibling version");
 				assertTrue(vcsType.toString(), developBranch.isModified());
 
-				vcs.setFileContent(DEVELOP_BRANCH, COMPONENT_SUBFOLDER + "/feature.txt", "ignored component change",
+				// The component's own #scm-ignore marker suppresses modification because it is in the filtered history.
+				vcs.setFileContent(DEVELOP_BRANCH, repo.getComponentPath("feature.txt"), "ignored component change",
 						Constants.SCM_IGNORE + " generated component change");
 				assertFalse(vcsType.toString(), developBranch.isModified());
 
+				// A component folder without version must fail instead of falling back to the repository-root version.
 				String missingVersionSubfolder = "components/missing-version";
-				vcs.setFileContent(DEVELOP_BRANCH, missingVersionSubfolder + "/README.md", "component exists",
+				VCSRepository missingVersionRepo = repository(vcsType, vcs, missingVersionSubfolder);
+				vcs.setFileContent(DEVELOP_BRANCH, missingVersionRepo.getComponentPath("README.md"), "component exists",
 						"component created without version");
 				assertNoVersionFile(vcsType, vcs, missingVersionSubfolder);
 			}

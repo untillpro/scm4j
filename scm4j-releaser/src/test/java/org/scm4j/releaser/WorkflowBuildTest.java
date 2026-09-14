@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 public class WorkflowBuildTest extends WorkflowTestBase {
-	
+
 	@Test
 	public void testBuildAfterForkInParts() throws Exception {
 		// fork unTillDb
@@ -45,7 +45,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		assertActionDoesBuild(action, compUBL, BuildStatus.BUILD_MDEPS);
 		checkUBLBuilt();
 	}
-	
+
 	@Test
 	public void testBuildSingleComponentTwice() throws Exception {
 		forkAndBuild(compUnTillDb);
@@ -59,7 +59,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 	public void testBuildCreatesSubfolderTag() throws Exception {
 		configureRepositorySubfolder("components/$1");
 
-		forkAndBuild(compUnTillDb);
+		forkAndBuild(compUnTill);
 
 		List<VCSTag> tags = repoUnTillDb.getVCS().getTags();
 		assertEquals(1, tags.size());
@@ -71,11 +71,15 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		ReleaseBranchCurrent releaseBranch = ReleaseBranchFactory.getCRB(repoUnTillDb);
 		assertEquals("unTillDb/release/B" + env.getUnTillDbVer().getReleaseNoPatchString(),
 				releaseBranch.getName());
+		assertEquals(env.getUnTillDbVer().toReleaseZeroPatch().toNextPatch().toString(),
+				getComponentFileContent(repoUnTillDb, releaseBranch.getName(), Constants.VER_FILE_NAME));
+		assertEquals(env.getUnTillDbVer().toNextMinor().toString(),
+				getComponentFileContent(repoUnTillDb, repoUnTillDb.getDevelopBranch(), Constants.VER_FILE_NAME));
 		List<VCSCommit> commits = repoUnTillDb.getVCS().getCommitsRange(
 				releaseBranch.getName(), null, WalkDirection.DESC, 2);
 		assertEquals(commits.get(1), tag.getRelatedCommit());
 	}
-	
+
 	@Test
 	public void testBuildOnNotForkedReleaseException() {
 		try {
@@ -85,7 +89,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			assertEquals(compUnTillDb, e.getComp());
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testNoBuilderException() throws Exception {
@@ -95,19 +99,19 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		((Map<String, ?>) content.get("eu.untill:(.*)")).remove("releaseCommand");
 		FileUtils.writeStringToFile(env.getCcFile(), yaml.dumpAsMap(content), StandardCharsets.UTF_8);
 		repoFactory = env.getRepoFactory();
-		
+
 		try {
 			forkAndBuild(compUnTillDb);
 			fail();
 		} catch (ENoBuilder e) {
 		}
 	}
-	
+
 	@Test
 	public void testActualizePatches() {
 		fork(compUnTill);
 		build(compUnTillDb);
-		
+
 		// add feature to existing unTillDb release
 		ReleaseBranchCurrent crb = ReleaseBranchFactory.getCRB(repoUnTillDb);
 		env.generateFeatureCommit(env.getUnTillDbVCS(), crb.getName(), "patch feature added");
@@ -115,28 +119,28 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		// build unTillDb patch
 		Component compUnTillDbPatch = new Component(UNTILLDB + ":" + env.getUnTillDbVer().toRelease());
 		execAndGetActionBuild(compUnTillDbPatch);
-		
+
 		// UBL should actualize its mdeps
 		IAction action = execAndGetActionBuild(compUnTill);
 		assertActionDoesBuild(action, compUnTill, BuildStatus.BUILD_MDEPS);
 		assertActionDoesBuild(action, compUBL, BuildStatus.ACTUALIZE_PATCHES);
 		assertActionDoesNothing(action, compUnTillDb);
-		
+
 		// check unTill actualized unTillDb version
 		checkUnTillMDepsVersions(1);
 
 		// check UBL actualized unTillDb version
 		checkUBLMDepsVersions(1);
 	}
-	
+
 	@Test
 	public void testNoActualizePatchesIfHasNewReleases() {
 		forkAndBuild(compUnTill);
-		
+
 		// release next 2.60 unTillDb minor
 		env.generateFeatureCommit(env.getUnTillDbVCS(), repoUnTillDb.getDevelopBranch(), "feature added");
 		forkAndBuild(compUnTillDb, 2);
-		
+
 		IAction action = execAndGetActionBuild(compUnTill.clone(getCrbVersion(compUnTill)));
 		assertActionDoesNothing(action, compUnTill);
 		assertActionDoesNothing(action, compUBL);
@@ -160,17 +164,17 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		// check UBL mdeps locked
 		checkUBLMDepsVersions(1);
 	}
-	
+
 	@Test
 	public void testBuiltRootIfNestedBuiltAndModified() {
 		fork(compUnTill);
 		build(compUnTillDb);
-		
+
 		// add feature to trunk and release branch
 		ReleaseBranchCurrent crb = ReleaseBranchFactory.getCRB(repoUnTillDb);
 		env.generateFeatureCommit(env.getUnTillDbVCS(), crb.getName(), "patch feature added");
 		env.generateFeatureCommit(env.getUnTillDbVCS(), null, "patch feature added");
-		
+
 		// unTill should be built using locked unTillDb version
 		IAction action = execAndGetActionBuild(compUnTill);
 		assertActionDoesBuild(action, compUnTill, BuildStatus.BUILD_MDEPS);
@@ -181,22 +185,22 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		crb = ReleaseBranchFactory.getCRB(repoUnTillDb);
 		assertEquals(env.getUnTillDbVer().toReleaseZeroPatch().toNextPatch(), crb.getVersion());
 	}
-	
+
 	@Test
 	public void testMinorUpgradeIsOKOnMinor() {
 		fork(compUnTill);
 		build(compUnTillDb);
 		// add feature to trunk and release branch
 		env.generateFeatureCommit(env.getUnTillDbVCS(), null, "feature added");
-		
+
 		// release next unTillDb version
 		forkAndBuild(compUnTillDb, 2);
 		//execAndGetActionBuildDelayedTag(compUnTillDb);
-		
+
 		// expect no EMinorUpgradeDowngrade exception because areMDepsPatchesActualForMinor should be used for minor
 		status(compUBL);
 	}
-	
+
 	@Test
 	public void testShouldRemoveFromCacheOnErrorsOnMinor() {
 		ExtendedStatusBuilder esb = spy(new ExtendedStatusBuilder(repoFactory));
@@ -206,7 +210,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		ConcurrentHashMap<Component, ExtendedStatus> subComponentsLocal = new ConcurrentHashMap<>();
 		Component versionedUBL = compUBL.clone("1.0");
 		doThrow(testException).when(esb).recursiveGetAndCacheStatus(cache, pc, subComponentsLocal, compUnTillDb, false);
-		
+
 		try {
 			esb.getAndCacheStatus(versionedUBL, cache, pc, false);
 			fail();
@@ -214,7 +218,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			verify(cache, atLeast(1)).remove(eq(repoUBL.getComponentLocation()));
 		}
 	}
-	
+
 	@Test
 	public void testShouldRemoveFromCacheOnErrorsOnPatch() {
 		forkAndBuild(compUBL);
@@ -226,7 +230,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		Component versionedUBL = compUBL.clone(getCrbVersion(compUBL));
 		Component versionedUnTillDb = new Component("eu.untill:unTillDb:2.59.0#comment 3");
 		doThrow(testException).when(esb).recursiveGetAndCacheStatus(cache, pc, subComponentsLocal, versionedUnTillDb, true);
-		
+
 		try {
 			esb.getAndCacheStatus(versionedUBL, cache, pc, true);
 			fail();
@@ -234,7 +238,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			verify(cache, atLeast(1)).remove(eq(repoUBL.getComponentLocation()));
 		}
 	}
-	
+
 	@Test
 	public void testShouldRemoveFromCacheOnErrorsIsNeedToFork() {
 		ExtendedStatusBuilder esb = spy(new ExtendedStatusBuilder(repoFactory));
@@ -243,7 +247,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		ProgressConsole pc = new ProgressConsole();
 		ConcurrentHashMap<Component, ExtendedStatus> subComponentsLocal = new ConcurrentHashMap<>();
 		doThrow(testException).when(esb).recursiveGetAndCacheStatus(cache, pc, subComponentsLocal, compUnTillDb, false);
-		
+
 		try {
 			esb.getAndCacheStatus(compUBL, cache, pc, false);
 			fail();
@@ -251,7 +255,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 			verify(cache, atLeast(1)).remove(eq(repoUBL.getComponentLocation()));
 		}
 	}
-	
+
 	@Test
 	public void testShouldRemoveFromCacheOnBuildStatusFailure() {
 		ExtendedStatusBuilder esb = spy(new ExtendedStatusBuilder(repoFactory));
@@ -259,7 +263,7 @@ public class WorkflowBuildTest extends WorkflowTestBase {
 		RuntimeException testException = new RuntimeException("");
 		ProgressConsole pc = new ProgressConsole();
 		doThrow(testException).when(esb).getMinorStatus(compUnTillDb, cache, pc, repoUnTillDb, null);
-		
+
 		try {
 			esb.getAndCacheStatus(compUBL, cache, pc, false);
 			fail();

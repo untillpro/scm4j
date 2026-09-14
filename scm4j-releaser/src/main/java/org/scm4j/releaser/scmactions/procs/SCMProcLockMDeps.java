@@ -46,7 +46,8 @@ public class SCMProcLockMDeps implements ISCMProc {
 			return;
 		}
 		String rbName = Utils.getReleaseBranchName(repo, status.getNextVersion());
-		MDepsFile currentMDepsFile = new MDepsFile(vcs.getFileContent(rbName, Constants.MDEPS_FILE_NAME, null));
+		String mDepsFilePath = repo.getComponentPath(Constants.MDEPS_FILE_NAME);
+		MDepsFile currentMDepsFile = new MDepsFile(vcs.getFileContent(rbName, mDepsFilePath, null));
 
 		StringBuilder sb = new StringBuilder();
 		Version newVersion;
@@ -66,7 +67,7 @@ public class SCMProcLockMDeps implements ISCMProc {
 			sb.setLength(sb.length() - 2);
 			progress.reportStatus("mdeps to lock:\r\n" + sb.toString());
 			statusMessages.add("lock mdeps");
-			vcsChangeList.add(new VCSChangeListNode(Constants.MDEPS_FILE_NAME, currentMDepsFile.toFileContent(),
+			vcsChangeList.add(new VCSChangeListNode(mDepsFilePath, currentMDepsFile.toFileContent(),
 					Constants.SCM_MDEPS));
 		}
 

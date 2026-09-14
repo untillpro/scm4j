@@ -34,6 +34,49 @@ import static org.mockito.Mockito.spy;
 public class WorkflowPatchesTest extends WorkflowTestBase {
 
 	@Test
+	public void testPatchesInSubfolder() throws Exception {
+		// Configure every component under its own repository subfolder, then create and build the initial
+		// release branches. The fixture keeps sentinel files at each repository root to expose wrong-path access.
+		configureRepositorySubfolder("components/$1");
+		forkAndBuild(compUnTill);
+
+		// Add a change inside the unTillDb component path so component-filtered history detects a patch to build.
+		ReleaseBranchCurrent unTillDbRelease = ReleaseBranchFactory.getCRB(repoUnTillDb);
+		repoUnTillDb.getVCS().setFileContent(unTillDbRelease.getName(),
+				repoUnTillDb.getComponentPath("patch-feature.txt"), "patch feature", "patch feature added");
+
+		// Build the requested unTillDb patch. This exercises component-relative release-version reads and bumps.
+		Component compUnTillDbPatch = new Component(UNTILLDB + ":" + env.getUnTillDbVer().toRelease());
+		IAction action = execAndGetActionBuild(compUnTillDbPatch);
+		assertActionDoesBuild(action, compUnTillDbPatch);
+
+		// The component version advances to the next build candidate
+		ReleaseBranchPatch patchedUnTillDb = ReleaseBranchFactory.getReleaseBranchPatch(
+				compUnTillDbPatch.getVersion(), repoUnTillDb);
+		assertEquals(env.getUnTillDbVer().toReleaseZeroPatch().toNextPatch().toNextPatch().toString(),
+				getComponentFileContent(repoUnTillDb, patchedUnTillDb.getName(), Constants.VER_FILE_NAME));
+
+		// Rebuild the existing top-level release so its dependent release branches actualize the newly built patch.
+		action = execAndGetActionBuild(compUnTill.clone(env.getUnTillVer().toRelease()));
+		assertActionDoesBuild(action, compUBL, BuildStatus.ACTUALIZE_PATCHES);
+		assertActionDoesBuild(action, compUnTill, BuildStatus.BUILD_MDEPS);
+		assertActionDoesNothing(action, compUnTillDb);
+
+		// Verify the new dependency versions were written to component-local mdeps files. Base teardown separately
+		// verifies that dependency actualization and locking left every repository-root mdeps sentinel unchanged.
+		ReleaseBranchPatch patchedUBL = ReleaseBranchFactory.getReleaseBranchPatch(
+				env.getUblVer().toRelease(), repoUBL);
+		ReleaseBranchPatch patchedUnTill = ReleaseBranchFactory.getReleaseBranchPatch(
+				env.getUnTillVer().toRelease(), repoUnTill);
+		assertMDepVersion(patchedUBL.getMDeps(), UNTILLDB,
+				env.getUnTillDbVer().toReleaseZeroPatch().toNextPatch());
+		assertMDepVersion(patchedUnTill.getMDeps(), UBL,
+				env.getUblVer().toReleaseZeroPatch().toNextPatch());
+		assertMDepVersion(patchedUnTill.getMDeps(), UNTILLDB,
+				env.getUnTillDbVer().toReleaseZeroPatch().toNextPatch());
+	}
+
+	@Test
 	public void testPatches() throws Exception {
 		forkAndBuild(compUnTill);
 
@@ -240,5 +283,15 @@ public class WorkflowPatchesTest extends WorkflowTestBase {
 				fail();
 			}
 		}
+	}
+
+	private void assertMDepVersion(List<Component> mdeps, String componentName, Version expectedVersion) {
+		for (Component mdep : mdeps) {
+			if (componentName.equals(mdep.getName())) {
+				assertEquals(expectedVersion, mdep.getVersion());
+				return;
+			}
+		}
+		fail("Missing mdep " + componentName);
 	}
 }
