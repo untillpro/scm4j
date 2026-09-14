@@ -63,7 +63,7 @@ public final class ReleaseBranchFactory {
 	
 	public static List<Component> getMDepsDevelop(VCSRepository repo) {
 		List<Component> res = new ArrayList<>();
-		for (Component mDep : getMDepsRelease(null, repo)) {
+		for (Component mDep : getMDepsRelease(repo.getDevelopBranch(), repo)) {
 			res.add(mDep.clone(""));
 		}
 		return res;
