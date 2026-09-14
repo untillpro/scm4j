@@ -66,7 +66,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 				compUnTillVersioned.getCoords().toString(), Option.DELAYED_TAG.getCmdLineStr());
 
 		// check Delayed Tags file
-		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTill.getRepositoryId());
+		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTill.getComponentLocation());
 		assertEquals(env.getUnTillVer().toReleaseZeroPatch().toNextPatch(), delayedTag.getVersion());
 		ReleaseBranchPatch patchRB = ReleaseBranchFactory.getReleaseBranchPatch(compUnTillVersioned.getVersion(), repoUnTill);
 		VCSCommit commitToTag = env.getUnTillVCS().getHeadCommit(patchRB.getName());
@@ -105,12 +105,12 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 				compUnTill.getCoords().toString(), Option.DELAYED_TAG.getCmdLineStr());
 
 		// check Delayed Tags file
-		assertNull(dtf.getDelayedTag(repoUnTillDb.getRepositoryId()));
-		assertNotNull(dtf.getDelayedTag(repoUnTill.getRepositoryId()));
-		assertNull(dtf.getDelayedTag(repoUBL.getRepositoryId()));
+		assertNull(dtf.getDelayedTag(repoUnTillDb.getComponentLocation()));
+		assertNotNull(dtf.getDelayedTag(repoUnTill.getComponentLocation()));
+		assertNull(dtf.getDelayedTag(repoUBL.getComponentLocation()));
 
 		// check delayed tag
-		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTill.getRepositoryId());
+		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTill.getComponentLocation());
 		assertEquals(env.getUnTillVer().toReleaseZeroPatch(), delayedTag.getVersion());
 		ReleaseBranchCurrent crb = ReleaseBranchFactory.getCRB(repoUnTill);
 		VCSCommit commitToTag = env.getUnTillVCS().getHeadCommit(crb.getName());
@@ -153,7 +153,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		IAction action = execAndGetActionBuildDelayedTag(compUnTillDb);
 		assertActionDoesBuildDelayedTag(action, compUnTillDb);
 
-		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTillDb.getRepositoryId());
+		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTillDb.getComponentLocation());
 		String branchName = Utils.getReleaseBranchName(repoUnTillDb, delayedTag.getVersion());
 		TagDesc tagDesc = Utils.getTagDesc(repoUnTillDb, delayedTag.getVersion().toString());
 		assertEquals("unTillDb/" + delayedTag.getVersion(), tagDesc.getName());
@@ -165,7 +165,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		new SCMActionTag(compUnTillDb, repoUnTillDb).execute(progress);
 		verify(progress).reportStatus("tag " + tagDesc.getName() + " already exists");
 		assertEquals(1, repoUnTillDb.getVCS().getTags().size());
-		assertNull(dtf.getDelayedTag(repoUnTillDb.getRepositoryId()));
+		assertNull(dtf.getDelayedTag(repoUnTillDb.getComponentLocation()));
 	}
 	
 	@Test
@@ -245,7 +245,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		IAction action = execAndGetActionBuildDelayedTag(compUnTillDb);
 		assertActionDoesBuildDelayedTag(action, compUnTillDb);
 
-		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTillDb.getRepositoryId());
+		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTillDb.getComponentLocation());
 		String branchName = Utils.getReleaseBranchName(repoUnTillDb, delayedTag.getVersion());
 		env.getUnTillDbVCS().createTag(branchName, "other-tag", "other tag message", delayedTag.getRevision());
 		

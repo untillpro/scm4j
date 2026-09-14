@@ -2,12 +2,12 @@ package org.scm4j.releaser.conf;
 
 import java.util.Objects;
 
-public final class VCSRepositoryId {
+public final class VCSComponentLocation {
 
 	private final String url;
 	private final String subfolder;
 
-	public VCSRepositoryId(String url, String subfolder) {
+	public VCSComponentLocation(String url, String subfolder) {
 		this.url = url;
 		this.subfolder = normalizeSubfolder(subfolder);
 	}
@@ -18,6 +18,10 @@ public final class VCSRepositoryId {
 
 	public String getSubfolder() {
 		return subfolder;
+	}
+
+	public String joinPath(String relativePath) {
+		return subfolder.isEmpty() ? relativePath : subfolder + "/" + relativePath;
 	}
 
 	private static String normalizeSubfolder(String subfolder) {
@@ -39,7 +43,7 @@ public final class VCSRepositoryId {
 		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		VCSRepositoryId other = (VCSRepositoryId) obj;
+		VCSComponentLocation other = (VCSComponentLocation) obj;
 		return Objects.equals(url, other.url) && Objects.equals(subfolder, other.subfolder);
 	}
 

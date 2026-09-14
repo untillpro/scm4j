@@ -59,13 +59,13 @@ public class ExtendedStatusBuilder {
 		VCSRepository repo = null;
 		try {
 			repo = repoFactory.getVCSRepository(comp);
-			VCSRepositoryId repositoryId = repo.getRepositoryId();
-			ExtendedStatus existing = cache.putIfAbsent(repositoryId, ExtendedStatus.DUMMY);
+			VCSComponentLocation componentLocation = repo.getComponentLocation();
+			ExtendedStatus existing = cache.putIfAbsent(componentLocation, ExtendedStatus.DUMMY);
 			
 			while (ExtendedStatus.DUMMY == existing) {
 				try {
 					Thread.sleep(PARALLEL_CALCULATION_AWAIT_TIME);
-					existing = cache.get(repositoryId);
+					existing = cache.get(componentLocation);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
@@ -76,17 +76,17 @@ public class ExtendedStatusBuilder {
 			}
 			
 			DelayedTagsFile dtf = new DelayedTagsFile();
-			DelayedTag dt = dtf.getDelayedTag(repositoryId);
+			DelayedTag dt = dtf.getDelayedTag(componentLocation);
 
 			ExtendedStatus res = patch ? 
 				getPatchStatus(comp, cache, progress, repo, dt) :
 				getMinorStatus(comp, cache, progress, repo, dt);
 			
-			cache.replace(repositoryId, res);
+			cache.replace(componentLocation, res);
 			return res;
 		} catch (Exception e) {
 			if (repo != null) {
-				cache.remove(repo.getRepositoryId());
+				cache.remove(repo.getComponentLocation());
 			}
 			if (e instanceof EReleaserException) {
 				throw e;
@@ -184,7 +184,7 @@ public class ExtendedStatusBuilder {
 
 	private boolean hasMDepsNotInDONEStatus(List<Component> mDeps, CachedStatuses cache) {
 		for (Component mDep : mDeps) {
-			if (cache.get(repoFactory.getVCSRepositoryId(mDep)).getStatus() != BuildStatus.DONE) {
+			if (cache.get(repoFactory.getVCSComponentLocation(mDep)).getStatus() != BuildStatus.DONE) {
 				return true;
 			}
 		}
@@ -194,7 +194,7 @@ public class ExtendedStatusBuilder {
 	boolean noValueableCommitsAfterLastTag(VCSRepository repo, ReleaseBranchPatch rb) {
 		IVCS vcs = repo.getVCS();
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		DelayedTag delayedTag = dtf.getDelayedTag(repo.getRepositoryId());
+		DelayedTag delayedTag = dtf.getDelayedTag(repo.getComponentLocation());
 		Boolean res = walkOnCommits(repo, rb, (commit) -> {
 			if (delayedTag != null && commit.getRevision().equals(delayedTag.getRevision())) {
 				return true;
@@ -236,11 +236,11 @@ public class ExtendedStatusBuilder {
 	
 	private boolean areMDepsPatchesActualForMinor(List<Component> mDeps, CachedStatuses cache) {
 		for (Component mDep : mDeps) {
-			VCSRepositoryId repositoryId = repoFactory.getVCSRepositoryId(mDep);
-			Version nextMDepVersion = cache.get(repositoryId).getNextVersion();
+			VCSComponentLocation componentLocation = repoFactory.getVCSComponentLocation(mDep);
+			Version nextMDepVersion = cache.get(componentLocation).getNextVersion();
 			if (!nextMDepVersion.equals(mDep.getVersion().toNextPatch())) {
 				DelayedTagsFile mdf = new DelayedTagsFile();
-				if (!(nextMDepVersion.getPatch().equals(Constants.ZERO_PATCH) && mdf.getDelayedTag(repositoryId) != null)) {
+				if (!(nextMDepVersion.getPatch().equals(Constants.ZERO_PATCH) && mdf.getDelayedTag(componentLocation) != null)) {
 					return false;
 				}
 			}
@@ -250,8 +250,8 @@ public class ExtendedStatusBuilder {
 	
 	private boolean areMDepsPatchesActualForPatch(Component rootComp, VCSRepository repo, List<Component> mDeps, CachedStatuses cache) {
 		for (Component mDep : mDeps) {
-			VCSRepositoryId repositoryId = repoFactory.getVCSRepositoryId(mDep);
-			Version nextVersion = cache.get(repositoryId).getNextVersion();
+			VCSComponentLocation componentLocation = repoFactory.getVCSComponentLocation(mDep);
+			Version nextVersion = cache.get(componentLocation).getNextVersion();
 			
 			// Any component `nextVersion`.truncatePatch is not equal to one mentioned in `mdeps` -> error (disallow minor upgrade/downgrade)
 			if (!nextVersion.toReleaseNoPatch().equals(mDep.getVersion().toReleaseNoPatch())) {
@@ -260,7 +260,7 @@ public class ExtendedStatusBuilder {
 			
 			DelayedTagsFile mdf = new DelayedTagsFile();
 			Version verToActualizeOn ;
-			if (mdf.getDelayedTag(repositoryId) != null) { // if delayed tag
+			if (mdf.getDelayedTag(componentLocation) != null) { // if delayed tag
 				verToActualizeOn = nextVersion;
 			} else {
 				verToActualizeOn = nextVersion.toPreviousPatch();
@@ -320,7 +320,7 @@ public class ExtendedStatusBuilder {
 		}
 		
 		for (Component mdep : rb.getCRBMDeps(progress, repo, comp)) {
-			ExtendedStatus mdepStatus = cache.get(repoFactory.getVCSRepositoryId(mdep));
+			ExtendedStatus mdepStatus = cache.get(repoFactory.getVCSComponentLocation(mdep));
 			// any mdeps needs FORK => YES
 			if (mdepStatus.getStatus() != BuildStatus.DONE) {
 				return true;

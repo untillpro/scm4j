@@ -10,10 +10,14 @@ import static org.junit.Assert.assertNotEquals;
 public class VCSRepositoryTest {
 
 	@Test
-	public void testSubfolderProperty() {
-		VCSRepository repository = repository("components/driver");
+	public void testLocationDelegation() {
+		VCSRepository repository = repository("components\\driver/");
 
+		assertEquals(new VCSComponentLocation("url", "components/driver"), repository.getComponentLocation());
+		assertEquals("url", repository.getUrl());
 		assertEquals("components/driver", repository.getSubfolder());
+		assertEquals("components/driver/version", repository.getComponentPath("version"));
+		assertEquals("version", repository(null).getComponentPath("version"));
 	}
 
 	@Test
@@ -35,7 +39,7 @@ public class VCSRepositoryTest {
 	public void testEqualsAndHashCode() {
 		EqualsVerifier
 				.forClass(VCSRepository.class)
-				.withOnlyTheseFields("repositoryId")
+				.withOnlyTheseFields("componentLocation")
 				.usingGetClass()
 				.verify();
 	}

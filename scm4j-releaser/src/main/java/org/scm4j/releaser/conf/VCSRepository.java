@@ -9,11 +9,9 @@ public class VCSRepository {
 	
 	public static final String DEFAULT_RELEASE_BRANCH_PREFIX = "release/";
 	public static final String DEFAULT_DEVELOP_BRANCH = null;
-	
+
 	private final String name;
-	private final String url;
-	private final String subfolder;
-	private final VCSRepositoryId repositoryId;
+	private final VCSComponentLocation componentLocation;
 	private final Credentials credentials;
 	private final VCSType type;
 	private final String developBranch;
@@ -23,7 +21,7 @@ public class VCSRepository {
 	
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(repositoryId);
+		return Objects.hashCode(componentLocation);
 	}
 
 	@Override
@@ -35,7 +33,7 @@ public class VCSRepository {
 		if (getClass() != obj.getClass())
 			return false;
 		VCSRepository other = (VCSRepository) obj;
-		return Objects.equals(repositoryId, other.repositoryId);
+		return Objects.equals(componentLocation, other.componentLocation);
 	}
 
 	public String getReleaseBranchPrefix() {
@@ -47,15 +45,19 @@ public class VCSRepository {
 	}
 	
 	public String getUrl() {
-		return url;
+		return componentLocation.getUrl();
 	}
 
 	public String getSubfolder() {
-		return subfolder;
+		return componentLocation.getSubfolder();
 	}
 
-	public VCSRepositoryId getRepositoryId() {
-		return repositoryId;
+	public VCSComponentLocation getComponentLocation() {
+		return componentLocation;
+	}
+
+	public String getComponentPath(String relativePath) {
+		return componentLocation.joinPath(relativePath);
 	}
 
 	public String getName() {
@@ -73,15 +75,18 @@ public class VCSRepository {
 	
 	public VCSRepository(String name, String url, Credentials credentials,
 						 VCSType type, String developBranch, String releaseBranchPrefix, IVCS vcs, IBuilder builder) {
-		this(name, url, null, credentials, type, developBranch, releaseBranchPrefix, vcs, builder);
+		this(name, new VCSComponentLocation(url, null), credentials, type, developBranch, releaseBranchPrefix, vcs, builder);
 	}
 
 	public VCSRepository(String name, String url, String subfolder, Credentials credentials,
 						 VCSType type, String developBranch, String releaseBranchPrefix, IVCS vcs, IBuilder builder) {
+		this(name, new VCSComponentLocation(url, subfolder), credentials, type, developBranch, releaseBranchPrefix, vcs, builder);
+	}
+
+	VCSRepository(String name, VCSComponentLocation componentLocation, Credentials credentials,
+				  VCSType type, String developBranch, String releaseBranchPrefix, IVCS vcs, IBuilder builder) {
 		this.name = name;
-		this.url = url;
-		this.subfolder = subfolder;
-		this.repositoryId = new VCSRepositoryId(url, subfolder);
+		this.componentLocation = componentLocation;
 		this.credentials = credentials;
 		this.type = type;
 		this.developBranch = developBranch;
@@ -92,7 +97,7 @@ public class VCSRepository {
 
 	@Override
 	public String toString() {
-		return "VCSRepository [url=" + url + "]";
+		return "VCSRepository [url=" + getUrl() + "]";
 	}
 
 	public IVCS getVCS() {

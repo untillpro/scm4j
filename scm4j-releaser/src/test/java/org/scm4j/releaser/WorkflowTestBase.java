@@ -88,7 +88,7 @@ public class WorkflowTestBase {
 	}
 
 	private void writeComponentVersion(VCSRepository repo, Version version) {
-		String versionFilePath = repo.getRepositoryId().getSubfolder() + "/" + Constants.VER_FILE_NAME;
+		String versionFilePath = repo.getComponentPath(Constants.VER_FILE_NAME);
 		repo.getVCS().setFileContent(repo.getDevelopBranch(), versionFilePath, version.toString(),
 				Constants.SCM_IGNORE + " component version file added");
 	}
@@ -128,7 +128,7 @@ public class WorkflowTestBase {
 		assertTrue(Utils.getBuildDir(repo, latestVersion).exists());
 
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		DelayedTag dt = dtf.getDelayedTag(repo.getRepositoryId());
+		DelayedTag dt = dtf.getDelayedTag(repo.getComponentLocation());
 		Boolean tagDelayed = dt != null && crb.getName().equals(Utils.getReleaseBranchName(repo, dt.getVersion()));
 		String expectedPatch = tagDelayed ? "0" : "1";
 

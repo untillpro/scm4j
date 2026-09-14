@@ -22,7 +22,7 @@ public class DevelopBranch {
 	}
 
 	public boolean isModified() {
-		String subfolder = repo.getRepositoryId().getSubfolder();
+		String subfolder = repo.getSubfolder();
 		List<VCSCommit> log;
 		if (subfolder.isEmpty()) {
 			// Keep the optimized repository-wide query. For Git, getCommitsRange performs a pull, fetch,
@@ -41,11 +41,8 @@ public class DevelopBranch {
 	
 	public Version getVersion() {
 		try {
-			String subfolder = repo.getRepositoryId().getSubfolder();
-			String versionFilePath = subfolder.isEmpty()
-					? Constants.VER_FILE_NAME
-					: subfolder + "/" + Constants.VER_FILE_NAME;
-			String verFileContent = repo.getVCS().getFileContent(repo.getDevelopBranch(), versionFilePath, null);
+			String verFileContent = repo.getVCS().getFileContent(repo.getDevelopBranch(),
+					repo.getComponentPath(Constants.VER_FILE_NAME), null);
 			return new Version(verFileContent.trim());
 		} catch (EVCSFileNotFound e) {
 			throw new ENoVersionFile(comp);

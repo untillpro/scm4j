@@ -40,18 +40,18 @@ public class DelayedTagsFileTest {
 	@Test
 	public void testDelayedTagsAreScopedByRepositorySubfolder() throws IOException {
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		VCSRepositoryId first = new VCSRepositoryId(TEST_URL, "components/first");
-		VCSRepositoryId second = new VCSRepositoryId(TEST_URL, "components/second");
+		VCSComponentLocation firstLocation = new VCSComponentLocation(TEST_URL, "components/first");
+		VCSComponentLocation secondLocation = new VCSComponentLocation(TEST_URL, "components/second");
 
-		dtf.writeDelayedTag(first, TEST_VERSION, TEST_REVISION);
-		dtf.writeDelayedTag(second, SECOND_VERSION, "second revision");
+		dtf.writeDelayedTag(firstLocation, TEST_VERSION, TEST_REVISION);
+		dtf.writeDelayedTag(secondLocation, SECOND_VERSION, "second revision");
 
-		assertEquals(TEST_VERSION, dtf.getDelayedTag(first).getVersion());
-		assertEquals(SECOND_VERSION, dtf.getDelayedTag(second).getVersion());
+		assertEquals(TEST_VERSION, dtf.getDelayedTag(firstLocation).getVersion());
+		assertEquals(SECOND_VERSION, dtf.getDelayedTag(secondLocation).getVersion());
 
-		dtf.removeTag(first);
-		assertNull(dtf.getDelayedTag(first));
-		assertEquals(SECOND_VERSION, dtf.getDelayedTag(second).getVersion());
+		dtf.removeTag(firstLocation);
+		assertNull(dtf.getDelayedTag(firstLocation));
+		assertEquals(SECOND_VERSION, dtf.getDelayedTag(secondLocation).getVersion());
 	}
 
 	@Test

@@ -3,8 +3,8 @@ package org.scm4j.releaser.actions;
 import lombok.SneakyThrows;
 import org.scm4j.commons.progress.IProgress;
 import org.scm4j.releaser.conf.Component;
+import org.scm4j.releaser.conf.VCSComponentLocation;
 import org.scm4j.releaser.conf.VCSRepository;
-import org.scm4j.releaser.conf.VCSRepositoryId;
 import org.scm4j.releaser.exceptions.EReleaserException;
 import org.scm4j.vcs.api.IVCS;
 
@@ -15,7 +15,7 @@ public abstract class ActionAbstract implements IAction {
 
 	protected final List<IAction> childActions;
 	protected final Component comp;
-	protected final List<VCSRepositoryId> processedRepositories = new ArrayList<>();
+	protected final List<VCSComponentLocation> processedComponentLocations = new ArrayList<>();
 	protected IAction parent = null;
 	protected final VCSRepository repo;
 
@@ -32,16 +32,16 @@ public abstract class ActionAbstract implements IAction {
 		}
 	}
 
-	protected boolean isRepositoryProcessed_(VCSRepositoryId repositoryId) {
+	protected boolean isRepositoryProcessed_(VCSComponentLocation componentLocation) {
 		if(null == parent){
-			return processedRepositories.contains(repositoryId);
+			return processedComponentLocations.contains(componentLocation);
 		}
-		return parent.isRepositoryProcessed(repositoryId);
+		return parent.isRepositoryProcessed(componentLocation);
 		
 	}
 	
-	public boolean isRepositoryProcessed(VCSRepositoryId repositoryId) {
-		return isRepositoryProcessed_(repositoryId);
+	public boolean isRepositoryProcessed(VCSComponentLocation componentLocation) {
+		return isRepositoryProcessed_(componentLocation);
 	}
 
 	@Override
@@ -50,11 +50,11 @@ public abstract class ActionAbstract implements IAction {
 	}
 
 	@Override
-	public void addProcessedRepository(VCSRepositoryId repositoryId) {
+	public void addProcessedRepository(VCSComponentLocation componentLocation) {
 		if(null != parent){
-			parent.addProcessedRepository(repositoryId);
+			parent.addProcessedRepository(componentLocation);
 		} else {
-			processedRepositories.add(repositoryId);
+			processedComponentLocations.add(componentLocation);
 		}
 	}
 
@@ -81,7 +81,7 @@ public abstract class ActionAbstract implements IAction {
 	
 	@Override
 	public void execute(IProgress progress) {
-		if (isRepositoryProcessed(repo.getRepositoryId())) {
+		if (isRepositoryProcessed(repo.getComponentLocation())) {
 			progress.reportStatus("already executed");
 			return;
 		}
@@ -90,7 +90,7 @@ public abstract class ActionAbstract implements IAction {
 		
 		try {
 			executeAction(progress);
-			addProcessedRepository(repo.getRepositoryId());
+			addProcessedRepository(repo.getComponentLocation());
 		} catch (Exception e) {
 			progress.error("execution error: " + e.toString());
 			if (!(e instanceof EReleaserException)) {

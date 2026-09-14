@@ -58,6 +58,14 @@ public class VCSRepositoryFactoryTest {
 	}
 
 	@Test
+	public void testRepositoryLocationFromConfiguration() {
+		VCSComponentLocation componentLocation = repoFactory.getVCSComponentLocation("myDiskFormatter");
+
+		assertEquals("http://localhost/git/myProjDiskFormatter", componentLocation.getUrl());
+		assertEquals("components/DiskFormatter", componentLocation.getSubfolder());
+	}
+
+	@Test
 	public void getFromComponentUsesArtifactIdAsRepositoryName() {
 		Component component = new Component(
 				"eu.untill.sdk.drivers:vmax-fiscal-printer-driver:7.0@zip # drivers");
@@ -94,7 +102,7 @@ public class VCSRepositoryFactoryTest {
 	@Test
 	public void getFromNameUsesFullCoordinatesForFallbackUrl() {
 		VCSRepository rep = repoFactory.getVCSRepository("abyrvalg");
-		assertNull(rep.getSubfolder());
+		assertEquals("", rep.getSubfolder());
 		assertThat(new Object[] { rep.getName(), rep.getUrl(), rep.getType(), rep.getDevelopBranch(), rep.getReleaseBranchPrefix() },
 				is(new Object[] { "abyrvalg", "https://github.com/qwerty/abyrvalg:abyrvalg", VCSType.SVN, "branches/", "release/" }));
 		assertThat(new Object[] { rep.getCredentials().getName(), rep.getCredentials().getPassword() },

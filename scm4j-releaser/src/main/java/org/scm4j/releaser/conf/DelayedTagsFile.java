@@ -28,11 +28,11 @@ public class DelayedTagsFile {
 	}
 	
 	public DelayedTag getDelayedTagByUrl(String url) {
-		return getDelayedTag(new VCSRepositoryId(url, null));
+		return getDelayedTag(new VCSComponentLocation(url, null));
 	}
 
-	public DelayedTag getDelayedTag(VCSRepositoryId repositoryId) {
-		return getRepositoryContent().get(repositoryId);
+	public DelayedTag getDelayedTag(VCSComponentLocation componentLocation) {
+		return getRepositoryContent().get(componentLocation);
 	}
 	
 	String loadContent() throws IOException {
@@ -45,13 +45,13 @@ public class DelayedTagsFile {
 
 	public Map<String, DelayedTag> getContent() {
 		Map<String, DelayedTag> result = new LinkedHashMap<>();
-		for (Map.Entry<VCSRepositoryId, DelayedTag> entry : getRepositoryContent().entrySet()) {
+		for (Map.Entry<VCSComponentLocation, DelayedTag> entry : getRepositoryContent().entrySet()) {
 			result.put(entry.getKey().toString(), entry.getValue());
 		}
 		return result;
 	}
 
-	private Map<VCSRepositoryId, DelayedTag> getRepositoryContent() {
+	private Map<VCSComponentLocation, DelayedTag> getRepositoryContent() {
 		if (!delayedTagsFile.exists()) {
 			return new HashMap<>();
 		}
@@ -73,9 +73,9 @@ public class DelayedTagsFile {
 		}
 	}
 
-	private List<Map<String, String>> delayedTagsMapToRecords(Map<VCSRepositoryId, DelayedTag> delayedTags) {
+	private List<Map<String, String>> delayedTagsMapToRecords(Map<VCSComponentLocation, DelayedTag> delayedTags) {
 		List<Map<String, String>> result = new ArrayList<>();
-		for (Map.Entry<VCSRepositoryId, DelayedTag> entry : delayedTags.entrySet()) {
+		for (Map.Entry<VCSComponentLocation, DelayedTag> entry : delayedTags.entrySet()) {
 			Map<String, String> record = new LinkedHashMap<>();
 			record.put(URL_PROPERTY, entry.getKey().getUrl());
 			if (!entry.getKey().getSubfolder().isEmpty()) {
@@ -88,45 +88,45 @@ public class DelayedTagsFile {
 		return result;
 	}
 
-	private Map<VCSRepositoryId, DelayedTag> recordsToDelayedTagsMap(List<?> delayedTags) {
-		Map<VCSRepositoryId, DelayedTag> result = new HashMap<>();
+	private Map<VCSComponentLocation, DelayedTag> recordsToDelayedTagsMap(List<?> delayedTags) {
+		Map<VCSComponentLocation, DelayedTag> result = new HashMap<>();
 		for (Object value : delayedTags) {
 			if (!(value instanceof Map)) {
 				throw new IllegalArgumentException("Wrong delayed tag record format");
 			}
 			Map<?, ?> record = (Map<?, ?>) value;
-			VCSRepositoryId repositoryId = new VCSRepositoryId((String) record.get(URL_PROPERTY),
+			VCSComponentLocation componentLocation = new VCSComponentLocation((String) record.get(URL_PROPERTY),
 					(String) record.get(SUBFOLDER_PROPERTY));
 			DelayedTag tag = new DelayedTag(new Version((String) record.get(VERSION_PROPERTY)),
 					(String) record.get(REVISION_PROPERTY));
-			result.put(repositoryId, tag);
+			result.put(componentLocation, tag);
 		}
 		return result;
 	}
 
-	private Map<VCSRepositoryId, DelayedTag> legacyStringsToDelayedTagsMap(Map<?, ?> delayedTags) {
-		Map<VCSRepositoryId, DelayedTag> result = new HashMap<>();
+	private Map<VCSComponentLocation, DelayedTag> legacyStringsToDelayedTagsMap(Map<?, ?> delayedTags) {
+		Map<VCSComponentLocation, DelayedTag> result = new HashMap<>();
 		for (Map.Entry<?, ?> entry : delayedTags.entrySet()) {
 			Map<?, ?> record = (Map<?, ?>) entry.getValue();
 			DelayedTag tag = new DelayedTag(new Version((String) record.get(VERSION_PROPERTY)),
 					(String) record.get(REVISION_PROPERTY));
-			result.put(new VCSRepositoryId((String) entry.getKey(), null), tag);
+			result.put(new VCSComponentLocation((String) entry.getKey(), null), tag);
 		}
 		return result;
 	}
 
 	public void writeUrlDelayedTag(String url, Version version, String revision) throws IOException {
-		writeDelayedTag(new VCSRepositoryId(url, null), version, revision);
+		writeDelayedTag(new VCSComponentLocation(url, null), version, revision);
 	}
 
-	public void writeDelayedTag(VCSRepositoryId repositoryId, Version version, String revision) throws IOException {
+	public void writeDelayedTag(VCSComponentLocation componentLocation, Version version, String revision) throws IOException {
 		if (!delayedTagsFile.exists()) {
 			delayedTagsFile.createNewFile();
 		}
 
-		Map<VCSRepositoryId, DelayedTag> content = getRepositoryContent();
+		Map<VCSComponentLocation, DelayedTag> content = getRepositoryContent();
 		DelayedTag tag = new DelayedTag(version, revision);
-		DelayedTag previousTag = content.put(repositoryId, tag);
+		DelayedTag previousTag = content.put(componentLocation, tag);
 		if (!tag.equals(previousTag)) {
 			writeContent(content);
 		}
@@ -145,18 +145,18 @@ public class DelayedTagsFile {
 	}
 
 	public void removeTagByUrl(String url) {
-		removeTag(new VCSRepositoryId(url, null));
+		removeTag(new VCSComponentLocation(url, null));
 	}
 
-	public void removeTag(VCSRepositoryId repositoryId) {
-		Map<VCSRepositoryId, DelayedTag> content = getRepositoryContent();
-		DelayedTag removedTag = content.remove(repositoryId);
+	public void removeTag(VCSComponentLocation componentLocation) {
+		Map<VCSComponentLocation, DelayedTag> content = getRepositoryContent();
+		DelayedTag removedTag = content.remove(componentLocation);
 		if (removedTag != null) {
 			writeContent(content);
 		}
 	}
 
-	private void writeContent(Map<VCSRepositoryId, DelayedTag> content) {
+	private void writeContent(Map<VCSComponentLocation, DelayedTag> content) {
 		Yaml yaml = new Yaml();
 		try {
 			saveContent(yaml.dump(delayedTagsMapToRecords(content)));
