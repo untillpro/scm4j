@@ -40,7 +40,7 @@ Out of scope:
 
 References:
 
-- [component location value semantics](../../../../../scm4j-releaser/src/main/java/org/scm4j/releaser/conf/VCSRepositoryId.java)
+- [component location value semantics](../../../../../scm4j-releaser/src/main/java/org/scm4j/releaser/conf/VCSComponentLocation.java)
 - [repository configuration ownership](../../../../../scm4j-releaser/src/main/java/org/scm4j/releaser/conf/VCSRepository.java)
 - [component location construction](../../../../../scm4j-releaser/src/main/java/org/scm4j/releaser/conf/VCSRepositoryFactory.java)
 - [status cache key contract](../../../../../scm4j-releaser/src/main/java/org/scm4j/releaser/CachedStatuses.java)
@@ -87,7 +87,7 @@ References:
 
 ### Component location
 
-- [x] rename: [conf/VCSRepositoryId.java](../../../../../scm4j-releaser/src/main/java/org/scm4j/releaser/conf/VCSRepositoryId.java) to `VCSComponentLocation.java`
+- [x] rename: [conf/VCSComponentLocation.java](../../../../../scm4j-releaser/src/main/java/org/scm4j/releaser/conf/VCSComponentLocation.java) from `VCSRepositoryId.java`
   - rename the class and constructor to `VCSComponentLocation`
   - retain immutable URL and normalized optional subfolder state
   - retain equality, hashing, and display semantics
