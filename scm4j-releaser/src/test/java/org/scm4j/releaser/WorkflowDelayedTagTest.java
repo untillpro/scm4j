@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 public class WorkflowDelayedTagTest extends WorkflowTestBase {
 
 	private final DelayedTagsFile dtf = new DelayedTagsFile();
-	
+
 	@Before
 	@After
 	public void setUpTearDown() {
@@ -47,7 +47,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		Component compUnTillVersioned = compUnTill.clone(env.getUnTillVer().toReleaseZeroPatch());
 		ReleaseBranchPatch rb = ReleaseBranchFactory.getReleaseBranchPatch(compUnTillVersioned.getVersion(), repoUnTillDb);
 		env.generateFeatureCommit(env.getUnTillVCS(), rb.getName(), "patch feature merged");
-		
+
 		// build all patches, delayed tag
 		IAction action = execAndGetActionBuildDelayedTag(compUnTillVersioned);
 		assertActionDoesBuildDelayedTag(action, compUnTillVersioned);
@@ -84,7 +84,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		// check Dealyed Tags file
 		assertTrue(dtf.getContent().isEmpty());
 	}
-	
+
 	@Test
 	public void testDelayedTagOnMinor() throws Exception {
 		fork(compUnTill);
@@ -144,6 +144,11 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		TagDesc expectedTag = Utils.getTagDesc(repoUnTillDb, env.getUnTillDbVer().toReleaseZeroPatch().toString());
 		assertEquals("unTillDb/" + env.getUnTillDbVer().toReleaseZeroPatch(), expectedTag.getName());
 		assertEquals(expectedTag.getName(), tags.get(0).getTagName());
+
+		ReleaseBranchPatch releaseBranch = ReleaseBranchFactory.getReleaseBranchPatch(
+				env.getUnTillDbVer(), repoUnTillDb);
+		assertEquals(env.getUnTillDbVer().toReleaseZeroPatch().toNextPatch().toString(),
+				getComponentFileContent(repoUnTillDb, releaseBranch.getName(), Constants.VER_FILE_NAME));
 	}
 
 	@Test
@@ -167,7 +172,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		assertEquals(1, repoUnTillDb.getVCS().getTags().size());
 		assertNull(dtf.getDelayedTag(repoUnTillDb.getComponentLocation()));
 	}
-	
+
 	@Test
 	public void testTagFileUnexpectedlyDeleted() throws Exception {
 		// build all, root tag delayed
@@ -223,7 +228,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		// check Dealyed Tags file
 		assertTrue(dtf.getContent().isEmpty());
 	}
-	
+
 	@Test
 	public void testExceptionIfNoDelayedTags() {
 		try {
@@ -238,7 +243,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		assertTrue(env.getUnTillDbVCS().getTags().isEmpty());
 		assertTrue(env.getUblVCS().getTags().isEmpty());
 	}
-	
+
 	@Test
 	public void testTagExistsOnGetActionTree() throws Exception {
 		fork(compUnTillDb);
@@ -248,7 +253,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		DelayedTag delayedTag = dtf.getDelayedTag(repoUnTillDb.getComponentLocation());
 		String branchName = Utils.getReleaseBranchName(repoUnTillDb, delayedTag.getVersion());
 		env.getUnTillDbVCS().createTag(branchName, "other-tag", "other tag message", delayedTag.getRevision());
-		
+
 		// simulate tag exists
 		TagDesc tagDesc = Utils.getTagDesc(repoUnTillDb, delayedTag.getVersion().toString());
 		env.getUnTillDbVCS().createTag(branchName, tagDesc.getName(), tagDesc.getMessage(), delayedTag.getRevision());
@@ -281,7 +286,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		assertActionDoesBuild(action, compUnTill, BuildStatus.BUILD_MDEPS);
 		assertActionDoesBuild(action, compUBL, BuildStatus.BUILD);
 		assertActionDoesNothing(action, compUnTillDb);
-		
+
 		// check nothing happens on next fork
 		action = execAndGetActionFork(compUnTill);
 		assertActionDoesNothing(action, compUnTill, compUnTillDb, compUBL);
@@ -319,7 +324,7 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 			assertEquals(repoUnTillDb.getUrl(), e.getUrl());
 		}
 	}
-	
+
 	@Test
 	public void testDelayedTagVersionUsageIfTrunkBumped() {
 		fork(compUnTillDb);
@@ -327,13 +332,15 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		assertActionDoesBuildDelayedTag(action, compUnTillDb);
 
 		new DevelopBranch(compUnTillDb, repoUnTillDb).getVersion();
-		
+
 		// simulate version is reaised already in trunk (e.g. built manually)
 		IVCS vcs = repoUnTillDb.getVCS();
-		vcs.setFileContent(repoUnTillDb.getDevelopBranch(), Constants.VER_FILE_NAME,
-				new Version(vcs.getFileContent(repoUnTillDb.getDevelopBranch(), Constants.VER_FILE_NAME, null)).toNextMinor().toString(),
+		String developVersionPath = repoUnTillDb.getComponentPath(Constants.VER_FILE_NAME);
+		vcs.setFileContent(repoUnTillDb.getDevelopBranch(), developVersionPath,
+				new Version(getComponentFileContent(repoUnTillDb, repoUnTillDb.getDevelopBranch(),
+						Constants.VER_FILE_NAME)).toNextMinor().toString(),
 				"minor bumped");
-		
+
 		// tag delayed
 		action = execAndGetActionTag(compUnTillDb, null);
 		assertActionDoesTag(action, compUnTillDb);
@@ -360,8 +367,10 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		// simulate version is reaised already in release branch (e.g. built manually)
 		IVCS vcs = repoUnTillDb.getVCS();
 		ReleaseBranchPatch patchBranch = ReleaseBranchFactory.getReleaseBranchPatch(env.getUnTillDbVer(), repoUnTillDb);
-		VCSCommit patchBranchHeadCommit = vcs.setFileContent(patchBranch.getName(), Constants.VER_FILE_NAME,
-				new Version(vcs.getFileContent(patchBranch.getName(), Constants.VER_FILE_NAME, null)).toNextPatch().toNextPatch().toString(),
+		String releaseVersionPath = repoUnTillDb.getComponentPath(Constants.VER_FILE_NAME);
+		VCSCommit patchBranchHeadCommit = vcs.setFileContent(patchBranch.getName(), releaseVersionPath,
+				new Version(getComponentFileContent(repoUnTillDb, patchBranch.getName(),
+						Constants.VER_FILE_NAME)).toNextPatch().toNextPatch().toString(),
 				"patch bumped");
 
 		// tag delayed
@@ -374,25 +383,25 @@ public class WorkflowDelayedTagTest extends WorkflowTestBase {
 		// check version is not bumped because it is bumped already
 		assertEquals(patchBranchHeadCommit, env.getUnTillDbVCS().getHeadCommit(patchBranch.getName()));
 	}
-	
+
 	@Test
 	public void testDealyedTagVersionUsageOnDifferentCRB() {
 		fork(compUnTillDb);
 		IAction action = execAndGetActionBuildDelayedTag(compUnTillDb);
 		assertActionDoesBuildDelayedTag(action, compUnTillDb);
-		
+
 		// make next build
 		env.generateFeatureCommit(env.getUnTillDbVCS(), repoUnTillDb.getDevelopBranch(), "feature added to dev branch");
 		fork(compUnTillDb, 2);
 		execAndGetActionBuild(compUnTillDb);
-		
+
 		// generate next feature to make CRB differ
 		env.generateFeatureCommit(env.getUnTillDbVCS(), repoUnTillDb.getDevelopBranch(), "feature added to dev branch");
-		
+
 		// make a tag for version which is not current CRB
 		action = execAndGetActionTag(compUnTillDb, null);
 		assertActionDoesTag(action, compUnTillDb);
-		
+
 		// ensure the version for delayed tag is used
 		ReleaseBranchPatch patch = ReleaseBranchFactory.getReleaseBranchPatch(env.getUnTillDbVer(), repoUnTillDb);
 		assertEquals(env.getUnTillDbVer().toReleaseZeroPatch().toNextPatch(), patch.getVersion());

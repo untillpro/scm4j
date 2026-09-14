@@ -16,8 +16,6 @@ public class VCSRepositoryTest {
 		assertEquals(new VCSComponentLocation("url", "components/driver"), repository.getComponentLocation());
 		assertEquals("url", repository.getUrl());
 		assertEquals("components/driver", repository.getSubfolder());
-		assertEquals("components/driver/version", repository.getComponentPath("version"));
-		assertEquals("version", repository(null).getComponentPath("version"));
 	}
 
 	@Test
@@ -33,6 +31,22 @@ public class VCSRepositoryTest {
 		assertEquals(repository(null), repository(""));
 		assertEquals(repository("components/driver"), repository("components/driver/"));
 		assertEquals(repository("components\\driver"), repository("components/driver"));
+	}
+
+	@Test
+	public void testComponentPathWithoutSubfolder() {
+		assertEquals("version", repository(null).getComponentPath("version"));
+		assertEquals("mdeps", repository("").getComponentPath("mdeps"));
+	}
+
+	@Test
+	public void testComponentPathUsesNormalizedSubfolder() {
+		assertEquals("components/driver/version",
+				repository("components/driver").getComponentPath("version"));
+		assertEquals("components/driver/mdeps",
+				repository("components/driver///").getComponentPath("mdeps"));
+		assertEquals("components/driver/metadata/version",
+				repository("components\\driver\\").getComponentPath("metadata/version"));
 	}
 
 	@Test

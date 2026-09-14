@@ -105,7 +105,7 @@ public final class Utils {
 
 	public static Version getDevVersion(VCSRepository repo) {
 		return new Version(
-				repo.getVCS().getFileContent(repo.getDevelopBranch(), Constants.VER_FILE_NAME, null));
+				repo.getVCS().getFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.VER_FILE_NAME), null));
 	}
 
 	public static void waitForDeleteDir(File dir) throws Exception {

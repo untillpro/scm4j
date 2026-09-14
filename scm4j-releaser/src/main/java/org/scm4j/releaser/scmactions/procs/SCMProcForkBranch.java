@@ -45,12 +45,14 @@ public class SCMProcForkBranch implements ISCMProc {
 	
 	private void truncateSnapshotReleaseVersion() {
 		String noSnapshotVersion = status.getNextVersion().toString();
-		vcsChangeList.add(new VCSChangeListNode(Constants.VER_FILE_NAME, noSnapshotVersion, Constants.SCM_VER + " " + noSnapshotVersion));
+		vcsChangeList.add(new VCSChangeListNode(repo.getComponentPath(Constants.VER_FILE_NAME), noSnapshotVersion,
+				Constants.SCM_VER + " " + noSnapshotVersion));
 	}
-	
+
 	private void bumpTrunkMinorVersion(IProgress progress) {
 		Version newMinorVersion = db.getVersion().toNextMinor();
-		Utils.reportDuration(() -> vcs.setFileContent(repo.getDevelopBranch(), Constants.VER_FILE_NAME, newMinorVersion.toString(), Constants.SCM_VER + " " + newMinorVersion),
+		Utils.reportDuration(() -> vcs.setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.VER_FILE_NAME),
+				newMinorVersion.toString(), Constants.SCM_VER + " " + newMinorVersion),
 				"change to version " + newMinorVersion + " in trunk", null, progress);
 	}
 }
