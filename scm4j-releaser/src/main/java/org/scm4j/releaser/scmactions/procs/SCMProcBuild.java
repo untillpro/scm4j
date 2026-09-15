@@ -89,7 +89,9 @@ public class SCMProcBuild implements ISCMProc {
 		Utils.reportDuration(() -> vcs.checkout(releaseBranchName, buildDir.getPath(), buildCommit.getRevision()), "checked" + statusMessage, null, progress);
 		Map<String, String> btev = Utils.getBuildTimeEnvVars(repo.getType(), buildCommit.getRevision(), releaseBranchName,
 				repo.getUrl());
-		repo.getBuilder().build(comp, buildDir, progress, btev);
+		String subfolder = repo.getSubfolder();
+		File buildWorkingDir = subfolder.isEmpty() ? buildDir : new File(buildDir, subfolder);
+		repo.getBuilder().build(comp, buildWorkingDir, progress, btev);
 	}
 
 	@SneakyThrows

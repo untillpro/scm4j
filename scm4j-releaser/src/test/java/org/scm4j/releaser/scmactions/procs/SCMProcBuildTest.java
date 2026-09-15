@@ -106,10 +106,12 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 
 		executeBuild(fixture, false);
 
+		assertBuildWorkingFolder(fixture);
 		assertBuildRevision(fixture, fixture.componentCommit);
 		assertTagRevision(fixture, fixture.componentCommit);
-		assertFalse(message(fixture), new File(fixture.builder.workingFolder, SIBLING_FILE).exists());
-		assertFalse(message(fixture), new File(fixture.builder.workingFolder, ROOT_FILE).exists());
+		File checkoutRoot = getCheckoutRoot(fixture);
+		assertFalse(message(fixture), new File(checkoutRoot, SIBLING_FILE).exists());
+		assertFalse(message(fixture), new File(checkoutRoot, ROOT_FILE).exists());
 		// The version bump is written on the current branch head, so it must keep the later unrelated changes.
 		assertEquals(message(fixture), fixture.version.toNextPatch().toString(),
 				vcs.getFileContent(fixture.branchName,
@@ -125,6 +127,7 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 
 		executeBuild(fixture, true);
 
+		assertBuildWorkingFolder(fixture);
 		assertBuildRevision(fixture, fixture.componentCommit);
 		DelayedTag delayedTag = new DelayedTagsFile().getDelayedTag(fixture.repository.getComponentLocation());
 		assertNotNull(message(fixture), delayedTag);
@@ -142,10 +145,12 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 
 		executeBuild(fixture, false);
 
+		assertBuildWorkingFolder(fixture);
 		assertBuildRevision(fixture, fixture.repositoryHead);
 		assertTagRevision(fixture, fixture.repositoryHead);
-		assertTrue(message(fixture), new File(fixture.builder.workingFolder, SIBLING_FILE).exists());
-		assertTrue(message(fixture), new File(fixture.builder.workingFolder, ROOT_FILE).exists());
+		File checkoutRoot = getCheckoutRoot(fixture);
+		assertTrue(message(fixture), new File(checkoutRoot, SIBLING_FILE).exists());
+		assertTrue(message(fixture), new File(checkoutRoot, ROOT_FILE).exists());
 	}
 
 	private BuildFixture createFixture(VCSType vcsType, IVCS vcs, String repositoryName, Version version,
@@ -179,6 +184,19 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 	private void assertBuildRevision(BuildFixture fixture, VCSCommit expectedCommit) {
 		assertEquals(message(fixture), Utils.getBuildTimeEnvVars(fixture.vcsType, expectedCommit.getRevision(),
 				fixture.branchName, fixture.repository.getUrl()), fixture.builder.buildTimeEnvVars);
+	}
+
+	private void assertBuildWorkingFolder(BuildFixture fixture) {
+		File checkoutRoot = getCheckoutRoot(fixture);
+		File expectedWorkingFolder = fixture.repository.getSubfolder().isEmpty() ? checkoutRoot :
+				new File(checkoutRoot, fixture.repository.getSubfolder());
+		assertEquals(message(fixture), expectedWorkingFolder.getAbsoluteFile(),
+				fixture.builder.workingFolder.getAbsoluteFile());
+		assertTrue(message(fixture), new File(fixture.builder.workingFolder, COMPONENT_FILE).exists());
+	}
+
+	private File getCheckoutRoot(BuildFixture fixture) {
+		return Utils.getBuildDir(fixture.repository, fixture.version);
 	}
 
 	private void assertTagRevision(BuildFixture fixture, VCSCommit expectedCommit) {

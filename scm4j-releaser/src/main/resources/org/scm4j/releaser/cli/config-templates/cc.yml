@@ -11,6 +11,7 @@
 
 # Components stored in subfolders of the same repository can declare an optional `subfolder`.
 # Capture groups from the component-coordinate pattern are substituted in `subfolder` as they are in `url`.
+# The release command runs from the resolved component subfolder when present, or from the repository root otherwise.
 
 #eu\.untill\.sdk\.drivers:(.*):
 #  url: https://dev.untill.com/git/untill/untill-drivers
