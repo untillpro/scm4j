@@ -66,11 +66,13 @@ public class SCMProcBuild implements ISCMProc {
 	}
 
 	private VCSCommit getCommitToBuildOn() {
+		VCSCommit headCommit = vcs.getHeadCommit(releaseBranchName);
 		String subfolder = repo.getSubfolder();
-		if (subfolder.isEmpty()) {
-			return vcs.getHeadCommit(releaseBranchName);
+		if (headCommit == null || subfolder.isEmpty()) {
+			return headCommit;
 		}
-		List<VCSCommit> commits = vcs.getCommitsRange(releaseBranchName, null, WalkDirection.DESC, 1, subfolder);
+		List<VCSCommit> commits = vcs.getCommitsRange(releaseBranchName, headCommit.getRevision(),
+				WalkDirection.DESC, 1, subfolder);
 		return commits.isEmpty() ? null : commits.get(0);
 	}
 

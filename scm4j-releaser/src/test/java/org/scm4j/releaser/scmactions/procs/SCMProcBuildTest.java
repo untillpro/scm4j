@@ -69,10 +69,32 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 			try (TestEnvironment env = new TestEnvironment(vcsType)) {
 				env.generateTestEnvironment();
 
+				assertMissingSubfolderReleaseBranch(vcsType, env.getUnTillDbVCS());
 				assertNonDelayedTagUsesComponentRevision(vcsType, env.getUnTillDbVCS());
 				assertDelayedTagUsesComponentRevision(vcsType, env.getUblVCS());
 				assertRootComponentUsesRepositoryHead(vcsType, env.getUnTillVCS());
 			}
+		}
+	}
+
+	private void assertMissingSubfolderReleaseBranch(VCSType vcsType, IVCS vcs) {
+		// A missing release branch must produce the same releaser error for root and subfolder components,
+		// instead of leaking a Git or SVN adapter exception from the path-filtered history query.
+		Version version = new Version("0.1.0");
+		RecordingBuilder builder = new RecordingBuilder();
+		VCSRepository repository = new VCSRepository("missing", vcs.getRepoUrl(), COMPONENT_SUBFOLDER, null,
+				vcsType, null, "release/", vcs, builder);
+		Component component = new Component("test:missing:" + version);
+		CachedStatuses cache = new CachedStatuses();
+		cache.put(repository.getComponentLocation(), new ExtendedStatus(version, BuildStatus.BUILD,
+				new LinkedHashMap<Component, ExtendedStatus>(), component, repository));
+
+		try {
+			new SCMProcBuild(component, cache, false, repository).execute(new ProgressConsole());
+			fail(message(vcsType, repository) + " should reject a missing release branch");
+		} catch (ENoReleaseBranch e) {
+			assertEquals(message(vcsType, repository), Utils.getReleaseBranchName(repository, version),
+					e.getReleaseBranchName());
 		}
 	}
 
@@ -180,7 +202,11 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 	}
 
 	private String message(BuildFixture fixture) {
-		return fixture.vcsType + " " + fixture.repository.getName();
+		return message(fixture.vcsType, fixture.repository);
+	}
+
+	private String message(VCSType vcsType, VCSRepository repository) {
+		return vcsType + " " + repository.getName();
 	}
 
 	private static class RecordingBuilder implements IBuilder {
