@@ -1,40 +1,32 @@
 @echo off
-if [%1] == [git.exe] goto normal
-if [%1] == [java.exe] goto test_empty_path
+setlocal EnableExtensions DisableDelayedExpansion
 
-call %~dp0releaser git.exe sh.exe %*
-exit /b
+set "GIT_EXE="
+for /f "delims=" %%I in ('where.exe git.exe 2^>nul') do if not defined GIT_EXE set "GIT_EXE=%%I"
 
-:test_empty_path
-SET PATH=%~dp$PATH:1
-echo Test path=%PATH%
-./releaser.cmd %2 %3 %4 %5 %6
-exit /b
+if not defined GIT_EXE call :use_git "%ProgramFiles%\Git\cmd\git.exe"
+if not defined GIT_EXE call :use_git "%ProgramW6432%\Git\cmd\git.exe"
+if not defined GIT_EXE call :use_git "%ProgramFiles(x86)%\Git\cmd\git.exe"
 
-:normal
-@echo off
-set gitpath=%~dp$PATH:1
-if ."%gitpath%" == ."" goto try_git
-goto try_sh
+if not defined GIT_EXE (
+	>&2 echo Error: git.exe was not found. Install Git for Windows or add git.exe to PATH.
+	exit /b 1
+)
 
-:try_git
-PATH=%PATH%;c:/Program Files/Git/Cmd
-set gitpath=%~dp$PATH:1
-if ."%gitpath%" == ."" goto git_not_found
+for %%I in ("%GIT_EXE%") do set "GIT_DIR=%%~dpI"
+set "PATH=%PATH%;%GIT_DIR%..\usr\bin"
 
-:try_sh
-PATH=%PATH%;%gitpath%../usr/bin
-set shpath=%~dp$PATH:2
-if ."%shpath%" == ."" goto sh_not_found
+where.exe /q sh.exe
+if errorlevel 1 (
+	>&2 echo Error: sh.exe was not found. Install Git for Windows or add sh.exe to PATH.
+	exit /b 1
+)
 
-"%shpath%sh" %~dp0releaser %3 %4 %5 %6 %7 %8 %9
+sh.exe "%~dp0releaser" %*
+set "RELEASER_EXIT_CODE=%ERRORLEVEL%"
+endlocal & exit /b %RELEASER_EXIT_CODE%
 
-exit /b
-
-:git_not_found
-echo %1 not found
-exit /b 1
-
-:sh_not_found
-echo %2 not found
-exit /b 1
+:use_git
+if defined GIT_EXE exit /b 0
+if exist "%~1" set "GIT_EXE=%~f1"
+exit /b 0
