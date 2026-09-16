@@ -17,7 +17,11 @@ import static org.junit.Assert.assertTrue;
  * repository-wide head. SQLite commits deliberately surround the postgres patch so the test can prove
  * that build selection, version updates, and tags stay scoped to the requested component.
  */
-public class WorkflowMonorepoPatchesTest extends WorkflowMonorepoTestBase {
+public class WorkflowMonorepoPatchesTest extends WorkflowTestBase {
+
+	public WorkflowMonorepoPatchesTest() {
+		super(WorkflowEnvironment.MONOREPO);
+	}
 
 	@Test
 	public void testPatchReleaseUsesComponentHistory() throws Exception {

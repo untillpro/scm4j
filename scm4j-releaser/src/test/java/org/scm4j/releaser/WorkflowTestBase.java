@@ -18,6 +18,7 @@ import org.scm4j.releaser.cli.Option;
 import org.scm4j.releaser.conf.*;
 import org.scm4j.releaser.scmactions.SCMActionRelease;
 import org.scm4j.releaser.scmactions.SCMActionTag;
+import org.scm4j.releaser.testutils.MonorepoTestEnvironment;
 import org.scm4j.releaser.testutils.TestBuilder;
 import org.scm4j.releaser.testutils.TestEnvironment;
 import org.scm4j.vcs.api.IVCS;
@@ -31,11 +32,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
+/**
+ * Shared workflow-test harness for both the standard multi-repository fixture and monorepo scenarios.
+ * Standard tests use the default environment, while monorepo tests opt into fixtures created per VCS adapter.
+ */
 public class WorkflowTestBase {
 	// unreachable version and mdeps for tests that use monorepo repositories
 	// stored in the root of the monorepo to make test fail on try to read version or mdeps from the root, not from the subfolder
@@ -52,25 +58,59 @@ public class WorkflowTestBase {
 	protected VCSRepository repoUnTillDb;
 	protected VCSRepository repoUBL;
 	protected VCSRepositoryFactory repoFactory;
+	private final WorkflowEnvironment workflowEnvironment;
+	private final Map<String, StandardComponentContext> standardComponentContexts = new HashMap<>();
+	private MonorepoTestEnvironment monorepoEnvironment;
+	private ScenarioContext monorepoContext;
+
+	protected enum WorkflowEnvironment {
+		STANDARD,
+		MONOREPO
+	}
+
+	protected WorkflowTestBase() {
+		this(WorkflowEnvironment.STANDARD);
+	}
+
+	protected WorkflowTestBase(WorkflowEnvironment workflowEnvironment) {
+		this.workflowEnvironment = workflowEnvironment;
+	}
 
 	@Rule
 	public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
 	@Before
 	public void setUp() throws Exception {
+		if (workflowEnvironment == WorkflowEnvironment.MONOREPO) {
+			// Monorepo scenarios create a fresh fixture for each VCS adapter in runForEachVcs.
+			cleanupReleases();
+			return;
+		}
+		setUpStandardEnvironment();
+		cleanupReleases();
+	}
+
+	private void setUpStandardEnvironment() throws Exception {
 		env = new TestEnvironment();
 		env.generateTestEnvironment();
 		repoFactory = env.getRepoFactory();
 		compUnTill = new Component(UNTILL);
 		compUnTillDb = new Component(UNTILLDB);
 		compUBL = new Component(UBL);
+		refreshStandardRepositories();
+	}
+
+	private void refreshStandardRepositories() {
 		repoUnTill = repoFactory.getVCSRepository(compUnTill);
 		repoUnTillDb = repoFactory.getVCSRepository(compUnTillDb);
 		repoUBL = repoFactory.getVCSRepository(compUBL);
-		repoUnTill = repoFactory.getVCSRepository(compUnTill);
-		TestBuilder.setBuilders(new HashMap<>());
-		new DelayedTagsFile().delete();
-		Utils.waitForDeleteDir(Constants.RELEASES_DIR);
+		standardComponentContexts.clear();
+		standardComponentContexts.put(compUnTill.getName(), new StandardComponentContext(
+				StandardComponentRole.UNTILL, env.getUnTillVCS(), repoUnTill, env.getUnTillVer()));
+		standardComponentContexts.put(compUBL.getName(), new StandardComponentContext(
+				StandardComponentRole.UBL, env.getUblVCS(), repoUBL, env.getUblVer()));
+		standardComponentContexts.put(compUnTillDb.getName(), new StandardComponentContext(
+				StandardComponentRole.UNTILL_DB, env.getUnTillDbVCS(), repoUnTillDb, env.getUnTillDbVer()));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -83,9 +123,7 @@ public class WorkflowTestBase {
 		FileUtils.writeStringToFile(env.getCcFile(), yaml.dumpAsMap(content), StandardCharsets.UTF_8);
 
 		repoFactory = env.getRepoFactory();
-		repoUnTill = repoFactory.getVCSRepository(compUnTill);
-		repoUnTillDb = repoFactory.getVCSRepository(compUnTillDb);
-		repoUBL = repoFactory.getVCSRepository(compUBL);
+		refreshStandardRepositories();
 		writeComponentFiles(repoUnTill, env.getUnTillVer());
 		writeComponentFiles(repoUnTillDb, env.getUnTillDbVer());
 		writeComponentFiles(repoUBL, env.getUblVer());
@@ -123,20 +161,32 @@ public class WorkflowTestBase {
 		return repo.getVCS().getFileContent(branchName, repo.getComponentPath(relativePath), null);
 	}
 
-	@After
-	public void tearDown() throws Exception {
-		try {
-			assertMonorepoRootFilesUnchanged();
-		} finally {
-			if (env != null) {
-				env.close();
-			}
-			TestBuilder.setBuilders(null);
-			Utils.waitForDeleteDir(Constants.RELEASES_DIR);
-		}
-	}
+	@After
+	public void tearDown() throws Exception {
+		try {
+			closeWorkflowEnvironment();
+		} finally {
+			TestBuilder.setBuilders(null);
+			clearReleaseState();
+		}
+	}
 
-	private void assertMonorepoRootFilesUnchanged() {
+	private void closeWorkflowEnvironment() throws Exception {
+		if (workflowEnvironment == WorkflowEnvironment.MONOREPO) {
+			// Close a partially initialized monorepo environment as well when a scenario fails midway.
+			closeMonorepoEnvironment();
+			return;
+		}
+		try {
+			assertConfiguredRepositoryRootsUnchanged();
+		} finally {
+			if (env != null) {
+				env.close();
+			}
+		}
+	}
+
+	private void assertConfiguredRepositoryRootsUnchanged() {
 		for (VCSRepository repo : new VCSRepository[] {repoUnTill, repoUnTillDb, repoUBL}) {
 			if (repo == null || repo.getSubfolder().isEmpty()) {
 				continue;
@@ -153,6 +203,222 @@ public class WorkflowTestBase {
 		}
 	}
 
+	protected void runForEachVcs(Scenario scenario) throws Exception {
+		// Filtering history, creating branches, checking out revisions, and tagging differ between Git and SVN.
+		for (VCSType vcsType : VCSType.values()) {
+			runMonorepoScenario(vcsType, scenario);
+		}
+	}
+
+	private void runMonorepoScenario(VCSType vcsType, Scenario scenario) throws Exception {
+		// Persistent state was cleared after the previous scenario; only builder observations need a fresh map.
+		resetBuilders();
+		monorepoEnvironment = new MonorepoTestEnvironment(vcsType);
+		try {
+			// Build disposable repositories and redirect the real CLI configuration to this scenario's files.
+			monorepoEnvironment.generate();
+			configureEnvironment(monorepoEnvironment);
+			repoFactory = monorepoEnvironment.getRepositoryFactory();
+			monorepoContext = new ScenarioContext(monorepoEnvironment);
+
+			// Every scenario must use one physical repository with two independently identified components.
+			assertEquals(monorepoContext.postgresRepo.getUrl(), monorepoContext.sqliteRepo.getUrl());
+			assertNotEquals(monorepoContext.postgresRepo.getComponentLocation(),
+					monorepoContext.sqliteRepo.getComponentLocation());
+
+			scenario.run(monorepoContext);
+		} finally {
+			try {
+				closeMonorepoEnvironment();
+			} finally {
+				clearReleaseState();
+			}
+		}
+	}
+
+	private void closeMonorepoEnvironment() throws Exception {
+		if (monorepoEnvironment == null) {
+			return;
+		}
+		MonorepoTestEnvironment environment = monorepoEnvironment;
+		try {
+			// Check sentinels before deleting the repositories so a component operation cannot silently touch root metadata.
+			assertDisposableMonorepoRootFilesUnchanged();
+		} finally {
+			try {
+				environment.close();
+			} finally {
+				monorepoEnvironment = null;
+				monorepoContext = null;
+			}
+		}
+	}
+
+	private void assertDisposableMonorepoRootFilesUnchanged() {
+		IVCS vcs = monorepoEnvironment.getMonorepoVCS();
+		if (vcs == null) {
+			return;
+		}
+		// Component-local operations must leave root metadata untouched on develop and every created release branch.
+		String developBranch = monorepoContext == null
+				? VCSRepository.DEFAULT_DEVELOP_BRANCH : monorepoContext.postgresRepo.getDevelopBranch();
+		assertDisposableMonorepoRootFilesUnchanged(vcs, developBranch);
+		if (monorepoContext == null) {
+			return;
+		}
+		Set<String> svnBranchNamespaces = monorepoEnvironment.getVcsType() == VCSType.SVN
+				? vcs.getBranches(null) : null;
+		for (VCSRepository repository : monorepoContext.sharedRepositories()) {
+			String releaseBranchPrefix = repository.getName() + "/" + repository.getReleaseBranchPrefix();
+			boolean releaseNamespaceExists = svnBranchNamespaces == null
+					|| svnBranchNamespaces.contains(repository.getName());
+			if (releaseNamespaceExists) {
+				for (String branchName : vcs.getBranches(releaseBranchPrefix)) {
+					assertDisposableMonorepoRootFilesUnchanged(vcs, branchName);
+				}
+			}
+		}
+	}
+
+	private void assertDisposableMonorepoRootFilesUnchanged(IVCS vcs, String branchName) {
+		assertEquals(MONOREPO_ROOT_UNREACHABLE_VERSION,
+				vcs.getFileContent(branchName, Constants.VER_FILE_NAME, null));
+		assertEquals(MONOREPO_ROOT_UNREACHABLE_MDEPS,
+				vcs.getFileContent(branchName, Constants.MDEPS_FILE_NAME, null));
+	}
+
+	@SuppressWarnings("deprecation")
+	private void configureEnvironment(MonorepoTestEnvironment environment) {
+		// Each CLI invocation reloads configuration from environment variables, so point it at the fixture files.
+		environmentVariables.set(DefaultConfigUrls.REPOS_LOCATION_ENV_VAR, null);
+		environmentVariables.set(DefaultConfigUrls.CC_URLS_ENV_VAR, environment.getCcFile().toString());
+		environmentVariables.set(DefaultConfigUrls.CREDENTIALS_URL_ENV_VAR,
+				environment.getCredentialsFile().toString());
+	}
+
+	private void cleanupReleases() throws Exception {
+		// Builders, their captured environment, delayed tags, and checkout folders are process-wide test state.
+		resetBuilders();
+		clearReleaseState();
+	}
+
+	private void resetBuilders() {
+		TestBuilder.setBuilders(new HashMap<>());
+	}
+
+	private void clearReleaseState() throws Exception {
+		TestBuilder.getEnvVars().clear();
+		new DelayedTagsFile().delete();
+		Utils.waitForDeleteDir(Constants.RELEASES_DIR);
+	}
+
+	protected VCSCommit latestComponentCommit(VCSRepository repository, String branchName) {
+		// This is the revision scm4j should select when it treats a component subfolder as a logical repository.
+		List<VCSCommit> commits = repository.getVCS().getCommitsRange(branchName, null,
+				WalkDirection.DESC, 1, repository.getSubfolder());
+		assertFalse(commits.isEmpty());
+		return commits.get(0);
+	}
+
+	protected void assertBuildRevision(Component component, VCSRepository repository, Version releaseVersion,
+			VCSCommit expectedCommit) {
+		// TestBuilder captures the real build boundary's VCS variables, including the revision actually checked out.
+		Map<String, String> actual = TestBuilder.getEnvVars().get(component.getName());
+		assertNotNull(actual);
+		assertEquals(Utils.getBuildTimeEnvVars(repository.getType(), expectedCommit.getRevision(),
+				Utils.getReleaseBranchName(repository, releaseVersion), repository.getUrl()), actual);
+	}
+
+	protected void assertTagRevision(VCSRepository repository, Version version, VCSCommit expectedCommit) {
+		VCSTag tag = findTag(repository, version);
+		assertEquals(expectedCommit.getRevision(), tag.getRelatedCommit().getRevision());
+	}
+
+	protected void assertTagExists(VCSRepository repository, Version version) {
+		assertNotNull(findTag(repository, version));
+	}
+
+	protected VCSTag findTag(VCSRepository repository, Version version) {
+		String tagName = Utils.getTagDesc(repository, version.toString()).getName();
+		return repository.getVCS().getTags().stream()
+				.filter(tag -> tagName.equals(tag.getTagName()))
+				.findFirst()
+				.orElseThrow(() -> new AssertionError(
+						"missing tag " + tagName + " for " + repository.getComponentLocation()));
+	}
+
+	protected List<VCSTag> componentTags(VCSRepository repository) {
+		// The VCS returns every tag in the shared repository; filter to this component's namespace.
+		return repository.getVCS().getTags().stream()
+				.filter(tag -> Utils.isTagForRepository(repository, tag.getTagName()))
+				.collect(Collectors.toList());
+	}
+
+	@FunctionalInterface
+	protected interface Scenario {
+		void run(ScenarioContext context) throws Exception;
+	}
+
+	// All monorepo scenarios use the same components to exercise identical repository identities and topology.
+	protected class ScenarioContext {
+
+		final MonorepoTestEnvironment environment;
+		final Component unTill;
+		final Component ubl;
+		final Component postgres;
+		final Component sqlite;
+		final VCSRepository unTillRepo;
+		final VCSRepository ublRepo;
+		final VCSRepository postgresRepo;
+		final VCSRepository sqliteRepo;
+
+		private ScenarioContext(MonorepoTestEnvironment environment) {
+			this.environment = environment;
+			unTill = new Component(MonorepoTestEnvironment.PRODUCT_UNTILL);
+			ubl = new Component(MonorepoTestEnvironment.PRODUCT_UBL);
+			postgres = new Component(MonorepoTestEnvironment.PRODUCT_POSTGRES);
+			sqlite = new Component(MonorepoTestEnvironment.PRODUCT_SQLITE);
+			unTillRepo = repoFactory.getVCSRepository(unTill);
+			ublRepo = repoFactory.getVCSRepository(ubl);
+			postgresRepo = repoFactory.getVCSRepository(postgres);
+			sqliteRepo = repoFactory.getVCSRepository(sqlite);
+		}
+
+		private VCSRepository[] sharedRepositories() {
+			return new VCSRepository[] {postgresRepo, sqliteRepo};
+		}
+	}
+
+	private enum StandardComponentRole {
+		UNTILL,
+		UBL,
+		UNTILL_DB
+	}
+
+	private static class StandardComponentContext {
+
+		final StandardComponentRole role;
+		final IVCS vcs;
+		final VCSRepository repository;
+		final Version initialVersion;
+
+		private StandardComponentContext(StandardComponentRole role, IVCS vcs,
+				VCSRepository repository, Version initialVersion) {
+			this.role = role;
+			this.vcs = vcs;
+			this.repository = repository;
+			this.initialVersion = initialVersion;
+		}
+	}
+
+	private StandardComponentContext standardComponentContext(Component component) {
+		StandardComponentContext context = standardComponentContexts.get(component.getName());
+		if (context == null) {
+			throw new AssertionError("unexpected component: " + component);
+		}
+		return context;
+	}
+
 	protected Version getCrbVersion(Component comp) {
 		VCSRepository repo = repoFactory.getVCSRepository(comp);
 		Version crbFirstVersion = Utils.getDevVersion(repo).toPreviousMinor().toReleaseZeroPatch();
@@ -161,64 +427,56 @@ public class WorkflowTestBase {
 	}
 
 	protected void checkCompBuilt(int times, Component comp) {
-		if (comp.getName().equals(compUnTill.getName())) {
-			checkCompBuilt(times, comp, env.getUnTillVCS(), repoUnTill, env.getUnTillVer());
-		} else if (comp.getName().equals(compUBL.getName())) {
-			checkCompBuilt(times, comp, env.getUblVCS(), repoUBL, env.getUblVer());
-		} else if (comp.getName().equals(compUnTillDb.getName())) {
-			checkCompBuilt(times, comp, env.getUnTillDbVCS(), repoUnTillDb, env.getUnTillDbVer());
-		}
+		checkCompBuilt(times, comp, standardComponentContext(comp));
 	}
 
-	private void checkCompBuilt(int times, Component comp, IVCS vcs, VCSRepository repo, Version initialVer) {
-		checkCompForked(times, comp, initialVer, repo);
-		ReleaseBranchCurrent crb = ReleaseBranchFactory.getCRB(repo);
+	private void checkCompBuilt(int times, Component comp, StandardComponentContext context) {
+		checkCompForked(times, comp, context);
+		VCSRepository repository = context.repository;
+		ReleaseBranchCurrent crb = ReleaseBranchFactory.getCRB(repository);
 		Version latestVersion = crb.getVersion();
 
 		assertNotNull(TestBuilder.getBuilders().get(comp.getName()));
-
-		assertTrue(Utils.getBuildDir(repo, latestVersion).exists());
+		assertTrue(Utils.getBuildDir(repository, latestVersion).exists());
 
 		DelayedTagsFile dtf = new DelayedTagsFile();
-		DelayedTag dt = dtf.getDelayedTag(repo.getComponentLocation());
-		Boolean tagDelayed = dt != null && crb.getName().equals(Utils.getReleaseBranchName(repo, dt.getVersion()));
+		DelayedTag dt = dtf.getDelayedTag(repository.getComponentLocation());
+		boolean tagDelayed = dt != null
+				&& crb.getName().equals(Utils.getReleaseBranchName(repository, dt.getVersion()));
 		String expectedPatch = tagDelayed ? "0" : "1";
 
 		assertEquals(expectedPatch, latestVersion.getPatch());
 
 		// check tags
-		List<VCSTag> tags = vcs.getTags().stream()
-				.filter(tag -> Utils.isTagForRepository(repo, tag.getTagName()))
-				.collect(Collectors.toList());
+		List<VCSTag> tags = componentTags(repository);
 		assertEquals(tagDelayed ? times - 1 : times, tags.size());
 
 		// check has tags for each built version
-		Version expectedCompReleaseVer = initialVer.toReleaseZeroPatch().toPreviousMinor();
+		Version expectedCompReleaseVer = context.initialVersion.toReleaseZeroPatch().toPreviousMinor();
 		for (int i = 0; i < times; i++) {
 			expectedCompReleaseVer = expectedCompReleaseVer.toNextMinor();
 			if (!tagDelayed) {
-				assertTrue(hasTagForVersion(repo, tags, expectedCompReleaseVer));
+				assertTrue(hasTagForVersion(repository, tags, expectedCompReleaseVer));
 			}
 		}
 
 		// check if the pre-last commit of each release branch is tagged
 		for (VCSTag tag : tags) {
-			List<VCSCommit> commits = vcs.getCommitsRange(Utils.getReleaseBranchName(
-					repo, getVersionFromTagName(tag.getTagName())), null, WalkDirection.DESC, 2);
+			List<VCSCommit> commits = context.vcs.getCommitsRange(Utils.getReleaseBranchName(
+					repository, getVersionFromTagName(tag.getTagName())), null, WalkDirection.DESC, 2);
 			assertEquals(commits.get(1), tag.getRelatedCommit());
 		}
 
 		// check Env Vars
-		String latestReleaseBranchName = Utils.getReleaseBranchName(repo, latestVersion);
-		List<VCSCommit> lastCommits = vcs.getCommitsRange(latestReleaseBranchName, null, WalkDirection.DESC, 2);
+		String latestReleaseBranchName = Utils.getReleaseBranchName(repository, latestVersion);
+		List<VCSCommit> lastCommits = context.vcs.getCommitsRange(
+				latestReleaseBranchName, null, WalkDirection.DESC, 2);
 		String buildRevision = lastCommits.get(tagDelayed ? 0 : 1).getRevision();
-		Map<String, String> btevActual = TestBuilder.getEnvVars().get(comp.getName());
-		Map<String, String> btevEthalon = Utils.getBuildTimeEnvVars(repo.getType(), buildRevision,
-				latestReleaseBranchName, repo.getUrl());
-		for (Map.Entry<String, String> btevEntry : btevEthalon.entrySet()) {
-			assertNotNull(btevEntry.getValue());
-			assertEquals(btevEntry.getValue(), btevActual.get(btevEntry.getKey()));
-		}
+		Map<String, String> actualBuildEnvironment = TestBuilder.getEnvVars().get(comp.getName());
+		assertNotNull(actualBuildEnvironment);
+		Map<String, String> expectedBuildEnvironment = Utils.getBuildTimeEnvVars(
+				repository.getType(), buildRevision, latestReleaseBranchName, repository.getUrl());
+		assertEquals(expectedBuildEnvironment, actualBuildEnvironment);
 	}
 
 	public void checkUnTillDbBuilt(int times) {
@@ -241,7 +499,7 @@ public class WorkflowTestBase {
 		Version latestVersion = getCrbVersion(compUBL);
 		List<Component> ublReleaseMDeps = ReleaseBranchFactory.getMDepsRelease(
 				Utils.getReleaseBranchName(repoUBL, latestVersion), repoUBL);
-		assertTrue(ublReleaseMDeps.size() == 1);
+		assertEquals(1, ublReleaseMDeps.size());
 		assertEquals(compUnTillDb.getName(), ublReleaseMDeps.get(0).getName());
 		assertTrue(ublReleaseMDeps.get(0).getVersion().isLocked());
 		checkCompMinorVersions(times, ublReleaseMDeps.get(0).getVersion(), env.getUnTillDbVer(), repoUnTillDb);
@@ -251,7 +509,7 @@ public class WorkflowTestBase {
 		Version latestVersion = getCrbVersion(compUnTill);
 		List<Component> untillReleaseMDeps = ReleaseBranchFactory.getMDepsRelease(
 				Utils.getReleaseBranchName(repoUnTill, latestVersion), repoUnTill);
-		assertTrue(untillReleaseMDeps.size() == 2);
+		assertEquals(2, untillReleaseMDeps.size());
 		assertEquals(compUnTillDb.getName(), untillReleaseMDeps.get(1).getName());
 		assertTrue(untillReleaseMDeps.get(1).getVersion().isLocked());
 		checkCompMinorVersions(times, untillReleaseMDeps.get(1).getVersion(), env.getUnTillDbVer(), repoUnTillDb);
@@ -272,12 +530,8 @@ public class WorkflowTestBase {
 	}
 
 	private boolean hasTagForVersion(VCSRepository repo, List<VCSTag> tags, Version expectedUBLReleaseVer) {
-		for (VCSTag tag : tags) {
-			if (tag.getTagName().equals(Utils.getTagDesc(repo, expectedUBLReleaseVer.toString()).getName())) {
-				return true;
-			}
-		}
-		return false;
+		String expectedTagName = Utils.getTagDesc(repo, expectedUBLReleaseVer.toString()).getName();
+		return tags.stream().anyMatch(tag -> expectedTagName.equals(tag.getTagName()));
 	}
 
 	private Version getVersionFromTagName(String tagName) {
@@ -293,20 +547,14 @@ public class WorkflowTestBase {
 	}
 
 	protected void checkCompForked(int times, Component comp) {
-		if (comp.getName().equals(compUnTill.getName())) {
-			checkCompForked(times, comp, env.getUnTillVer(), repoUnTill);
-		} else if (comp.getName().equals(compUBL.getName())) {
-			checkCompForked(times, comp, env.getUblVer(), repoUBL);
-		} else if (comp.getName().equals(compUnTillDb.getName())) {
-			checkCompForked(times, comp, env.getUnTillDbVer(), repoUnTillDb);
-		}
+		checkCompForked(times, comp, standardComponentContext(comp));
 	}
 
-	private void checkCompForked(int times, Component comp, Version initialVer, VCSRepository repo) {
+	private void checkCompForked(int times, Component comp, StandardComponentContext context) {
 		Version latestVersion = getCrbVersion(comp);
-		String releaseBranchName = Utils.getReleaseBranchName(repo, latestVersion);
-		assertTrue(repo.getVCS().getBranches(releaseBranchName).contains(releaseBranchName));
-		checkCompMinorVersions(times, latestVersion, initialVer, repo);
+		String releaseBranchName = Utils.getReleaseBranchName(context.repository, latestVersion);
+		assertTrue(context.repository.getVCS().getBranches(releaseBranchName).contains(releaseBranchName));
+		checkCompMinorVersions(times, latestVersion, context.initialVersion, context.repository);
 	}
 
 	public void checkUBLForked(int times) {
@@ -335,24 +583,25 @@ public class WorkflowTestBase {
 		checkCompForked(times, compUnTill);
 	}
 
-	private IAction getActionByComp(IAction action, Component comp, int level) {
+	private IAction findActionByComp(IAction action, Component comp) {
 		for (IAction nestedAction : action.getChildActions()) {
-			IAction res = getActionByComp(nestedAction, comp, level + 1);
-			if (res != null) {
-				return res;
+			IAction result = findActionByComp(nestedAction, comp);
+			if (result != null) {
+				return result;
 			}
 		}
 		if (action.getComp().getName().equals(comp.getName())) {
 			return action;
 		}
-		if (level == 0) {
-			throw new AssertionError("No action for " + comp);
-		}
 		return null;
 	}
 
 	private IAction getActionByComp(IAction action, Component comp) {
-		return getActionByComp(action, comp, 0);
+		IAction result = findActionByComp(action, comp);
+		if (result == null) {
+			throw new AssertionError("No action for " + comp);
+		}
+		return result;
 	}
 
 	protected void assertThatAction(IAction action, Matcher<? super IAction> matcher, Component... comps) {
@@ -491,46 +740,42 @@ public class WorkflowTestBase {
 
 	protected void fork(Component comp, int times) {
 		IAction action = execAndGetActionFork(comp);
-		if (TestEnvironment.PRODUCT_UNTILL.contains(comp.getCoords().toString(""))) {
+		switch (standardComponentContext(comp).role) {
+		case UNTILL:
 			assertActionDoesForkAll(action);
-		} else if (TestEnvironment.PRODUCT_UBL.contains(comp.getCoords().toString(""))) {
-			assertActionDoesFork(action, compUBL, compUnTillDb);
-		} else if (TestEnvironment.PRODUCT_UNTILLDB.contains(comp.getCoords().toString(""))) {
-			assertActionDoesFork(action, compUnTillDb);
-		} else {
-			fail("unexpected coords: " + comp.getCoords());
-		}
-		if (TestEnvironment.PRODUCT_UNTILL.contains(comp.getCoords().toString(""))) {
 			checkUnTillForked(times);
-		} else if (TestEnvironment.PRODUCT_UBL.contains(comp.getCoords().toString(""))) {
+			break;
+		case UBL:
+			assertActionDoesFork(action, compUBL, compUnTillDb);
 			checkUBLForked(times);
-		} else if (TestEnvironment.PRODUCT_UNTILLDB.contains(comp.getCoords().toString(""))) {
+			break;
+		case UNTILL_DB:
+			assertActionDoesFork(action, compUnTillDb);
 			checkUnTillDbForked(times);
-		} else {
-			fail("unexpected coords: " + comp.getCoords());
+			break;
+		default:
+			throw new AssertionError("unexpected component: " + comp);
 		}
 	}
 
 	protected void build(Component comp, int times) {
 		IAction action = execAndGetActionBuild(comp);
-		if (TestEnvironment.PRODUCT_UNTILL.contains(comp.getCoords().toString(""))) {
+		switch (standardComponentContext(comp).role) {
+		case UNTILL:
 			assertActionDoesBuildAll(action);
-		} else if (TestEnvironment.PRODUCT_UBL.contains(comp.getCoords().toString(""))) {
+			checkUnTillBuilt(times);
+			break;
+		case UBL:
 			assertActionDoesBuild(action, compUBL, BuildStatus.BUILD_MDEPS);
 			assertActionDoesBuild(action, compUnTillDb);
-		} else if (TestEnvironment.PRODUCT_UNTILLDB.contains(comp.getCoords().toString(""))) {
-			assertActionDoesBuild(action, compUnTillDb);
-		} else {
-			fail("unexpected coords: " + comp.getCoords());
-		}
-		if (TestEnvironment.PRODUCT_UNTILL.contains(comp.getCoords().toString(""))) {
-			checkUnTillBuilt(times);
-		} else if (TestEnvironment.PRODUCT_UBL.contains(comp.getCoords().toString(""))) {
 			checkUBLBuilt(times);
-		} else if (TestEnvironment.PRODUCT_UNTILLDB.contains(comp.getCoords().toString(""))) {
+			break;
+		case UNTILL_DB:
+			assertActionDoesBuild(action, compUnTillDb);
 			checkUnTillDbBuilt(times);
-		} else {
-			fail("unexpected coords: " + comp.getCoords());
+			break;
+		default:
+			throw new AssertionError("unexpected component: " + comp);
 		}
 	}
 

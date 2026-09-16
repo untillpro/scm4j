@@ -46,7 +46,11 @@ import static org.junit.Assert.assertTrue;
  *     `-- unTill  1.124.3-SNAPSHOT               next release: 1.124.0
  * </pre>
  */
-public class WorkflowMonorepoForkAndBuildTest extends WorkflowMonorepoTestBase {
+public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
+
+	public WorkflowMonorepoForkAndBuildTest() {
+		super(WorkflowEnvironment.MONOREPO);
+	}
 
 	@Test
 	public void testMonorepoComponents() throws Exception {
