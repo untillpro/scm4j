@@ -176,15 +176,19 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 			Version secondUnTillRelease = firstUnTillRelease.toNextMinor();
 			String secondPostgresBranch = Utils.getReleaseBranchName(postgresRepo, secondPostgresRelease);
 			VCSCommit secondPostgresBuildCommit = latestComponentCommit(postgresRepo, secondPostgresBranch);
+			String secondUnTillBranch = Utils.getReleaseBranchName(unTillRepo, secondUnTillRelease);
+			VCSCommit secondUnTillBuildCommit = unTillRepo.getVCS().getHeadCommit(secondUnTillBranch);
+			assertNotNull(secondUnTillBuildCommit);
 			IAction secondBuildAction = execAndGetActionBuild(unTill);
 			// The postgres change must now build both the dependency and its consuming application, but not UBL.
 			assertActionDoesBuild(secondBuildAction, postgres);
 			assertActionDoesBuild(secondBuildAction, unTill, BuildStatus.BUILD_MDEPS);
 			assertActionDoesNothing(secondBuildAction, ubl);
-			// Confirm the second release is tagged and that unTill now locks the new postgres version only.
+			// Confirm both builds and tags use the captured revisions, and unTill locks the new postgres version only.
 			assertBuildRevision(postgres, postgresRepo, secondPostgresRelease, secondPostgresBuildCommit);
 			assertTagRevision(postgresRepo, secondPostgresRelease, secondPostgresBuildCommit);
-			assertTagExists(unTillRepo, secondUnTillRelease);
+			assertBuildRevision(unTill, unTillRepo, secondUnTillRelease, secondUnTillBuildCommit);
+			assertTagRevision(unTillRepo, secondUnTillRelease, secondUnTillBuildCommit);
 			assertUnTillMDeps(unTillRepo, secondUnTillRelease, secondPostgresRelease);
 			assertReleaseCounts(postgresRepo, unTillRepo, 2);
 			assertUnchangedComponents(sqlite, sqliteRepo, ubl, ublRepo);
@@ -278,10 +282,6 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 	private void assertTagRevision(VCSRepository repository, Version version, VCSCommit expectedCommit) {
 		VCSTag tag = findTag(repository, version);
 		assertEquals(expectedCommit.getRevision(), tag.getRelatedCommit().getRevision());
-	}
-
-	private void assertTagExists(VCSRepository repository, Version version) {
-		assertNotNull(findTag(repository, version));
 	}
 
 	private VCSTag findTag(VCSRepository repository, Version version) {
