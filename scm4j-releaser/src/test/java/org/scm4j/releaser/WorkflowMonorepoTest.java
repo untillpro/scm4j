@@ -320,8 +320,10 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 		List<Component> actual = ReleaseBranchFactory.getMDepsRelease(
 				Utils.getReleaseBranchName(repository, releaseVersion), repository);
 		assertEquals(expected.size(), actual.size());
+		assertEquals(expected.keySet(), actual.stream()
+				.map(Component::getName)
+				.collect(Collectors.toSet()));
 		for (Component component : actual) {
-			assertTrue("unexpected dependency " + component, expected.containsKey(component.getName()));
 			assertTrue(component.getVersion().isLocked());
 			assertEquals(expected.get(component.getName()), component.getVersion());
 		}
