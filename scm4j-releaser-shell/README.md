@@ -7,17 +7,17 @@ Shell runner for [scm4j-releaser](../scm4j-releaser).
 - Install `jdk8`, `git`, `sh` (on Windows `sh` normally comes with `git`, use `chocolatey install git jdk8`)
 - Clone the scm4j monorepo
 - Run `releaser.cmd` or `releaser` to build and run scm4j-releaser
-- Use `releaser pull` to update the releaser source
-- Use `releaser pull 23.0` to get particular version
+- Use Git in the monorepo checkout to select the branch, tag, or commit to run
 - For more details, see [scm4j-releaser](../scm4j-releaser)
 
 # Under the Hood
 
-- releaser.cmd on Windows has a single purpose - find `sh`, `git` and launch `sh releaser`
+- `releaser` resolves the monorepo root from its own location, regardless of the current working directory
+- On every invocation, `releaser` uses the root Gradle wrapper to build the scm4j-releaser fat JAR from the current checkout; Gradle skips unchanged build work
+- After a successful build, `releaser` runs the generated fat JAR and passes through the supplied CLI arguments
+- `releaser.cmd` on Windows has a single purpose - find `sh`, `git` and launch `sh releaser`
 
-# Problems
-
-- If any problems with git occurs drop a folder which is shown by `pull` command
+The legacy `releaser pull` commands are no longer supported. Update or switch the monorepo checkout with Git instead.
 
 # Historical version
 

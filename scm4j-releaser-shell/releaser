@@ -1,75 +1,23 @@
-#/bin/sh
+#!/bin/sh
 
 set -e
 
-# Helpers 
-
-fatjar(){
-	info "Run gradle..."
-	"$RGIT"/gradlew -p "$RGIT" fatJar
+info() {
+	# Print informational messages in bold green to stderr.
+	printf '\033[1;32m%s\033[0m\n' "$*" >&2
 }
 
-info(){
-	printf "\e[1;32m" 1>&2
-	echo "$@" 1>&2
-	printf "\e[0m" 1>&2
-}
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+SCM4J_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+LIBS="$SCM4J_ROOT/scm4j-releaser/build/libs"
 
-get_branch() {
-	git -C "$DIRT" branch | grep \*
-}
+info "Build scm4j-releaser from $SCM4J_ROOT..."
+"$SCM4J_ROOT/gradlew" -p "$SCM4J_ROOT" :scm4j-releaser:fatJar
 
-# Main part
-
-USR_HOME=${USERPROFILE:-$HOME}
-
-if [ -z "$USR_HOME" ];then
-	WD=$(dirname $0)
-else
-	WD=$USR_HOME/.scm4j
+jar=$(ls -1t "$LIBS"/fat-scm4j-releaser-*.jar 2>/dev/null | sed -n '1p')
+if [ -z "$jar" ]; then
+	info "Unable to find the scm4j-releaser fat JAR in $LIBS"
+	exit 1
 fi
 
-# Does not start with '.' since: The name '.releaser' starts or ends with a '.'. 
-#   This has been deprecated and is scheduled to be removed in Gradle 5.0
-RGIT="$WD/releaser-src"
-
-REPO="https://github.com/scm4j/scm4j-releaser.git"
-REPO_SHELL="https://github.com/scm4j/scm4j-releaser-shell"
-LIBS=$RGIT/build/libs
-
-if [ ! -d "$RGIT" ]; then
-	info Clone $REPO to "$RGIT"...
-	git clone $REPO $RGIT || exit 1
-	fatjar
-fi
-
-if [ "$1" == "pull" ]; then
-	if [ "$2" == "shell" ]; then
-		REPOT=$REPO_SHELL
-		DIRT=$(dirname $0)
-	else
-		REPOT=$REPO
-		DIRT=$RGIT
-		branch=$2
-	fi
-	if [ -z "$branch" ]; then
-		branch=master
-	fi
-	info "Pull from $REPOT:$branch to $DIRT..."
-	git -C "$DIRT" checkout master
-	git -C "$DIRT" pull
-	if [ ! "$2" == "shell" ]; then
-		git -C "$DIRT" checkout $branch
-		branch_name=`get_branch`
-		if [[ ! $branch_name = *"HEAD detached"* ]]; then 
-			git -C "$DIRT" pull
-		fi
-		rm -rf $LIBS
-		fatjar
-	fi
-	info Done
-	exit
-fi
-
-jar=$(ls "$LIBS"/fa*)
-java -cp "$jar" -Djava.util.concurrent.ForkJoinPool.common.parallelism=64 org.scm4j.releaser.cli.CLI $*
+exec java -cp "$jar" -Djava.util.concurrent.ForkJoinPool.common.parallelism=64 org.scm4j.releaser.cli.CLI "$@"
