@@ -148,6 +148,7 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 			assertNotEquals(sqliteRepositoryHead.getRevision(), postgresBuildCommit.getRevision());
 			// Verify the externally durable result: locked dependencies and exactly one release of each built component.
 			assertUnTillMDeps(unTillRepo, firstUnTillRelease, firstPostgresRelease);
+			assertTagExists(unTillRepo, firstUnTillRelease);
 			assertReleaseCounts(postgresRepo, unTillRepo, 1);
 			assertUnchangedComponents(sqlite, sqliteRepo, ubl, ublRepo);
 			// Once released, postgres has no work of its own left to execute.
@@ -282,6 +283,10 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 	private void assertTagRevision(VCSRepository repository, Version version, VCSCommit expectedCommit) {
 		VCSTag tag = findTag(repository, version);
 		assertEquals(expectedCommit.getRevision(), tag.getRelatedCommit().getRevision());
+	}
+
+	private void assertTagExists(VCSRepository repository, Version version) {
+		assertNotNull(findTag(repository, version));
 	}
 
 	private VCSTag findTag(VCSRepository repository, Version version) {
