@@ -13,6 +13,7 @@ import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSType;
 import org.scm4j.releaser.testutils.MonorepoTestEnvironment;
 import org.scm4j.releaser.testutils.TestBuilder;
+import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
 import org.scm4j.vcs.api.WalkDirection;
@@ -56,6 +57,7 @@ import static org.junit.Assert.assertTrue;
 public class WorkflowMonorepoTest extends WorkflowTestBase {
 
 	private MonorepoTestEnvironment monorepoEnvironment;
+	private VCSRepository monorepoRepository;
 
 	@Override
 	@Before
@@ -69,10 +71,7 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 	public void tearDown() throws Exception {
 		try {
 			// Close a partially initialized environment as well when a scenario fails midway.
-			if (monorepoEnvironment != null) {
-				monorepoEnvironment.close();
-				monorepoEnvironment = null;
-			}
+			closeMonorepoEnvironment();
 		} finally {
 			TestBuilder.setBuilders(null);
 			new DelayedTagsFile().delete();
@@ -106,6 +105,7 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 			VCSRepository unTillRepo = repoFactory.getVCSRepository(unTill);
 			VCSRepository ublRepo = repoFactory.getVCSRepository(ubl);
 			VCSRepository postgresRepo = repoFactory.getVCSRepository(postgres);
+			monorepoRepository = postgresRepo;
 			VCSRepository sqliteRepo = repoFactory.getVCSRepository(sqlite);
 
 			// Prove the fixture really models one physical repository with two distinct component identities.
@@ -189,11 +189,55 @@ public class WorkflowMonorepoTest extends WorkflowTestBase {
 			assertReleaseCounts(postgresRepo, unTillRepo, 2);
 			assertUnchangedComponents(sqlite, sqliteRepo, ubl, ublRepo);
 		} finally {
+			try {
+				closeMonorepoEnvironment();
+			} finally {
+				new DelayedTagsFile().delete();
+				Utils.waitForDeleteDir(Constants.RELEASES_DIR);
+			}
+		}
+	}
+
+	private void closeMonorepoEnvironment() throws Exception {
+		if (monorepoEnvironment == null) {
+			return;
+		}
+		try {
+			assertMonorepoRootFilesUnchanged();
+		} finally {
 			monorepoEnvironment.close();
 			monorepoEnvironment = null;
-			new DelayedTagsFile().delete();
-			Utils.waitForDeleteDir(Constants.RELEASES_DIR);
+			monorepoRepository = null;
 		}
+	}
+
+	private void assertMonorepoRootFilesUnchanged() {
+		IVCS vcs = monorepoEnvironment.getMonorepoVCS();
+		if (vcs == null) {
+			return;
+		}
+		String developBranch = monorepoRepository == null
+				? VCSRepository.DEFAULT_DEVELOP_BRANCH : monorepoRepository.getDevelopBranch();
+		assertMonorepoRootFilesUnchanged(vcs, developBranch);
+		if (monorepoRepository == null) {
+			return;
+		}
+		String releaseBranchPrefix = monorepoRepository.getName() + "/"
+				+ monorepoRepository.getReleaseBranchPrefix();
+		boolean releaseNamespaceExists = monorepoEnvironment.getVcsType() != VCSType.SVN
+				|| vcs.getBranches(null).contains(monorepoRepository.getName());
+		if (releaseNamespaceExists) {
+			for (String branchName : vcs.getBranches(releaseBranchPrefix)) {
+				assertMonorepoRootFilesUnchanged(vcs, branchName);
+			}
+		}
+	}
+
+	private void assertMonorepoRootFilesUnchanged(IVCS vcs, String branchName) {
+		assertEquals(MONOREPO_ROOT_UNREACHABLE_VERSION,
+				vcs.getFileContent(branchName, Constants.VER_FILE_NAME, null));
+		assertEquals(MONOREPO_ROOT_UNREACHABLE_MDEPS,
+				vcs.getFileContent(branchName, Constants.MDEPS_FILE_NAME, null));
 	}
 
 	@SuppressWarnings("deprecation")
