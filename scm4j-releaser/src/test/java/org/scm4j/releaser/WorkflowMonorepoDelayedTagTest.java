@@ -20,7 +20,11 @@ import static org.junit.Assert.assertTrue;
  * repository. Each release branch is moved by its sibling so the eventual tag must use the saved
  * component revision rather than the newer physical repository head.
  */
-public class WorkflowMonorepoDelayedTagTest extends WorkflowMonorepoTestBase {
+public class WorkflowMonorepoDelayedTagTest extends WorkflowTestBase {
+
+	public WorkflowMonorepoDelayedTagTest() {
+		super(WorkflowEnvironment.MONOREPO);
+	}
 
 	@Test
 	public void testDelayedTagsAreScopedByComponent() throws Exception {
