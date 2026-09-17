@@ -26,7 +26,7 @@ public class WorkflowMonorepoPatchesTest extends WorkflowTestBase {
 	@Test
 	public void testPatchReleaseUsesComponentHistory() throws Exception {
 		// Git and SVN implement branch history differently, so the same component-scoping contract covers both.
-		runForEachVcs(this::runPatchScenario);
+		runForSelectedVcs(this::runPatchScenario);
 	}
 
 	private void runPatchScenario(ScenarioContext context) {

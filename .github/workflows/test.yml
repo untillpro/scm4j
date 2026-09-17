@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 4 * * *'
+      timezone: Europe/Moscow
 
 permissions:
   contents: read
@@ -29,8 +32,12 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Make Gradle wrapper executable
-        run: chmod +x gradlew
-
       - name: Run tests
+        if: github.event_name != 'schedule'
         run: ./gradlew test
+
+      - name: Run scheduled releaser workflow tests on Git and SVN
+        if: github.event_name == 'schedule'
+        env:
+          SCM4J_WORKFLOW_TEST_ALL_VCS: 'true'
+        run: ./gradlew :scm4j-releaser:test --tests 'org.scm4j.releaser.Workflow*Test'

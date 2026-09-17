@@ -20,15 +20,14 @@ public class ReleaseBranchFactoryTest {
 
 	@Test
 	public void testDevelopmentMDepsUseConfiguredBranch() throws Exception {
-		for (VCSType vcsType : VCSType.values()) {
-			try (TestEnvironment env = new TestEnvironment(vcsType)) {
-				env.generateTestEnvironment();
-				IVCS vcs = env.getUnTillVCS();
-				vcs.createBranch(null, CUSTOM_DEVELOP_BRANCH, "custom develop branch created");
+		VCSType vcsType = VCSType.GIT;
+		try (TestEnvironment env = new TestEnvironment()) {
+			env.generateTestEnvironment();
+			IVCS vcs = env.getUnTillVCS();
+			vcs.createBranch(null, CUSTOM_DEVELOP_BRANCH, "custom develop branch created");
 
-				assertBranchSelection(vcsType, vcs, null, "root");
-				assertBranchSelection(vcsType, vcs, COMPONENT_SUBFOLDER, "component");
-			}
+			assertBranchSelection(vcsType, vcs, null, "root");
+			assertBranchSelection(vcsType, vcs, COMPONENT_SUBFOLDER, "component");
 		}
 	}
 

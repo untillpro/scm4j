@@ -3,10 +3,10 @@ package org.scm4j.releaser.actions;
 import org.junit.Test;
 import org.scm4j.commons.progress.IProgress;
 import org.scm4j.commons.progress.ProgressConsole;
-import org.scm4j.releaser.WorkflowTestBase;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSComponentLocation;
+import org.scm4j.releaser.conf.VCSType;
 import org.scm4j.releaser.exceptions.EReleaserException;
 
 import java.util.ArrayList;
@@ -17,7 +17,10 @@ import java.util.List;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class ActionAbstractTest extends WorkflowTestBase {
+public class ActionAbstractTest {
+
+	private final Component compUnTill = new Component("test:component");
+	private final VCSRepository repoUnTill = repository(null);
 
 	static class TestAction extends ActionAbstract {
 		public TestAction(Component comp, List<IAction> childActions, VCSRepository repo) {
@@ -89,6 +92,6 @@ public class ActionAbstractTest extends WorkflowTestBase {
 	}
 
 	private VCSRepository repository(String subfolder) {
-		return new VCSRepository("name", "url", subfolder, null, null, null, null, null, null);
+		return new VCSRepository("name", "url", subfolder, null, VCSType.GIT, null, null, null, null);
 	}
 }

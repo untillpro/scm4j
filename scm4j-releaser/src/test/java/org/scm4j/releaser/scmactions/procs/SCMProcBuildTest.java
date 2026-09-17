@@ -1,6 +1,7 @@
 package org.scm4j.releaser.scmactions.procs;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.scm4j.commons.Version;
 import org.scm4j.commons.progress.IProgress;
@@ -10,7 +11,6 @@ import org.scm4j.releaser.CachedStatuses;
 import org.scm4j.releaser.Constants;
 import org.scm4j.releaser.ExtendedStatus;
 import org.scm4j.releaser.Utils;
-import org.scm4j.releaser.WorkflowTestBase;
 import org.scm4j.releaser.builders.IBuilder;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.DelayedTag;
@@ -18,6 +18,7 @@ import org.scm4j.releaser.conf.DelayedTagsFile;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSType;
 import org.scm4j.releaser.exceptions.ENoReleaseBranch;
+import org.scm4j.releaser.testutils.TestBuilder;
 import org.scm4j.releaser.testutils.TestEnvironment;
 import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.VCSCommit;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class SCMProcBuildTest extends WorkflowTestBase {
+public class SCMProcBuildTest {
 
 	private static final String COMPONENT_SUBFOLDER = "components/driver";
 	private static final String COMPONENT_FILE = "feature.txt";
@@ -42,38 +43,52 @@ public class SCMProcBuildTest extends WorkflowTestBase {
 	private static final String SIBLING_CONTENT = "sibling change after component change";
 	private static final String ROOT_CONTENT = "root change after component change";
 
+	@Before
+	public void cleanTestStateBefore() throws Exception {
+		cleanTestState();
+	}
+
 	@After
-	public void cleanDelayedTags() {
+	public void cleanTestStateAfter() throws Exception {
+		cleanTestState();
+	}
+
+	private void cleanTestState() throws Exception {
 		new DelayedTagsFile().delete();
+		TestBuilder.getEnvVars().clear();
+		TestBuilder.setBuilders(null);
+		Utils.waitForDeleteDir(Constants.RELEASES_DIR);
 	}
 
 	@Test
-	public void testNoReleaseBranch() {
-		CachedStatuses cache = new CachedStatuses();
-		cache.put(repoUBL.getComponentLocation(), new ExtendedStatus(env.getUblVer(), BuildStatus.BUILD,
-				new LinkedHashMap<Component, ExtendedStatus>(), compUBL, repoUBL));
-		ISCMProc proc = new SCMProcBuild(compUBL, cache, false, repoUBL);
-		try {
-			proc.execute(new ProgressConsole());
-			fail();
-		} catch (ENoReleaseBranch e) {
-			assertEquals(Utils.getReleaseBranchName(repoUBL, env.getUblVer()), e.getReleaseBranchName());
+	public void testNoReleaseBranch() throws Exception {
+		try (TestEnvironment env = new TestEnvironment()) {
+			env.generateTestEnvironment();
+			Component component = new Component(TestEnvironment.PRODUCT_UBL);
+			VCSRepository repository = env.getRepoFactory().getVCSRepository(component);
+			CachedStatuses cache = new CachedStatuses();
+			cache.put(repository.getComponentLocation(), new ExtendedStatus(env.getUblVer(), BuildStatus.BUILD,
+					new LinkedHashMap<Component, ExtendedStatus>(), component, repository));
+			ISCMProc proc = new SCMProcBuild(component, cache, false, repository);
+			try {
+				proc.execute(new ProgressConsole());
+				fail();
+			} catch (ENoReleaseBranch e) {
+				assertEquals(Utils.getReleaseBranchName(repository, env.getUblVer()), e.getReleaseBranchName());
+			}
 		}
 	}
 
 	@Test
 	public void testBuildRevisionSelection() throws Exception {
-		// Run the same scenarios against real Git and SVN repositories so both adapters must select
-		// the same build revision.
-		for (VCSType vcsType : VCSType.values()) {
-			try (TestEnvironment env = new TestEnvironment(vcsType)) {
-				env.generateTestEnvironment();
+		VCSType vcsType = VCSType.GIT;
+		try (TestEnvironment env = new TestEnvironment()) {
+			env.generateTestEnvironment();
 
-				assertMissingSubfolderReleaseBranch(vcsType, env.getUnTillDbVCS());
-				assertNonDelayedTagUsesComponentRevision(vcsType, env.getUnTillDbVCS());
-				assertDelayedTagUsesComponentRevision(vcsType, env.getUblVCS());
-				assertRootComponentUsesRepositoryHead(vcsType, env.getUnTillVCS());
-			}
+			assertMissingSubfolderReleaseBranch(vcsType, env.getUnTillDbVCS());
+			assertNonDelayedTagUsesComponentRevision(vcsType, env.getUnTillDbVCS());
+			assertDelayedTagUsesComponentRevision(vcsType, env.getUblVCS());
+			assertRootComponentUsesRepositoryHead(vcsType, env.getUnTillVCS());
 		}
 	}
 

@@ -55,7 +55,7 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 	@Test
 	public void testMonorepoComponents() throws Exception {
 		// Run the complete workflow through both adapters because their history and branch models differ.
-		runForEachVcs(this::runScenario);
+		runForSelectedVcs(this::runScenario);
 	}
 
 	private void runScenario(ScenarioContext context) {

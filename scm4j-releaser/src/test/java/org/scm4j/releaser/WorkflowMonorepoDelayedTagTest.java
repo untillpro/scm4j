@@ -29,7 +29,7 @@ public class WorkflowMonorepoDelayedTagTest extends WorkflowTestBase {
 	@Test
 	public void testDelayedTagsAreScopedByComponent() throws Exception {
 		// Exercise the same delayed-state isolation through both supported VCS implementations.
-		runForEachVcs(this::runDelayedTagScenario);
+		runForSelectedVcs(this::runDelayedTagScenario);
 	}
 
 	private void runDelayedTagScenario(ScenarioContext context) {
