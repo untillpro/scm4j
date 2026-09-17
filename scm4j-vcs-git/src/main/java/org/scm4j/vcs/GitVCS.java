@@ -493,7 +493,7 @@ public class GitVCS implements IVCS {
 			
 			pullAndFetch(git);
 			
-			Collection<Ref> refs = gitRepo.getRefDatabase().getRefs(REFS_REMOTES_ORIGIN).values();
+			Collection<Ref> refs = gitRepo.getRefDatabase().getRefsByPrefix(REFS_REMOTES_ORIGIN);
 			Set<String> res = new HashSet<>();
 			String bn;
 			for (Ref ref : refs) {
@@ -774,7 +774,7 @@ public class GitVCS implements IVCS {
 			 RevWalk rw = new RevWalk(gitRepo)) {
 
 			pullAndFetch(git);
-			Collection<Ref> tagRefs = gitRepo.getTags().values();
+			Collection<Ref> tagRefs = gitRepo.getRefDatabase().getRefsByPrefix(REFS_TAGS);
 	        List<VCSTag> res = new ArrayList<>();
 	        RevCommit revCommit;
 	        for (Ref ref : tagRefs) {
@@ -847,7 +847,7 @@ public class GitVCS implements IVCS {
 			List<VCSTag> res = new ArrayList<>();
 
 			// getAllRefsByPeeledObject does not work. Does not return newelly created tag
-			Collection<Ref> tagRefs = gitRepo.getTags().values();
+			Collection<Ref> tagRefs = gitRepo.getRefDatabase().getRefsByPrefix(REFS_TAGS);
 
 			RevCommit revCommit;
 			for (Ref ref : tagRefs) {
