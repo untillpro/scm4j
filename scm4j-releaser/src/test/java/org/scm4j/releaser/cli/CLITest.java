@@ -189,6 +189,7 @@ public class CLITest {
 		assertEquals(CLI.EXIT_CODE_ERROR, mockedCLI.exec(args));
 
 		assertTrue(mockedCLI.getLastException() instanceof ECmdLineNoCommand);
+		verify(mockedPS, never()).println(Matchers.contains("scm4j-releaser "));
 		verifyCmdLineException();
 	}
 

@@ -111,7 +111,6 @@ public class CLI {
 	public int exec(String[] args) {
 		boolean isStackTrace = ArrayUtils.contains(args, Option.STACK_TRACE.getCmdLineStr());
 		try {
-			out.println("scm4j-releaser " + CLI.class.getPackage().getSpecificationVersion());
 			try {
 				initWorkingDir();
 			} catch (Exception e) {

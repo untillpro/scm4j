@@ -14,8 +14,8 @@ LIBS="$SCM4J_ROOT/scm4j-releaser/build/libs"
 info "Build scm4j-releaser from $SCM4J_ROOT..."
 "$SCM4J_ROOT/gradlew" -p "$SCM4J_ROOT" :scm4j-releaser:fatJar
 
-jar=$(ls -1t "$LIBS"/fat-scm4j-releaser-*.jar 2>/dev/null | sed -n '1p')
-if [ -z "$jar" ]; then
+jar="$LIBS/fat-scm4j-releaser.jar"
+if [ ! -f "$jar" ]; then
 	info "Unable to find the scm4j-releaser fat JAR in $LIBS"
 	exit 1
 fi
