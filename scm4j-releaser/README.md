@@ -4,7 +4,7 @@
 - `project`: root component
 - `managable dependency`: dependency of any component which is "under control", i.e. can be branched, built and uploaded to a maven repository
 - `mdeps`: file which lists managable dependencies, is located at the root of every repository
-- `develop branch`: branch which is used as a source for release branches (in other words - all development happens on). By default it is `master` or `trunk`, depending on VCS
+- `develop branch`: branch which is used as a source for release branches (in other words - all development happens on). By default it is the repository-defined default branch (normally `main`) for Git or `trunk` for SVN
 
 # Usage
 
@@ -46,7 +46,7 @@ For version definitions ref. [semantic Versioning 2.0.0](http://semver.org/).
 - [postTag hooks](https://github.com/scm4j/scm4j-releaser/issues/8)
 
 # Related repositories
-  
+
   - [scm4j-vcs-api](../scm4j-vcs-api)
   - [scm4j-vcs-git](../scm4j-vcs-git)
   - [scm4j-vcs-svn](../scm4j-vcs-svn)

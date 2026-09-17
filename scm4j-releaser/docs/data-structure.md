@@ -1,11 +1,11 @@
 # TOC
 
+- [TOC](#toc)
 - [component configuration files](#component-configuration-files)
   - [`version` file](#version-file)
   - [`mdeps` file](#mdeps-file)
-- environment vars
-  - [SCM4J_CC](data-structure-SCM4J_CC.md): list of yaml files which map artifact coordinates to repositories URLs
-  - [SCM4J_CREDENTIALS](data-structure-SCM4J_CREDENTIALS.md): list of yaml files which defines credentials
+    - [`develop` branch:](#develop-branch)
+    - [`release` branch:](#release-branch)
 - [comment tags](#comment-tags)
 - [working files](#working-files)
 
@@ -17,7 +17,7 @@ Component configuration files should be  located in the root of repository
   - Keeps development and release version numbers
 - `mdeps`
   - Managed dependencies list
-  
+
 ## `version` file
 
 Contains a single line.
@@ -29,7 +29,7 @@ Contains a single line.
 `release`  branch:
 ```ini
 1.4.0
-```  
+```
 
 ## `mdeps` file
 
@@ -39,11 +39,11 @@ Keeps managable dependencies
 
 ```
 com.mycompany:component-one:
-com.mycompany:component-two:master-SNAPSHOT
+com.mycompany:component-two:<branch>-SNAPSHOT
 com.mycompany:component-three:
 ```
 
-Note: `master-SNAPSHOT` must be used for components which use `jitpack`
+For components resolved through [JitPack](https://docs.jitpack.io/readme/#snapshots), replace `<branch>` with the exact Git branch JitPack should build, for example `main-SNAPSHOT` or `stable-SNAPSHOT`.
 
 ### `release` branch:
 
@@ -67,7 +67,7 @@ Comment tags are placed inside commit comments
   - Commit in `release` branch which truncates `-SNAPSHOT`
 - `#scm-ignore`
   - Commit in `develop` branch which shows that all previous feature commits are ignored
-  
+
 # working files
 
 Working files are located at ${user.home}/.scm4j

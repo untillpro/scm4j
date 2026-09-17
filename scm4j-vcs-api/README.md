@@ -31,14 +31,14 @@ scm4j-vcs-api provides:
 	- Result of VCS branches diff operation. Contains Diff type (added, modified, deleted) and unified diff string for a certain file which differs between branches 
 - Head, Head Commit, Branch Head
 	- The latest commit or state of a branch
-- Master Branch
-	- "Master" for Git, "Trunk" for SVN etc
+- Primary Branch
+	- The repository-defined default branch for Git, "Trunk" for SVN, etc.
 - `VCSTag`, Tag
     - Contains tag name, tag log message, tag author and `VCSCommit` instance which represents the tagged commit
 
 # Using VCS interface
 IVCS interface consists of few basic vcs functions.
-Note: null passed as a branch name is considered as Master Branch. Any non-null branch name is considered as user-created branch within conventional place for branches: any branch except "master" for Git, any branch within "Branches" branch for SVN etc. For SVN do not use "Branches\my-branch" as branch name, use "my-branch" instead.
+Note: `null` passed as a branch name represents the repository's primary branch: the branch targeted by the remote symbolic `HEAD` for Git and `trunk` for SVN. Any non-null branch name is used explicitly. For SVN, do not use `Branches\my-branch` as the branch name; use `my-branch` instead.
 - `void createBranch(String srcBranchName, String dstBranchName, String commitMessage)`
 	- Creates a new branch named `dstBranchName` from the Head of `srcBranchName`.
 	- commitMessage is a log message which will be attached to branch create operation if it possible (e.g. Git does not posts branch create operation as a separate commit)
@@ -74,7 +74,7 @@ Note: null passed as a branch name is considered as Master Branch. Any non-null 
 	- Returns list of `VCSDiffEntry` showing what was made within branch `srcBranchName` relative to branch `destBranchName`
 	- Note: result could be considered as a commit which would be made on merging the branch `srcBranchName` into `destBranchName`
 - `Set<String> getBranches(String path)`
-	- Returns list of names of all branches which are started from `path`. Branches here are considered as user-created branches and Master Branch. I.e. any branch for Git, "Trunk" and any branch within "Branches" branch (not "Tags" branches) for SVN etc
+	- Returns list of names of all branches which start with `path`, including the primary branch. This means any branch for Git, and `trunk` plus branches within `branches` (but not `tags`) for SVN.
     - `path` processing
         - Git
             - prefix of branch names to browse

@@ -93,7 +93,7 @@ public abstract class VCSAbstractTest {
 		if (testBaseDir.exists()) {
 			FileUtils.deleteDirectory(testBaseDir);
 		}
-		
+
 		repoName = "scm4j-vcs-" + getVCSTypeString() + "-testrepo";
 
 		localVCSWorkspace = new VCSWorkspace(WORKSPACE_DIR);
@@ -108,9 +108,9 @@ public abstract class VCSAbstractTest {
 		vcsTestDataGen = getVCS(localVCSGenRepo);
 
 		vcs = getVCS(mockedVCSRepo);
-		
+
 		resetMocks();
-		
+
 		setMakeFailureOnVCSReset(false);
 	}
 
@@ -186,28 +186,28 @@ public abstract class VCSAbstractTest {
 		resetMocks();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, commit.getRevision()), LINE_1);
 		verifyMocks();
-		
+
 		vcsTestDataGen.createBranch(null, NEW_BRANCH, "new branch created");
 		commit = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, MOD_LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_3, CONTENT_CHANGED_COMMIT_MESSAGE);
-		
+
 		assertEquals(LINE_3, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null));
 		assertEquals(MOD_LINE_2, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, commit.getRevision()));
-		
+
 
 		try {
 			vcs.getFileContent(null, "sdfsdf1.txt", null);
 			fail(EVCSFileNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSFileNotFound e) {
 		}
-		
+
 		try {
 			vcs.getFileContent("wrong-branch", FILE3_IN_FOLDER_NAME, null) ;
 			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSBranchNotFound e) {
 		}
 	}
-	
+
 	@Test
 	public void testFileSetContents() throws Exception {
 		vcsTestDataGen.setFileContent(null, Arrays.asList(
@@ -221,7 +221,7 @@ public abstract class VCSAbstractTest {
 		assertTrue(lastCommit.getLogMessage().contains(FILE3_ADDED_COMMIT_MESSAGE));
 		assertEquals(LINE_1, vcs.getFileContent(null, FILE1_NAME, null));
 		assertEquals(LINE_2, vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null));
-		
+
 		assertNull(vcsTestDataGen.setFileContent(null, new ArrayList<>()));
 	}
 
@@ -272,26 +272,26 @@ public abstract class VCSAbstractTest {
 		assertFalse(mockedLWC.getFolder().exists());
 		assertFalse(mockedLWC.getLockFile().exists());
 	}
-	
+
 	@Test
 	public void testBranchesDiff() throws Exception {
 		/**
-		 * Master Branch
-		 *  f1-     
+		 * Main Branch
+		 *  f1-
 		 *   |     f2-
 		 *   |     mfm
 		 *   |     mf+ (merge)
 		 *   |   /
-		 *  mf+  
-		 *   |     tf+ (merge) 
+		 *  mf+
+		 *   |     tf+ (merge)
 		 *   |   /  |
 		 *  tf+    f1m
 		 *   |     f3+
-		 *  f2+  /     	 
+		 *  f2+  /
 		 *  f1+
-		 *  
+		 *
 		 *  Result should be: f3+, f1+, f2-, mfm.
-		 *  But: Result of merge operation for f1 is missing file even by TortouiseSVN 
+		 *  But: Result of merge operation for f1 is missing file even by TortoiseSVN
 		 */
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcsTestDataGen.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
@@ -313,40 +313,40 @@ public abstract class VCSAbstractTest {
 		vcsTestDataGen.removeFile(NEW_BRANCH, FILE2_NAME, FILE2_REMOVED_COMMIT_MESSAGE);
 
 		vcsTestDataGen.removeFile(null,  FILE1_NAME, "file1 removed");
-		
+
 		//vcs.setFileContent(null, "folder/file 2 in folder.txt", "file 2 in folder line", "conflicting folder added");
 		vcsTestDataGen.setFileContent(null, "moved file trunk.txt", "file 2 in folder line", "moved file added");
 		//vcs.merge(null, NEW_BRANCH, "merged moved file trunk.txt from trunk");
-		
-		
+
+
 		resetMocks();
 		List<VCSDiffEntry> diffs = vcs.getBranchesDiff(NEW_BRANCH, null);
 		verifyMocks();
 		assertNotNull(diffs);
 		VCSDiffEntry diff;
-		
+
 		diff = getEntryDiffForFile(diffs, FILE3_IN_FOLDER_NAME);
 		assertNotNull(diff);
 		assertTrue(diff.getChangeType() == VCSChangeType.ADD);
 		assertTrue(diff.getUnifiedDiff().contains("+" + LINE_2));
-		
+
 		diff = getEntryDiffForFile(diffs, MOD_FILE_NAME);
 		assertNotNull(diff);
 		assertTrue(diff.getChangeType() == VCSChangeType.MODIFY);
 		assertTrue(diff.getUnifiedDiff().contains("-" + MOD_LINE_1));
 		assertTrue(diff.getUnifiedDiff().contains("+" + MOD_LINE_2));
-		
+
 		diff = getEntryDiffForFile(diffs, FILE1_NAME);
 		assertNotNull(diff);
 		assertTrue(diff.getChangeType() == VCSChangeType.ADD);
 		assertTrue(diff.getUnifiedDiff().contains("+" + LINE_3));
-		
+
 		diff = getEntryDiffForFile(diffs, FILE2_NAME);
 		assertNotNull(diff);
 		assertTrue(diff.getChangeType() == VCSChangeType.DELETE);
 		assertTrue(diff.getUnifiedDiff().contains("-" + LINE_1));
 	}
-	
+
 	private VCSDiffEntry getEntryDiffForFile(List<VCSDiffEntry> entries, String filePath) {
 		for (VCSDiffEntry entry : entries) {
 			if (entry.getFilePath().equals(filePath)) {
@@ -367,7 +367,7 @@ public abstract class VCSAbstractTest {
 			fail();
 		} catch (EVCSFileNotFound e) {
 		}
-		
+
 		assertTrue(logContainsMessage(null, FILE2_REMOVED_COMMIT_MESSAGE));
 	}
 
@@ -381,34 +381,34 @@ public abstract class VCSAbstractTest {
 		List<VCSCommit> log = vcs.log(null, DEFAULT_COMMITS_LIMIT);
 		verifyMocks();
 		assertThat(new Object[] {log.get(0), log.get(1)}, is(new Object[] {c2, c1}));
-		
+
 		log = vcs.log(null, 1);
 		assertTrue(log.size() == 1);
 		assertThat(log.get(0), is(c2));
-		
+
 		log = vcs.log(NEW_BRANCH, 0);
 		assertTrue(log.size() > 1);
 		assertThat(log, hasItem(c3));
 	}
-	
-	@Test 
+
+	@Test
 	public void testCommitsGetRange() throws Exception {
 		/**
-		 * Master Branch
-		 * 
+		 * Primary Branch
+		 *
 		 *        f11+
 		 *        f2+
-		 *  f5+    |  
+		 *  f5+    |
 		 *  f4+    |
-		 *   |   / 
-		 *  f3+       	
-		 *  f1+ 
+		 *   |   /
+		 *  f3+
+		 *  f1+
 		 */
 		String c1 = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE).getRevision();
 		String c3 = vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_3, FILE3_ADDED_COMMIT_MESSAGE).getRevision();
 		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
-		String c4 = vcsTestDataGen.setFileContent(null, "file 4.txt", "dfdfsdf", "File 4 master added").getRevision();
-		String c5 = vcsTestDataGen.setFileContent(null, "file 5.txt", "dfdfsdf", "File 5 master added").getRevision();
+		String c4 = vcsTestDataGen.setFileContent(null, "file 4.txt", "dfdfsdf", "File 4 primary branch added").getRevision();
+		String c5 = vcsTestDataGen.setFileContent(null, "file 5.txt", "dfdfsdf", "File 5 primary branch added").getRevision();
 		String c2 = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE2_NAME, LINE_2, FILE2_ADDED_COMMIT_MESSAGE).getRevision();
 		String c11 = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, "file 1 branch added").getRevision();
 
@@ -416,13 +416,13 @@ public abstract class VCSAbstractTest {
 		List<VCSCommit> commits = vcs.getCommitsRange(null, c1, null);
 		verifyMocks();
 		assertTrue(commitsConsistsOfIds(commits, c3, c4, c5));
-		
+
 		commits = vcs.getCommitsRange(null, null, null);
 		assertTrue(commitsConsistsOfIds(commits, c3, c4, c5));
-		
+
 		commits = vcs.getCommitsRange(NEW_BRANCH, c1, null);
 		assertTrue(commitsContainsIds(commits, c2, c11));
-		
+
 		commits = vcs.getCommitsRange(null, c1, c4);
 		assertTrue(commitsConsistsOfIds(commits, c3, c4));
 
@@ -441,7 +441,7 @@ public abstract class VCSAbstractTest {
 
 		commits = vcs.getCommitsRange(NEW_BRANCH, c1, WalkDirection.ASC, 0);
 		assertTrue(commitsContainsSequenceOfIds(commits, c2, c11));
-		
+
 		commits = vcs.getCommitsRange(null, c1, WalkDirection.ASC, Integer.MAX_VALUE);
 		assertTrue(commitsContainsSequenceOfIds(commits, c1, c3, c4, c5));
 		assertTrue(commits.get(0).getRevision().equals(c1));
@@ -538,7 +538,7 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.getHeadCommit(NEW_BRANCH).equals(commit3));
 		assertNull(vcs.getHeadCommit("wrong-branch"));
 	}
-	
+
 	@Test
 	public void testFileExists() throws Exception {
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
@@ -550,7 +550,7 @@ public abstract class VCSAbstractTest {
 		assertTrue(vcs.fileExists(NEW_BRANCH, FILE3_IN_FOLDER_NAME));
 		assertFalse(vcs.fileExists(null, "no file"));
 	}
-	
+
 	@Test
 	public void testTagCreate() throws Exception {
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
@@ -567,7 +567,7 @@ public abstract class VCSAbstractTest {
 			vcs.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 			fail();
 		} catch (EVCSTagExists e) {
-			
+
 		}
 
 		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
@@ -582,10 +582,10 @@ public abstract class VCSAbstractTest {
 			vcs.createTag(NEW_BRANCH, TAG_NAME_2, TAG_MESSAGE_2, null);
 			fail();
 		} catch (EVCSTagExists e) {
-			
+
 		}
 	}
-	
+
 	@Test
 	public void testTagListAfterDelete() throws Exception {
 		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
@@ -595,7 +595,7 @@ public abstract class VCSAbstractTest {
 		VCSTag tag = vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		assertTrue(vcs.getTags().contains(tag));
 	}
-	
+
 	@Test
 	public void testTagsList() throws Exception {
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
@@ -625,7 +625,7 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertFalse(containsTagName(vcs.getTags(), TAG_NAME_1));
 	}
-	
+
 	@Test
 	public void testCheckoutHead() throws Exception {
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
@@ -640,13 +640,13 @@ public abstract class VCSAbstractTest {
 			assertEquals(FileUtils.readFileToString(testFile, StandardCharsets.UTF_8), LINE_1);
 		}
 	}
-	
+
 	@Test
 	public void testCheckoutRevision() throws Exception {
 		VCSCommit first = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
 		IVCSRepositoryWorkspace rw = localVCSWorkspace.getVCSRepositoryWorkspace("test_checkout_place");
-		
+
 		try (IVCSLockedWorkingCopy lwc = rw.getVCSLockedWorkingCopy()) {
 			lwc.setCorrupted(true);
 			vcs.checkout(null, lwc.getFolder().getPath(), first.getRevision());
@@ -723,7 +723,7 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 		assertFalse(vcs.getBranches(namespace).contains(branchName));
 	}
-	
+
 	private boolean containsTagName(List<VCSTag> tags, String tagName) {
 		for (VCSTag tag : tags) {
 			if (tag.getTagName().equals(tagName)) {
@@ -774,7 +774,7 @@ public abstract class VCSAbstractTest {
 		}
 		return false;
 	}
-	
+
 	private Boolean commitsConsistsOfIds(List<VCSCommit> commits, String... ids) {
 		if (commits.size() == 0 || ids.length == 0) {
 			return false;
@@ -796,7 +796,7 @@ public abstract class VCSAbstractTest {
 		}
 		return count == ids.length;
 	}
-	
+
 	private boolean logContainsMessage(String branchName, String commitMessage) {
 		List<VCSCommit> log = vcs.log(branchName, DEFAULT_COMMITS_LIMIT);
 		for (VCSCommit commit : log) {
@@ -806,10 +806,10 @@ public abstract class VCSAbstractTest {
 		}
 		return false;
 	}
-	
+
 	protected abstract IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo);
 
 	protected abstract void setMakeFailureOnVCSReset(Boolean doMakeFailure) throws Exception;
-	
+
 	protected abstract String getVCSTypeString();
 }

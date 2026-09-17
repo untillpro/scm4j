@@ -28,6 +28,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.RefSpec;
@@ -47,7 +50,6 @@ import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
 public class GitVCSTest extends VCSAbstractTest {
-
 	private Repository localGitRepo;
 	private ProxySelector proxySelectorBackup;
 	private final RuntimeException testGitResetException = new RuntimeException("test exception on git.reset()");
@@ -249,6 +251,54 @@ public class GitVCSTest extends VCSAbstractTest {
 	public void testGitVCSUtilsCreation() {
 		assertNotNull(new GitVCSUtils());
 	}
+
+	@Test
+	public void testNullBranchUsesRemoteDefaultAfterWorkingCopySwitch() {
+		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		vcs.checkout(NEW_BRANCH, mockedLWC.getFolder().getPath(), null);
+
+		assertEquals(LINE_1, vcs.getFileContent(null, FILE1_NAME, null));
+	}
+
+	@Test
+	public void testCustomRemoteDefaultIsSupported() throws Exception {
+		File remoteDir = new File(TEST_BASE_DIR, "custom-default-repo");
+		try (Git ignored = GitVCSUtils.createRepository(remoteDir, "stable")) {
+			// Repository is ready for access through a separate reusable workspace.
+		}
+		GitVCS customVcs = createVCS(remoteDir, "custom-default-workspace");
+
+		customVcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+
+		assertEquals(LINE_1, customVcs.getFileContent(null, FILE1_NAME, null));
+	}
+
+	@Test
+	public void testNonSymbolicRemoteHeadIsRejected() throws Exception {
+		File remoteDir = new File(TEST_BASE_DIR, "detached-head-repo");
+		try (Git remote = GitVCSUtils.createRepository(remoteDir)) {
+			ObjectId headCommit = remote.getRepository().resolve(Constants.HEAD);
+			RefUpdate head = remote.getRepository().updateRef(Constants.HEAD, true);
+			head.setNewObjectId(headCommit);
+			assertEquals(RefUpdate.Result.FORCED, head.forceUpdate());
+		}
+		GitVCS detachedHeadVcs = createVCS(remoteDir, "detached-head-workspace");
+
+		try {
+			detachedHeadVcs.getHeadCommit(null);
+			fail("Expected a repository with a non-symbolic HEAD to be rejected");
+		} catch (EVCSException e) {
+			assertTrue(e.getMessage().contains("Could not determine the default branch"));
+			assertTrue(e.getMessage().contains("remote HEAD is not symbolic"));
+		}
+	}
+
+	private GitVCS createVCS(File remoteDir, String workspaceName) {
+		IVCSWorkspace workspace = new VCSWorkspace(new File(TEST_BASE_DIR, workspaceName).getPath());
+		return new GitVCS(workspace.getVCSRepositoryWorkspace(remoteDir.toURI().toString()));
+	}
 	
 	@Test
 	public void testGetTagsUnannotated() throws Exception {
@@ -332,7 +382,7 @@ public class GitVCSTest extends VCSAbstractTest {
 	public void testGetBranchesExcludesRemoteHead() throws Exception {
 		String remoteHead = "refs/remotes/origin/HEAD";
 		try (Git localGit = git.getLocalGit(mockedLWC)) {
-			localGit.getRepository().updateRef(remoteHead).link("refs/remotes/origin/master");
+			localGit.getRepository().updateRef(remoteHead).link("refs/remotes/origin/main");
 			assertTrue(localGit.getRepository().exactRef(remoteHead).isSymbolic());
 		}
 

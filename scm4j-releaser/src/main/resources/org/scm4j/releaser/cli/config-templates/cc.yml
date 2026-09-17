@@ -30,7 +30,7 @@
   
 # Repository where 
 # a) `release` branches are prefixed with `B` (default is `release/`) 
-# b) `develop` branch is named `branches/develop` (by default it is `trunk` or `master` according to the repository type).
+# b) `develop` branch is named `branches/develop` (when omitted, Git uses the branch targeted by the remote symbolic `HEAD` and SVN uses `trunk`).
 
 #mycompany:component4:
 #  url: http://mycompany.com/repos/component4

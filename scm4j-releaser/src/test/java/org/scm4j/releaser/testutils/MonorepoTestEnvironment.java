@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.UUID;
 
 public class MonorepoTestEnvironment implements AutoCloseable {
-
 	public static final String PRODUCT_UNTILL = "eu.untill:unTill";
 	public static final String PRODUCT_UBL = "eu.untill:UBL";
 	public static final String PRODUCT_POSTGRES = "eu.untill:postgres";
