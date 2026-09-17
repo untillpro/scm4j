@@ -8,6 +8,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.scm4j.commons.Version;
 import org.scm4j.releaser.actions.IAction;
 import org.scm4j.releaser.branch.ReleaseBranchCurrent;
@@ -28,7 +30,11 @@ import org.scm4j.vcs.api.WalkDirection;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +48,10 @@ import static org.junit.Assert.*;
  * Shared workflow-test harness for both the standard multi-repository fixture and monorepo scenarios.
  * Standard tests use the default environment, while monorepo tests opt into fixtures created per VCS adapter.
  */
-public class WorkflowTestBase {
-	// unreachable version and mdeps for tests that use monorepo repositories
+@RunWith(Parameterized.class)
+public abstract class WorkflowTestBase {
+	static final String ALL_VCS_ENV_VAR = "SCM4J_WORKFLOW_TEST_ALL_VCS";
+	// unreachable version and mdeps for tests that use monorepo repositories
 	// stored in the root of the monorepo to make test fail on try to read version or mdeps from the root, not from the subfolder
 	protected static final String MONOREPO_ROOT_UNREACHABLE_VERSION = "99.99.99-SNAPSHOT";
 	protected static final String MONOREPO_ROOT_UNREACHABLE_MDEPS = "# root metadata sentinel";
@@ -62,6 +70,30 @@ public class WorkflowTestBase {
 	private final Map<String, StandardComponentContext> standardComponentContexts = new HashMap<>();
 	private MonorepoTestEnvironment monorepoEnvironment;
 	private ScenarioContext monorepoContext;
+
+	@Parameterized.Parameter
+	public VCSType testingVcsType;
+
+	@Parameterized.Parameters(name = "{0}")
+	public static Iterable<Object[]> workflowVcsParameters() {
+		List<Object[]> parameters = new ArrayList<>();
+		for (VCSType vcsType : selectVcsTypes(ManagementFactory.getRuntimeMXBean().getInputArguments(),
+				System.getenv(ALL_VCS_ENV_VAR))) {
+			parameters.add(new Object[] {vcsType});
+		}
+		return parameters;
+	}
+
+	static List<VCSType> selectVcsTypes(List<String> jvmArguments, String runAllVcs) {
+		for (String argument : jvmArguments) {
+			if (argument.startsWith("-agentlib:jdwp")) {
+				return Collections.singletonList(VCSType.GIT);
+			}
+		}
+		return Boolean.parseBoolean(runAllVcs)
+				? Arrays.asList(VCSType.GIT, VCSType.SVN)
+				: Collections.singletonList(VCSType.GIT);
+	}
 
 	protected enum WorkflowEnvironment {
 		STANDARD,
@@ -82,7 +114,7 @@ public class WorkflowTestBase {
 	@Before
 	public void setUp() throws Exception {
 		if (workflowEnvironment == WorkflowEnvironment.MONOREPO) {
-			// Monorepo scenarios create a fresh fixture for each VCS adapter in runForEachVcs.
+			// Each parameterized invocation creates its own monorepo fixture in runForSelectedVcs.
 			cleanupReleases();
 			return;
 		}
@@ -91,7 +123,7 @@ public class WorkflowTestBase {
 	}
 
 	private void setUpStandardEnvironment() throws Exception {
-		env = new TestEnvironment();
+		env = new TestEnvironment(testingVcsType);
 		env.generateTestEnvironment();
 		repoFactory = env.getRepoFactory();
 		compUnTill = new Component(UNTILL);
@@ -134,14 +166,20 @@ public class WorkflowTestBase {
 		protectMonorepoFromRootRead(repoUnTill, repoUnTillDb, repoUBL);
 	}
 
-	private void writeComponentFiles(VCSRepository repo, Version version) {
-		String rootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME)
-				? repo.getVCS().getFileContent(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME, null)
-				: null;
-		repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.VER_FILE_NAME), version.toString(),
+	private void writeComponentFiles(VCSRepository repo, Version version) {
+
+		String rootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME)
+
+				? repo.getVCS().getFileContent(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME, null)
+
+				: null;
+
+		repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.VER_FILE_NAME), version.toString(),
+
 				Constants.SCM_IGNORE + " component version file added");
 		if (rootMDeps != null) {
-			repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.MDEPS_FILE_NAME),
+			repo.getVCS().setFileContent(repo.getDevelopBranch(), repo.getComponentPath(Constants.MDEPS_FILE_NAME),
+
 					rootMDeps, Constants.SCM_IGNORE + " component mdeps file added");
 		}
 	}
@@ -157,8 +195,10 @@ public class WorkflowTestBase {
 		}
 	}
 
-	protected String getComponentFileContent(VCSRepository repo, String branchName, String relativePath) {
-		return repo.getVCS().getFileContent(branchName, repo.getComponentPath(relativePath), null);
+	protected String getComponentFileContent(VCSRepository repo, String branchName, String relativePath) {
+
+		return repo.getVCS().getFileContent(branchName, repo.getComponentPath(relativePath), null);
+
 	}
 
 	@After
@@ -187,27 +227,43 @@ public class WorkflowTestBase {
 	}
 
 	private void assertConfiguredRepositoryRootsUnchanged() {
-		for (VCSRepository repo : new VCSRepository[] {repoUnTill, repoUnTillDb, repoUBL}) {
-			if (repo == null || repo.getSubfolder().isEmpty()) {
-				continue;
-			}
-			boolean hasRootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME);
-			for (String branchName : repo.getVCS().getBranches(null)) {
-				assertEquals(MONOREPO_ROOT_UNREACHABLE_VERSION,
-						repo.getVCS().getFileContent(branchName, Constants.VER_FILE_NAME, null));
-				if (hasRootMDeps) {
-					assertEquals(MONOREPO_ROOT_UNREACHABLE_MDEPS,
-							repo.getVCS().getFileContent(branchName, Constants.MDEPS_FILE_NAME, null));
-				}
-			}
-		}
-	}
-
-	protected void runForEachVcs(Scenario scenario) throws Exception {
-		// Filtering history, creating branches, checking out revisions, and tagging differ between Git and SVN.
-		for (VCSType vcsType : VCSType.values()) {
-			runMonorepoScenario(vcsType, scenario);
+		for (VCSRepository repo : new VCSRepository[] {repoUnTill, repoUnTillDb, repoUBL}) {
+
+			if (repo == null || repo.getSubfolder().isEmpty()) {
+
+				continue;
+
+			}
+
+			boolean hasRootMDeps = repo.getVCS().fileExists(repo.getDevelopBranch(), Constants.MDEPS_FILE_NAME);
+
+			assertConfiguredRepositoryRootUnchanged(repo, repo.getDevelopBranch(), hasRootMDeps);
+			boolean releaseNamespaceExists = repo.getType() != VCSType.SVN
+					|| repo.getVCS().getBranches(null).contains(repo.getName());
+			if (releaseNamespaceExists) {
+				String releaseBranchPrefix = repo.getName() + "/" + repo.getReleaseBranchPrefix();
+				for (String branchName : repo.getVCS().getBranches(releaseBranchPrefix)) {
+					assertConfiguredRepositoryRootUnchanged(repo, branchName, hasRootMDeps);
+				}
+
+			}
+
 		}
+
+	}
+
+	private void assertConfiguredRepositoryRootUnchanged(VCSRepository repo, String branchName,
+			boolean hasRootMDeps) {
+		assertEquals(MONOREPO_ROOT_UNREACHABLE_VERSION,
+				repo.getVCS().getFileContent(branchName, Constants.VER_FILE_NAME, null));
+		if (hasRootMDeps) {
+			assertEquals(MONOREPO_ROOT_UNREACHABLE_MDEPS,
+					repo.getVCS().getFileContent(branchName, Constants.MDEPS_FILE_NAME, null));
+		}
+	}
+
+	protected void runForSelectedVcs(Scenario scenario) throws Exception {
+		runMonorepoScenario(testingVcsType, scenario);
 	}
 
 	private void runMonorepoScenario(VCSType vcsType, Scenario scenario) throws Exception {
@@ -422,9 +478,12 @@ public class WorkflowTestBase {
 	protected Version getCrbVersion(Component comp) {
 		VCSRepository repo = repoFactory.getVCSRepository(comp);
 		Version crbFirstVersion = Utils.getDevVersion(repo).toPreviousMinor().toReleaseZeroPatch();
-		return new Version(getComponentFileContent(repo, Utils.getReleaseBranchName(repo, crbFirstVersion),
-				Constants.VER_FILE_NAME));
-	}
+		return new Version(getComponentFileContent(repo, Utils.getReleaseBranchName(repo, crbFirstVersion),
+
+				Constants.VER_FILE_NAME));
+
+	}
+
 
 	protected void checkCompBuilt(int times, Component comp) {
 		checkCompBuilt(times, comp, standardComponentContext(comp));
