@@ -371,7 +371,7 @@ project(':scm4j-vcs-test') {
 project(':scm4j-vcs-git') {
     dependencies {
         api project(':scm4j-vcs-api')
-        api 'org.eclipse.jgit:org.eclipse.jgit:4.3.0.201604071810-r'
+        api 'org.eclipse.jgit:org.eclipse.jgit:5.13.5.202508271544-r'
         api 'org.apache.commons:commons-lang3:3.5'
         api 'commons-io:commons-io:2.6'
 

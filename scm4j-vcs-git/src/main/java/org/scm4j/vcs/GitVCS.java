@@ -51,19 +51,19 @@ public class GitVCS implements IVCS {
 	private static final String REFS_TAGS = Constants.R_TAGS;
 	private CredentialsProvider credentials;
 	private final IVCSRepositoryWorkspace repo;
-	
+
 	public CredentialsProvider getCredentials() {
 		return credentials;
 	}
-	
+
 	public GitVCS(IVCSRepositoryWorkspace repo) {
 		this.repo = repo;
 	}
-	
+
 	private void setCredentials(CredentialsProvider credentials) {
 		this.credentials = credentials;
 	}
-	
+
 	private String getRealBranchName(String branchName) {
 		return branchName == null ? MASTER_BRANCH_NAME : branchName;
 	}
@@ -86,11 +86,11 @@ public class GitVCS implements IVCS {
 		}
 		return new Git(gitRepo);
 	}
-	
+
 	Git getLocalGit(IVCSLockedWorkingCopy wc) throws Exception {
 		return getLocalGit(wc.getFolder().getPath());
 	}
-	
+
 	public VCSChangeType gitChangeTypeToVCSChangeType(ChangeType changeType) {
 		switch (changeType) {
 		case ADD:
@@ -103,7 +103,7 @@ public class GitVCS implements IVCS {
 			return VCSChangeType.UNKNOWN;
 		}
 	}
-	
+
 	public VCSTag createUnannotatedTag(String branchName, String tagName, String revisionToTag) {
 		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
 			 Git git = getLocalGit(wc);
@@ -114,25 +114,25 @@ public class GitVCS implements IVCS {
 					.pull()
 					.setCredentialsProvider(credentials)
 					.call();
-			
+
 			RevCommit commitToTag = revisionToTag == null ? null : rw.parseCommit(ObjectId.fromString(revisionToTag));
-			
+
 			Ref ref = git
 					.tag()
 					.setAnnotated(false)
 					.setName(tagName)
 					.setObjectId(commitToTag)
 					.call();
-			
+
 			push(git, new RefSpec(ref.getName()));
-			
+
 			return new VCSTag(tagName, null, null, revisionToTag == null ? getHeadCommit(branchName)
 					: getVCSCommit(commitToTag));
 		} catch (GitAPIException e) {
 			throw new EVCSException(e);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
-		} 
+		}
 	}
 
 	@Override
@@ -143,7 +143,7 @@ public class GitVCS implements IVCS {
 			 Repository gitRepo = git.getRepository()) {
 
 			checkout(git, gitRepo, srcBranchName, null);
-			
+
 			git
 					.branchCreate()
 					.setUpstreamMode(SetupUpstreamMode.TRACK)
@@ -160,7 +160,7 @@ public class GitVCS implements IVCS {
 			throw new EVCSException(e);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
-		} 
+		}
 	}
 
 	@Override
@@ -178,7 +178,7 @@ public class GitVCS implements IVCS {
 					.call();
 
 			RefSpec refSpec = new RefSpec(":refs/heads/" + branchName);
-			
+
 			push(git, refSpec);
 		} catch (GitAPIException e) {
 			throw new EVCSException(e);
@@ -251,9 +251,9 @@ public class GitVCS implements IVCS {
 	@Override
 	public void setProxy(final String host, final int port, final String proxyUser, final String proxyPassword) {
 		ProxySelector.setDefault(new ProxySelector() {
-			
+
 			final ProxySelector delegate = ProxySelector.getDefault();
-			
+
 			@Override
 			public List<Proxy> select(URI uri) {
 				if (uri.toString().toLowerCase().contains(repo.getRepoUrl().toLowerCase())) {
@@ -264,7 +264,7 @@ public class GitVCS implements IVCS {
 			                : delegate.select(uri);
 				}
 			}
-			
+
 			@Override
 			public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
 				if (delegate != null) {
@@ -286,9 +286,9 @@ public class GitVCS implements IVCS {
 
 	@Override
 	public String getRepoUrl() {
-		return repo.getRepoUrl(); 
+		return repo.getRepoUrl();
 	}
-	
+
 	@Override
 	public String getFileContent(String branchName, String fileRelativePath, String revision) {
 		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
@@ -296,7 +296,7 @@ public class GitVCS implements IVCS {
 			 Repository gitRepo = git.getRepository();
 			 RevWalk revWalk = new RevWalk(gitRepo);
 			 TreeWalk treeWalk = new TreeWalk(gitRepo)) {
-			
+
 			pullAndFetch(git);
 
 			ObjectId revisionCommitId = gitRepo.resolve(revision == null ? REFS_HEADS + getRealBranchName(branchName) : revision);
@@ -343,7 +343,7 @@ public class GitVCS implements IVCS {
 		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
 				 Git git = getLocalGit(wc);
 				 Repository gitRepo = git.getRepository()) {
-				
+
 			checkout(git, gitRepo, branchName, null);
 			CommitCommand commitCommand = git.commit();
 			StringBuilder commitMessageSB = new StringBuilder();
@@ -389,9 +389,9 @@ public class GitVCS implements IVCS {
 	private void checkout(Git git, Repository gitRepo, String branchName, String revision) throws Exception {
 		String bn = getRealBranchName(branchName);
 		CheckoutCommand cmd = git.checkout();
-		
+
 		pullAndFetch(git);
-		
+
 		if (revision == null) {
 			cmd
 					.setStartPoint("origin/" + bn)
@@ -399,7 +399,7 @@ public class GitVCS implements IVCS {
 					.setUpstreamMode(SetupUpstreamMode.TRACK)
 					.setName(bn)
 					.call();
-			
+
 		} else {
 			try (RevWalk walk = new RevWalk(gitRepo)) {
 				RevCommit commit = walk.parseCommit(RevCommit.fromString(revision));
@@ -418,7 +418,7 @@ public class GitVCS implements IVCS {
 				.pull()
 				.setCredentialsProvider(credentials)
 				.call();
-		
+
 		// remove local branches and tags which are not exists on remote
 		// See https://github.com/scm4j/scm4j-releaser/issues/59
 		// if executed first then version is considered as modified. So have uncommited change: 19.5-SNAPSHOT -> 18.5-SNAPSHOT
@@ -473,7 +473,7 @@ public class GitVCS implements IVCS {
 				}
 				VCSDiffEntry vcsEntry = new VCSDiffEntry(
 						diffEntry.getPath(diffEntry.getChangeType() == ChangeType.ADD ? Side.NEW : Side.OLD),
-						gitChangeTypeToVCSChangeType(diffEntry.getChangeType()), 
+						gitChangeTypeToVCSChangeType(diffEntry.getChangeType()),
 						baos.toString("UTF-8"));
 				res.add(vcsEntry);
 			}
@@ -490,13 +490,16 @@ public class GitVCS implements IVCS {
 		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
 			 Git git = getLocalGit(wc);
 			 Repository gitRepo = git.getRepository()) {
-			
+
 			pullAndFetch(git);
-			
-			Collection<Ref> refs = gitRepo.getRefDatabase().getRefs(REFS_REMOTES_ORIGIN).values();
+
+			Collection<Ref> refs = gitRepo.getRefDatabase().getRefsByPrefix(REFS_REMOTES_ORIGIN);
 			Set<String> res = new HashSet<>();
 			String bn;
 			for (Ref ref : refs) {
+				if (ref.isSymbolic()) {
+					continue;
+				}
 				bn = ref.getName().replace(REFS_REMOTES_ORIGIN, "");
 				if (bn.startsWith(path == null ? "" : path)) {
 					res.add(bn);
@@ -515,7 +518,7 @@ public class GitVCS implements IVCS {
 		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
 			 Git git = getLocalGit(wc);
 			 Repository gitRepo = git.getRepository()) {
-				
+
 			LogCommand log = git
 					.log()
 					.add(gitRepo.resolve(REFS_REMOTES_ORIGIN + getRealBranchName(branchName)));
@@ -523,14 +526,14 @@ public class GitVCS implements IVCS {
 			if (limit > 0) {
 				log.setMaxCount(limit);
 			}
-			
+
 			Iterable<RevCommit> commits = log.call();
-			
+
 			List<VCSCommit> res = new ArrayList<>();
 			for (RevCommit commit : commits) {
 				res.add(getVCSCommit(commit));
 			}
-			
+
 			return res;
 		} catch (GitAPIException e) {
 			throw new EVCSException(e);
@@ -551,7 +554,7 @@ public class GitVCS implements IVCS {
 			 Repository gitRepo = git.getRepository()) {
 
 			checkout(git, gitRepo, branchName, null);
-			
+
 			git
 					.rm()
 					.addFilepattern(filePath)
@@ -614,7 +617,7 @@ public class GitVCS implements IVCS {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	private RevCommit getInitialCommit(Repository gitRepo, String branchName) throws Exception {
 		try (RevWalk rw = new RevWalk(gitRepo)) {
 			Ref ref = gitRepo.exactRef(REFS_HEADS + branchName);
@@ -721,7 +724,7 @@ public class GitVCS implements IVCS {
 			 Repository gitRepo = git.getRepository()) {
 
 			checkout(git, gitRepo, branchName, null);
-			
+
 			return new File(wc.getFolder(), filePath).exists();
 		} catch (GitAPIException e) {
 			throw new EVCSException(e);
@@ -774,7 +777,7 @@ public class GitVCS implements IVCS {
 			 RevWalk rw = new RevWalk(gitRepo)) {
 
 			pullAndFetch(git);
-			Collection<Ref> tagRefs = gitRepo.getTags().values();
+			Collection<Ref> tagRefs = gitRepo.getRefDatabase().getRefsByPrefix(REFS_TAGS);
 	        List<VCSTag> res = new ArrayList<>();
 	        RevCommit revCommit;
 	        for (Ref ref : tagRefs) {
@@ -797,7 +800,7 @@ public class GitVCS implements IVCS {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	@Override
 	public void removeTag(String tagName) {
 		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
@@ -811,7 +814,7 @@ public class GitVCS implements IVCS {
 					.tagDelete()
 					.setTags(tagName)
 					.call();
-		
+
 			push(git, new RefSpec(":refs/tags/" + tagName));
 
 		} catch (GitAPIException e) {
@@ -825,7 +828,7 @@ public class GitVCS implements IVCS {
 	public void checkout(String branchName, String targetPath, String revision)  {
 		try (Git git = getLocalGit(targetPath);
 			 Repository gitRepo = git.getRepository()) {
-			
+
 			checkout(git, gitRepo, branchName, revision);
 
 		} catch (GitAPIException e) {
@@ -846,8 +849,8 @@ public class GitVCS implements IVCS {
 
 			List<VCSTag> res = new ArrayList<>();
 
-			// getAllRefsByPeeledObject does not work. Does not return newelly created tag
-			Collection<Ref> tagRefs = gitRepo.getTags().values();
+			// getAllRefsByPeeledObject does not work. Does not return newely created tag
+			Collection<Ref> tagRefs = gitRepo.getRefDatabase().getRefsByPrefix(REFS_TAGS);
 
 			RevCommit revCommit;
 			for (Ref ref : tagRefs) {
@@ -864,7 +867,7 @@ public class GitVCS implements IVCS {
 					}
 				}
 			}
-			
+
 			return res;
 		} catch (GitAPIException e) {
 			throw new EVCSException(e);
@@ -873,5 +876,5 @@ public class GitVCS implements IVCS {
 		}
 	}
 
-	
+
 }

@@ -1,6 +1,7 @@
 package org.scm4j.vcs;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -325,6 +326,17 @@ public class GitVCSTest extends VCSAbstractTest {
 		// expect no EVCSBRanchExists exception
 		vcs.createBranch(null, "branch", "branch created");
 		assertTrue(vcs.getBranches("").contains("branch"));
+	}
+
+	@Test
+	public void testGetBranchesExcludesRemoteHead() throws Exception {
+		String remoteHead = "refs/remotes/origin/HEAD";
+		try (Git localGit = git.getLocalGit(mockedLWC)) {
+			localGit.getRepository().updateRef(remoteHead).link("refs/remotes/origin/master");
+			assertTrue(localGit.getRepository().exactRef(remoteHead).isSymbolic());
+		}
+
+		assertFalse(vcs.getBranches("").contains("HEAD"));
 	}
 	
 	@Test
