@@ -1,7 +1,7 @@
 Variable lists files which maps artifact coordinates to repositories parameters.
 Deprecated name: `SCM4J_VCS_REPOS`
 
-Example of variable (";" - separated): 
+Example of variable (";" - separated):
 
 ```
 SCM4J_CC=c:/workspace/my-repos.yml;http://mycompany.com/repos/project1-repos.yml`
@@ -14,7 +14,7 @@ Yaml file consists of number of rules which are applied in order of appearance, 
 
 # Just a component. Note that `releaseCommand` (deprecated: `builder`) is a must and ident of attribute specification must be at least three spaces
 
-mycompany:component1: 
+mycompany:component1:
  url: http://mycompany.com/repos/component1
  releaseCommand: cmd /c gradlew.bat upload
 
@@ -27,16 +27,16 @@ component1|component2:
 
 my(.*):
  url: http://mycompany.com/git/myProj$1
-  
+
 # `svn` type repository (`git` is default)
 
 mycompany:component3:
  url: http://mycompany.com/repos/component3
  type: svn
-  
-# Repository where 
-# a) `release` branches are prefixed with `B` (default is `release/`) 
-# b) `develop` branch is named `branches/develop` (by default it is `trunk` or `master` according to the repository type).
+
+# Repository where
+# a) `release` branches are prefixed with `B` (default is `release/`)
+# b) `develop` branch is named `branches/develop` (by default it is `trunk` for SVN or the repository-defined default branch (normally `main`) for Git).
 
 mycompany:component4:
  url: http://mycompany.com/repos/component4

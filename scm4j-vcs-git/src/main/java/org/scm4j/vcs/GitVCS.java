@@ -45,13 +45,13 @@ import java.util.*;
 public class GitVCS implements IVCS {
 
 	public static final String GIT_VCS_TYPE_STRING = "git";
-	private static final String MASTER_BRANCH_NAME = "master";
 	private static final String REFS_REMOTES_ORIGIN = Constants.R_REMOTES + Constants.DEFAULT_REMOTE_NAME + "/";
 	private static final String REFS_HEADS = Constants.R_HEADS;
 	private static final String REFS_TAGS = Constants.R_TAGS;
 	private CredentialsProvider credentials;
 	private final IVCSRepositoryWorkspace repo;
-
+	private String defaultBranchName;
+	
 	public CredentialsProvider getCredentials() {
 		return credentials;
 	}
@@ -64,8 +64,56 @@ public class GitVCS implements IVCS {
 		this.credentials = credentials;
 	}
 
-	private String getRealBranchName(String branchName) {
-		return branchName == null ? MASTER_BRANCH_NAME : branchName;
+	private String getRealBranchName(String branchName) throws GitAPIException {
+		return branchName == null ? getDefaultBranchName() : branchName;
+	}
+
+	private synchronized String getDefaultBranchName() throws GitAPIException {
+		if (defaultBranchName != null) {
+			return defaultBranchName;
+		}
+
+		Map<String, Ref> refs;
+		try {
+			refs = Git.lsRemoteRepository()
+					.setRemote(repo.getRepoUrl())
+					.setCredentialsProvider(credentials)
+					.callAsMap();
+		} catch (GitAPIException e) {
+			throw defaultBranchLookupFailed(e);
+		}
+
+		Ref head = refs.get(Constants.HEAD);
+		if (head == null) {
+			throw invalidDefaultBranch("remote HEAD is not advertised");
+		}
+		if (!head.isSymbolic()) {
+			throw invalidDefaultBranch("remote HEAD is not symbolic");
+		}
+
+		String targetName = head.getLeaf().getName();
+		Ref target = refs.get(targetName);
+		if (!targetName.startsWith(REFS_HEADS) || targetName.length() == REFS_HEADS.length()
+				|| target == null || target.getObjectId() == null) {
+			throw invalidDefaultBranch("remote HEAD does not target an advertised branch");
+		}
+		defaultBranchName = targetName.substring(REFS_HEADS.length());
+		return defaultBranchName;
+	}
+
+	private GitAPIException invalidDefaultBranch(String reason) {
+		return defaultBranchException(": " + reason, null);
+	}
+
+	private GitAPIException defaultBranchLookupFailed(Exception cause) {
+		return defaultBranchException("", cause);
+	}
+
+	private GitAPIException defaultBranchException(String detail, Exception cause) {
+		return new GitAPIException("Could not determine the default branch of Git repository "
+				+ repo.getRepoUrl() + detail, cause) {
+			private static final long serialVersionUID = 1L;
+		};
 	}
 
 	Git getLocalGit(String folder) throws Exception {
@@ -169,7 +217,7 @@ public class GitVCS implements IVCS {
 			 Git git = getLocalGit(wc);
 			 Repository gitRepo = git.getRepository()) {
 
-			checkout(git, gitRepo, MASTER_BRANCH_NAME, null);
+			checkout(git, gitRepo, null, null);
 
 			git
 					.branchDelete()
