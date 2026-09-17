@@ -29,7 +29,7 @@ public class ReleaserGradlePluginIntegrationTest {
 	}
 
 	@Test public void noVersionFile() throws Exception {
-		createFile("build.gradle", "plugins { id 'io.github.scm4j.releaser.scm4j-releaser-gradle-plugin' }");
+		createFile("build.gradle", "plugins { id 'io.github.scm4j.scm4j-releaser-gradle-plugin' }");
 		Exception e = assertThrows(UnexpectedBuildFailure.class, () -> {
 			GradleRunner.create()
 					.withProjectDir(testProjectDir.getRoot())
@@ -40,7 +40,7 @@ public class ReleaserGradlePluginIntegrationTest {
 	}
 
 	@Test public void version() throws Exception {
-		createFile("build.gradle", "plugins { id 'io.github.scm4j.releaser.scm4j-releaser-gradle-plugin' }\n"
+		createFile("build.gradle", "plugins { id 'io.github.scm4j.scm4j-releaser-gradle-plugin' }\n"
 				+ "task testVersion { doLast { assert version == '1.1' } }");
 		createFile("version", "1.1");
 		BuildResult result = GradleRunner.create()
