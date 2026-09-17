@@ -39,11 +39,11 @@ Keeps managable dependencies
 
 ```
 com.mycompany:component-one:
-com.mycompany:component-two:main-SNAPSHOT
+com.mycompany:component-two:<branch>-SNAPSHOT
 com.mycompany:component-three:
 ```
 
-Note: `main-SNAPSHOT` must be used for components which use `jitpack`
+For components resolved through [JitPack](https://docs.jitpack.io/readme/#snapshots), replace `<branch>` with the exact Git branch JitPack should build, for example `main-SNAPSHOT` or `stable-SNAPSHOT`.
 
 ### `release` branch:
 
