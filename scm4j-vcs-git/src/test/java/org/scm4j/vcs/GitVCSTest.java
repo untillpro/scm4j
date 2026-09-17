@@ -257,6 +257,7 @@ public class GitVCSTest extends VCSAbstractTest {
 		vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcs.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		vcs.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		vcs.checkout(NEW_BRANCH, mockedLWC.getFolder().getPath(), null);
 
 		assertEquals(LINE_1, vcs.getFileContent(null, FILE1_NAME, null));
 	}
