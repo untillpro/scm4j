@@ -4,35 +4,20 @@ plugins {
 }
 
 def moduleMetadata = [
-        'scm4j-commons'               : [group: 'org.scm4j',       version: '1.15.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-deployer-api'          : [group: 'org.scm4j',       version: '0.14.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-deployer-engine'       : [group: 'org.scm4j',       version: '0.35.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-deployer-installers'   : [group: 'org.scm4j',       version: '0.30.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-installer'             : [group: 'org.scm4j',       version: '0.44.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-jenkins'               : [group: 'org.scm4j',       version: '2.0-SNAPSHOT',    java: JavaVersion.VERSION_1_7],
-        'scm4j-releaser'              : [group: 'org.scm4j',       version: '34.2.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+        'scm4j-commons'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-deployer-api'          : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-deployer-engine'       : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-deployer-installers'   : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-installer'             : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-jenkins'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_7],
+        'scm4j-releaser'              : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
         'scm4j-releaser-gradle-plugin': [group: 'io.github.scm4j', version: '0.4.0-SNAPSHOT',  java: JavaVersion.VERSION_1_8],
-        'scm4j-template'              : [group: 'org.scm4j',       version: '0.1.0-SNAPSHOT',  java: JavaVersion.VERSION_1_8],
-        'scm4j-test-jitpack'          : [group: '',                version: '1.0.0-SNAPSHOT',  java: JavaVersion.VERSION_1_7],
-        'scm4j-vcs-api'               : [group: 'org.scm4j',       version: '1.17.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-vcs-git'               : [group: 'org.scm4j',       version: '1.19.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-vcs-svn'               : [group: 'org.scm4j',       version: '1.20.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-        'scm4j-vcs-test'              : [group: 'org.scm4j',       version: '1.18.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
-]
-
-def manifestVersionPolicy = [
-        'scm4j-commons'               : false,
-        'scm4j-deployer-api'          : true,
-        'scm4j-deployer-engine'       : true,
-        'scm4j-deployer-installers'   : true,
-        'scm4j-installer'             : true,
-        'scm4j-releaser'              : false,
-        'scm4j-releaser-gradle-plugin': true,
-        'scm4j-template'              : true,
-        'scm4j-vcs-api'               : false,
-        'scm4j-vcs-git'               : false,
-        'scm4j-vcs-svn'               : false,
-        'scm4j-vcs-test'              : false,
+        'scm4j-template'              : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-test-jitpack'          : [group: '',                                               java: JavaVersion.VERSION_1_7],
+        'scm4j-vcs-api'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-vcs-git'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-vcs-svn'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+        'scm4j-vcs-test'              : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
 ]
 
 subprojects {
@@ -40,7 +25,13 @@ subprojects {
 
     def metadata = moduleMetadata[project.name]
     group = metadata.group
-    version = metadata.version
+    if (metadata.containsKey('version')) {
+        version = metadata.version
+    } else {
+        tasks.withType(AbstractArchiveTask).configureEach {
+            archiveVersion.set('')
+        }
+    }
 
     java {
         toolchain {
@@ -71,21 +62,6 @@ subprojects {
         dependsOn(tasks.named('sourcesJar'), tasks.named('javadocJar'))
     }
 
-    if (manifestVersionPolicy.containsKey(project.name)) {
-        tasks.named('jar', Jar) {
-            def stripSnapshot = manifestVersionPolicy[project.name]
-            def specificationVersion = project.version.toString()
-            if (stripSnapshot) {
-                specificationVersion = specificationVersion.replaceAll(/-SNAPSHOT$/, '')
-            }
-            manifest.attributes(
-                    'Specification-Title': project.name,
-                    'Specification-Version': specificationVersion,
-                    'Implementation-Title': project.name,
-                    'Implementation-Version': "${project.version} (${new Date().format('yyyy-MM-dd')})",
-            )
-        }
-    }
 }
 
 project(':scm4j-commons') {
@@ -137,19 +113,6 @@ project(':scm4j-deployer-engine') {
         testImplementation 'org.mockito:mockito-all:1.9.5'
     }
 
-    def generatedResourcesDir = layout.buildDirectory.dir('generated/resources')
-    def apiVersionFile = generatedResourcesDir.map {
-        it.file('org/scm4j/deployer/engine/scm4j-deployer-api-version').asFile
-    }
-
-    tasks.named('jar', Jar) {
-        doFirst {
-            def outputFile = apiVersionFile.get()
-            outputFile.parentFile.mkdirs()
-            outputFile.text = project(':scm4j-deployer-api').version.toString()
-        }
-        from(generatedResourcesDir)
-    }
 }
 
 project(':scm4j-deployer-installers') {
@@ -236,14 +199,13 @@ project(':scm4j-releaser') {
 
     tasks.register('fatJar', Jar) {
         dependsOn(tasks.named('classes'))
-        archiveBaseName.set("fat-${project.name}")
+        dependsOn(configurations.runtimeClasspath)
+        archiveFileName.set('fat-scm4j-releaser.jar')
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         manifest.attributes(
                 'Main-Class': 'org.scm4j.releaser.cli.CLI',
                 'Specification-Title': project.name,
-                'Specification-Version': project.version,
                 'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version} (${new Date().format('yyyy-MM-dd')})",
         )
         from {
             sourceSets.main.runtimeClasspath.collect { it.directory ? it : zipTree(it) }
@@ -264,6 +226,15 @@ project(':scm4j-releaser') {
 
 project(':scm4j-releaser-gradle-plugin') {
     apply plugin: 'com.gradle.plugin-publish'
+
+    tasks.named('jar', Jar) {
+        manifest.attributes(
+                'Specification-Title': project.name,
+                'Specification-Version': project.version.toString().replaceAll(/-SNAPSHOT$/, ''),
+                'Implementation-Title': project.name,
+                'Implementation-Version': "${project.version} (${new Date().format('yyyy-MM-dd')})",
+        )
+    }
 
     def legacyApiSourceDir = layout.buildDirectory.dir('generated/sources/legacyApi/java/main')
     def generateLegacyApiSources = tasks.register('generateLegacyApiSources') {
