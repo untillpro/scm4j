@@ -291,7 +291,7 @@ public abstract class VCSAbstractTest {
 		 *  f1+
 		 *
 		 *  Result should be: f3+, f1+, f2-, mfm.
-		 *  But: Result of merge operation for f1 is missing file even by TortouiseSVN
+		 *  But: Result of merge operation for f1 is missing file even by TortoiseSVN
 		 */
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcsTestDataGen.setFileContent(null, FILE2_NAME, LINE_1, FILE2_ADDED_COMMIT_MESSAGE);
