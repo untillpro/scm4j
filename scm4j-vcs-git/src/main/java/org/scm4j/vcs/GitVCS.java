@@ -497,6 +497,9 @@ public class GitVCS implements IVCS {
 			Set<String> res = new HashSet<>();
 			String bn;
 			for (Ref ref : refs) {
+				if (ref.isSymbolic()) {
+					continue;
+				}
 				bn = ref.getName().replace(REFS_REMOTES_ORIGIN, "");
 				if (bn.startsWith(path == null ? "" : path)) {
 					res.add(bn);
