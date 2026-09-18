@@ -49,6 +49,6 @@ References:
 ### Gradle publication identity
 
 - [x] update: [build.gradle](../../../../../build.gradle) (manual edit; no applicable Gradle CLI command updates project metadata)
-  - set the metadata group of every module previously assigned `org.scm4j` to `org.untillpro`; retain the empty `scm4j-test-jitpack` group and the Gradle plugin's `io.github.scm4j` group
+  - set the metadata group of `scm4j-releaser` from `org.scm4j` to `org.untillpro`; retain the empty `scm4j-test-jitpack` group and the Gradle plugin's `io.github.scm4j` group
   - continue deriving the Maven publication group ID from `project.group` rather than duplicating the new namespace in the publication block
   - run `.\gradlew.bat :scm4j-releaser:test :scm4j-releaser:publishReleaserPublicationToMavenLocal "-PreleaserVersion=0.0.0-prime-197-test"`, then confirm its POM and JAR resolve under `org/untillpro/scm4j-releaser`, with no artifact for that test version under `org/scm4j/scm4j-releaser`
