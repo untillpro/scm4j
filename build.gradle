@@ -4,20 +4,20 @@ plugins {
 }
 
 def moduleMetadata = [
-        'scm4j-commons'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-deployer-api'          : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-deployer-engine'       : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-deployer-installers'   : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-installer'             : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-jenkins'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_7],
-        'scm4j-releaser'              : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-releaser-gradle-plugin': [group: 'io.github.scm4j', version: '0.4.0-SNAPSHOT',  java: JavaVersion.VERSION_1_8],
-        'scm4j-template'              : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-test-jitpack'          : [group: '',                                               java: JavaVersion.VERSION_1_7],
-        'scm4j-vcs-api'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-vcs-git'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-vcs-svn'               : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
-        'scm4j-vcs-test'              : [group: 'org.scm4j',                                      java: JavaVersion.VERSION_1_8],
+    'scm4j-commons'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-deployer-api'          : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-deployer-engine'       : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-deployer-installers'   : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-installer'             : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-jenkins'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_7],
+    'scm4j-releaser'              : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-template'              : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-api'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-git'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-svn'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-test'              : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-test-jitpack'          : [group: '',              java: JavaVersion.VERSION_1_7],
+    'scm4j-releaser-gradle-plugin': [group: 'io.github.scm4j', version: '0.4.0-SNAPSHOT',  java: JavaVersion.VERSION_1_8],
 ]
 
 subprojects {
