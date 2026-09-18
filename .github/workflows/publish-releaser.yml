@@ -3,7 +3,13 @@ name: Publish scm4j releaser
 on:
   push:
     tags:
-      - 'scm4j-releaser/*'
+      - 'scm4j-releaser-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing scm4j-releaser release tag to publish
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -15,16 +21,18 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Derive releaser version
         id: version
         shell: bash
         env:
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
 
-          prefix='scm4j-releaser/'
+          prefix='scm4j-releaser-'
           if [[ "$TAG_NAME" != "$prefix"* ]]; then
             echo "Expected a tag starting with $prefix, got: $TAG_NAME" >&2
             exit 1
