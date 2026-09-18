@@ -4,20 +4,22 @@ plugins {
 }
 
 def moduleMetadata = [
-    'scm4j-commons'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-deployer-api'          : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-deployer-engine'       : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-deployer-installers'   : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-installer'             : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-jenkins'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_7],
-    'scm4j-releaser'              : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-template'              : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-api'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-git'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-svn'               : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-test'              : [group: 'org.untillpro', java: JavaVersion.VERSION_1_8],
+    // io.github.untillpro is verifiable through the Untill GitHub organization;
+    // org.untillpro would require control of the corresponding untillpro.org site.
+    'scm4j-commons'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-deployer-api'          : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-deployer-engine'       : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-deployer-installers'   : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-installer'             : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-jenkins'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_7],
+    'scm4j-releaser'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-template'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-api'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-git'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-svn'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs-test'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-test-jitpack'          : [group: '',              java: JavaVersion.VERSION_1_7],
-    'scm4j-releaser-gradle-plugin': [group: 'io.github.scm4j', version: '0.4.0-SNAPSHOT',  java: JavaVersion.VERSION_1_8],
+    'scm4j-releaser-gradle-plugin': [group: 'io.github.untillpro', version: '0.4.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
 ]
 
 subprojects {
@@ -355,12 +357,12 @@ public final class ManagableDependencyParser {
     }
 
     gradlePlugin {
-        website = 'https://github.com/scm4j/scm4j/tree/main/scm4j-releaser-gradle-plugin'
-        vcsUrl = 'https://github.com/scm4j/scm4j.git'
+        website = 'https://github.com/untillpro/scm4j/tree/main/scm4j-releaser-gradle-plugin'
+        vcsUrl = 'https://github.com/untillpro/scm4j.git'
 
         plugins {
             scm4jReleaserGradlePlugin {
-                id = 'io.github.scm4j.scm4j-releaser-gradle-plugin'
+                id = 'io.github.untillpro.scm4j-releaser-gradle-plugin'
                 displayName = 'scm4j-releaser Gradle plugin'
                 description = 'This plugin loads version and manageable dependencies from external files (version and mdeps)'
                 implementationClass = 'io.github.scm4j.releaser.gradle.ReleaserGradlePlugin'
