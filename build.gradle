@@ -166,6 +166,12 @@ project(':scm4j-jenkins') {
 }
 
 project(':scm4j-releaser') {
+    apply plugin: 'maven-publish'
+
+    def requestedReleaserVersion = providers.gradleProperty('releaserVersion')
+            .map { it.trim() }
+    def publicationReleaserVersion = requestedReleaserVersion.getOrElse('')
+
     sourceSets {
         inv {
             java.srcDir 'src/inv/java'
@@ -197,7 +203,7 @@ project(':scm4j-releaser') {
         jvmArgs '-Xmx128m'
     }
 
-    tasks.register('fatJar', Jar) {
+    def fatJar = tasks.register('fatJar', Jar) {
         dependsOn(tasks.named('classes'))
         dependsOn(configurations.runtimeClasspath)
         archiveFileName.set('fat-scm4j-releaser.jar')
@@ -211,6 +217,35 @@ project(':scm4j-releaser') {
             sourceSets.main.runtimeClasspath.collect { it.directory ? it : zipTree(it) }
         }
         exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+    }
+
+    publishing {
+        publications {
+            releaser(MavenPublication) {
+                groupId = project.group.toString()
+                artifactId = project.name
+                version = publicationReleaserVersion ?: 'unspecified'
+                artifact(fatJar)
+            }
+        }
+        repositories {
+            maven {
+                name = 'GitHubPackages'
+                url = uri('https://maven.pkg.github.com/untillpro/scm4j')
+                credentials {
+                    username = System.getenv('GITHUB_ACTOR')
+                    password = System.getenv('GITHUB_TOKEN')
+                }
+            }
+        }
+    }
+
+    tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).configureEach {
+        doFirst {
+            if (!publicationReleaserVersion) {
+                throw new GradleException('Publishing scm4j-releaser requires a non-blank -PreleaserVersion=<version> value.')
+            }
+        }
     }
 
     tasks.register('run', JavaExec) {

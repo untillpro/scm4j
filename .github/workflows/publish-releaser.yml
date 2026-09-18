@@ -1,0 +1,59 @@
+name: Publish scm4j releaser
+
+on:
+  push:
+    tags:
+      - 'scm4j-releaser-*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Derive releaser version
+        id: version
+        shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          prefix='scm4j-releaser-'
+          if [[ "$TAG_NAME" != "$prefix"* ]]; then
+            echo "Expected a tag starting with $prefix, got: $TAG_NAME" >&2
+            exit 1
+          fi
+
+          version="${TAG_NAME#"$prefix"}"
+          if [[ -z "$version" || "$version" == 'unspecified' || "$version" == *'/'* || "$version" == *'\'* || "$version" =~ [[:cntrl:]] ]]; then
+            echo "Invalid Maven version derived from tag $TAG_NAME: $version" >&2
+            exit 1
+          fi
+
+          printf 'value=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Temurin JDK 8
+        uses: actions/setup-java@v6.0.1
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Run releaser tests
+        run: ./gradlew :scm4j-releaser:test
+
+      - name: Publish releaser to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASER_VERSION: ${{ steps.version.outputs.value }}
+        run: ./gradlew :scm4j-releaser:publish "-PreleaserVersion=${RELEASER_VERSION}"

@@ -1,0 +1,80 @@
+---
+change_id: 2609180814-publish-releaser-github-maven
+type: build
+issue_url: https://untill.atlassian.net/browse/PRIME-194
+scope: [releaser-build, ci]
+---
+
+# Change request: Publish the releaser to GitHub Maven Packages
+
+Refs:
+
+- [PRIME-194: migrate-drivers: scm4j: publish the releaser as a maven artifact on github](./issue-PRIME-194.md)
+
+## Why
+
+The scm4j releaser needs to be consumable as a Maven artifact from GitHub Packages, with repeatable publication of new versions. The existing fat JAR distribution must remain available.
+
+## What
+
+Improve the releaser's distribution guarantees for contributors and consumers:
+
+- The scm4j releaser is available as a Maven artifact from the project's GitHub Packages registry.
+- Repository release automation publishes each new releaser version to GitHub Packages.
+- The existing fat JAR packaging capability remains available.
+
+## How
+
+Decisions:
+
+- Apply Maven publishing only to `scm4j-releaser` and use the existing `fatJar` output as the publication's primary artifact under `org.scm4j:scm4j-releaser`, rather than publishing the Java component with unresolved dependencies on unpublished monorepo modules.
+- Keep the local `fat-scm4j-releaser.jar` output versionless and supply the Maven publication version at release time, so publication does not restore a source-managed module version or change the shell launcher's artifact contract.
+- Treat tags named `scm4j-releaser-<version>` as release boundaries; the publishing workflow derives the Maven version from the matching tag and publishes the tagged commit only.
+- Authenticate the repository-scoped GitHub Packages publication with `GITHUB_ACTOR` and the workflow's `GITHUB_TOKEN`, granting the job only `contents: read` and `packages: write` permissions.
+- Reuse the repository's Java 8 and Gradle Actions setup and require releaser verification to succeed in the publishing job before the remote publication step runs.
+
+Assumptions:
+
+- Releaser releases continue to use the existing `scm4j-releaser-<version>` tag convention, and each suffix is a valid Maven version.
+- Package consumers need the self-contained executable releaser and do not require transitive metadata for its internal scm4j project dependencies.
+- GitHub Actions is allowed to create and update the package associated with `untillpro/scm4j` through the repository-scoped token.
+
+Out of scope:
+
+- Publishing the releaser's internal monorepo dependencies, the Gradle plugin, or other scm4j modules to GitHub Packages.
+- Changing the shell launchers to download or resolve the published Maven package.
+- Publishing to Maven Central or adding signing and release-attestation infrastructure.
+
+References (internal):
+
+- [current releaser packaging and dependency graph](../../../../../build.gradle)
+- [current shell consumption of the stable fat JAR](../../../../../scm4j-releaser-shell/releaser)
+- [existing GitHub Actions Java and Gradle setup](../../../../../.github/workflows/test.yml)
+- [versionless releaser artifact decision](../../../archive/2609/2609170818-remove-obsolete-module-versions/change.md)
+
+References (external):
+
+- [GitHub Packages publication with Gradle](https://docs.github.com/en/actions/tutorials/publish-packages/publish-java-packages-with-gradle)
+- [GitHub Actions tag-filtered workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushbranchestagsbranches-ignoretags-ignore)
+- [Gradle custom artifact publication](https://docs.gradle.org/current/userguide/publishing_customization.html#sec:publishing_custom_artifacts)
+
+## Provisioning and configuration
+
+### Gradle publishing
+
+- [x] update: [build.gradle](../../../../../build.gradle) (manual edit; no applicable Gradle CLI operation)
+  - apply `maven-publish` only to `scm4j-releaser` and expose its generated `publish` lifecycle without adding publication tasks to unrelated subprojects
+  - define a Maven publication named `releaser` whose primary artifact is the existing `fatJar` task output and whose coordinates are `org.scm4j:scm4j-releaser:<releaserVersion>`
+  - accept the publication version through a required `releaserVersion` Gradle property, fail a publication request with an actionable message when it is absent or blank, and leave ordinary builds versionless
+  - publish to `https://maven.pkg.github.com/untillpro/scm4j` using `GITHUB_ACTOR` and `GITHUB_TOKEN`, without embedding credentials or introducing a long-lived repository secret
+  - preserve the `fatJar` task's stable filename, executable manifest, bundled runtime classpath, and signature exclusions while making publication depend on that task
+  - verify an ordinary versionless build on Windows with `.\gradlew.bat :scm4j-releaser:fatJar`, and verify `.\gradlew.bat :scm4j-releaser:publishReleaserPublicationToMavenLocal` fails with the intended missing-version diagnostic
+  - run `.\gradlew.bat :scm4j-releaser:test :scm4j-releaser:publishReleaserPublicationToMavenLocal "-PreleaserVersion=0.0.0-test"`, then inspect the local POM and JAR to confirm the requested coordinates, dependency-free metadata, executable entry point, and bundled scm4j classes
+
+### Release automation
+
+- [x] create: [.github/workflows/publish-releaser.yml](../../../../../.github/workflows/publish-releaser.yml) (manual edit; no applicable GitHub CLI command generates a repository workflow)
+  - trigger only for pushed tags matching `scm4j-releaser-*`, derive `releaserVersion` by removing that prefix from `github.ref_name`, and reject an empty or invalid Maven version before invoking Gradle
+  - run one `ubuntu-latest` job with only `contents: read` and `packages: write`, passing the repository-provided `GITHUB_TOKEN` to the publication step
+  - use `actions/checkout@v7.0.1`, `actions/setup-java@v6.0.1` with Temurin 8, and `gradle/actions/setup-gradle@v6.3.0` with its open-source basic cache provider; these are the latest stable exact releases
+  - run the releaser tests before `:scm4j-releaser:publish`, pass the derived version through `-PreleaserVersion`, and let any verification or upload failure fail the workflow
