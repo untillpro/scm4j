@@ -4,7 +4,7 @@ Shell runner for [scm4j-releaser](../scm4j-releaser).
 
 # Usage
 
-- Install `jdk8`, `git`, `sh` (on Windows `sh` normally comes with `git`, use `chocolatey install git jdk8`)
+- Install `jdk8`, `git`, `sh` (on Windows `sh` normally comes with `git`)
 - Clone the scm4j monorepo
 - Run `releaser.cmd` or `releaser` to build and run scm4j-releaser
 - Use Git in the monorepo checkout to select the branch, tag, or commit to run
