@@ -11,4 +11,4 @@
 
 * keep `fatJar` gradle task
 * implement `publish` gradle task that will publish the releaser to github maven artifact
-* implement github action that will pubish the new version to github maven artifactory
+* implement github action that will publish the new version to github maven artifactory
