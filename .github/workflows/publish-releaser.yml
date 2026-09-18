@@ -3,7 +3,7 @@ name: Publish scm4j releaser
 on:
   push:
     tags:
-      - 'scm4j-releaser-*'
+      - 'scm4j-releaser/*'
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          prefix='scm4j-releaser-'
+          prefix='scm4j-releaser/'
           if [[ "$TAG_NAME" != "$prefix"* ]]; then
             echo "Expected a tag starting with $prefix, got: $TAG_NAME" >&2
             exit 1
