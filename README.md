@@ -15,7 +15,7 @@ scm4j-releaser-<version>
 The maving artifact with the following coords will be published to github maven repository:
 
 ```text
-org.untillpro:scm4j-releaser:<version>
+io.github.untillpro:scm4j-releaser:<version>
 ```
 
 Example:
@@ -34,7 +34,7 @@ git push origin scm4j-releaser-36.0.1
 Use these Maven coordinates, replacing `<version>` with the required release:
 
 ```text
-org.untillpro:scm4j-releaser:<version>
+io.github.untillpro:scm4j-releaser:<version>
 ```
 
 The GitHub Maven repository is:
@@ -59,7 +59,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.untillpro:scm4j-releaser:36.0.0'
+    implementation 'io.github.untillpro:scm4j-releaser:36.0.0'
 }
 ```
 
@@ -93,7 +93,7 @@ Add the repository and dependency to `pom.xml`:
 
 <dependencies>
   <dependency>
-    <groupId>org.untillpro</groupId>
+    <groupId>io.github.untillpro</groupId>
     <artifactId>scm4j-releaser</artifactId>
     <version>36.0.0</version>
   </dependency>
