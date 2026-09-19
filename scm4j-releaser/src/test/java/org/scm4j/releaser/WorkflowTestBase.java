@@ -20,7 +20,7 @@ import org.scm4j.releaser.cli.Option;
 import org.scm4j.releaser.conf.*;
 import org.scm4j.releaser.scmactions.SCMActionRelease;
 import org.scm4j.releaser.scmactions.SCMActionTag;
-import org.scm4j.releaser.testutils.MonorepoTestEnvironment;
+import org.scm4j.releaser.testutils.MonorepoTestRepositories;
 import org.scm4j.releaser.testutils.TestBuilder;
 import org.scm4j.releaser.testutils.TestEnvironment;
 import org.scm4j.vcs.api.IVCS;
@@ -30,7 +30,6 @@ import org.scm4j.vcs.api.WalkDirection;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,8 +44,10 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 /**
- * Shared workflow-test harness for both the standard multi-repository fixture and monorepo scenarios.
- * Standard tests use the default environment, while monorepo tests opt into fixtures created per VCS adapter.
+ * Creates fresh repositories before each test and deletes them afterward.
+ * Tests run on Git by default; SCM4J_WORKFLOW_TEST_ALL_VCS=true adds SVN.
+ * Monorepo tests call super(WorkflowEnvironment.MONOREPO) and use the prepared component and repository fields
+ * directly in ordinary @Test methods. No additional setup or runner callback is needed for a new test.
  */
 @RunWith(Parameterized.class)
 public abstract class WorkflowTestBase {
@@ -66,10 +67,13 @@ public abstract class WorkflowTestBase {
 	protected VCSRepository repoUnTillDb;
 	protected VCSRepository repoUBL;
 	protected VCSRepositoryFactory repoFactory;
+	protected MonorepoTestRepositories monorepoRepositories;
+	protected Component compPostgres;
+	protected Component compSqlite;
+	protected VCSRepository repoPostgres;
+	protected VCSRepository repoSqlite;
 	private final WorkflowEnvironment workflowEnvironment;
 	private final Map<String, StandardComponentContext> standardComponentContexts = new HashMap<>();
-	private MonorepoTestEnvironment monorepoEnvironment;
-	private ScenarioContext monorepoContext;
 
 	@Parameterized.Parameter
 	public VCSType testingVcsType;
@@ -77,19 +81,13 @@ public abstract class WorkflowTestBase {
 	@Parameterized.Parameters(name = "{0}")
 	public static Iterable<Object[]> workflowVcsParameters() {
 		List<Object[]> parameters = new ArrayList<>();
-		for (VCSType vcsType : selectVcsTypes(ManagementFactory.getRuntimeMXBean().getInputArguments(),
-				System.getenv(ALL_VCS_ENV_VAR))) {
+		for (VCSType vcsType : selectVcsTypes(System.getenv(ALL_VCS_ENV_VAR))) {
 			parameters.add(new Object[] {vcsType});
 		}
 		return parameters;
 	}
 
-	static List<VCSType> selectVcsTypes(List<String> jvmArguments, String runAllVcs) {
-		for (String argument : jvmArguments) {
-			if (argument.startsWith("-agentlib:jdwp")) {
-				return Collections.singletonList(VCSType.GIT);
-			}
-		}
+	static List<VCSType> selectVcsTypes(String runAllVcs) {
 		return Boolean.parseBoolean(runAllVcs)
 				? Arrays.asList(VCSType.GIT, VCSType.SVN)
 				: Collections.singletonList(VCSType.GIT);
@@ -114,11 +112,10 @@ public abstract class WorkflowTestBase {
 	@Before
 	public void setUp() throws Exception {
 		if (workflowEnvironment == WorkflowEnvironment.MONOREPO) {
-			// Each parameterized invocation creates its own monorepo fixture in runForSelectedVcs.
-			cleanupReleases();
-			return;
+			setUpMonorepoRepositories();
+		} else {
+			setUpStandardEnvironment();
 		}
-		setUpStandardEnvironment();
 		cleanupReleases();
 	}
 
@@ -130,6 +127,25 @@ public abstract class WorkflowTestBase {
 		compUnTillDb = new Component(UNTILLDB);
 		compUBL = new Component(UBL);
 		refreshStandardRepositories();
+	}
+
+	private void setUpMonorepoRepositories() throws Exception {
+		monorepoRepositories = new MonorepoTestRepositories(testingVcsType);
+		monorepoRepositories.generate();
+		configureMonorepoEnvironment();
+		repoFactory = monorepoRepositories.getRepositoryFactory();
+		compUnTill = new Component(MonorepoTestRepositories.PRODUCT_UNTILL);
+		compUBL = new Component(MonorepoTestRepositories.PRODUCT_UBL);
+		compPostgres = new Component(MonorepoTestRepositories.PRODUCT_POSTGRES);
+		compSqlite = new Component(MonorepoTestRepositories.PRODUCT_SQLITE);
+		repoUnTill = repoFactory.getVCSRepository(compUnTill);
+		repoUBL = repoFactory.getVCSRepository(compUBL);
+		repoPostgres = repoFactory.getVCSRepository(compPostgres);
+		repoSqlite = repoFactory.getVCSRepository(compSqlite);
+
+		// Two independent components must share one physical repository.
+		assertEquals(repoPostgres.getUrl(), repoSqlite.getUrl());
+		assertNotEquals(repoPostgres.getComponentLocation(), repoSqlite.getComponentLocation());
 	}
 
 	private void refreshStandardRepositories() {
@@ -213,8 +229,7 @@ public abstract class WorkflowTestBase {
 
 	private void closeWorkflowEnvironment() throws Exception {
 		if (workflowEnvironment == WorkflowEnvironment.MONOREPO) {
-			// Close a partially initialized monorepo environment as well when a scenario fails midway.
-			closeMonorepoEnvironment();
+			closeMonorepoRepositories();
 			return;
 		}
 		try {
@@ -262,69 +277,33 @@ public abstract class WorkflowTestBase {
 		}
 	}
 
-	protected void runForSelectedVcs(Scenario scenario) throws Exception {
-		runMonorepoScenario(testingVcsType, scenario);
-	}
-
-	private void runMonorepoScenario(VCSType vcsType, Scenario scenario) throws Exception {
-		// Persistent state was cleared after the previous scenario; only builder observations need a fresh map.
-		resetBuilders();
-		monorepoEnvironment = new MonorepoTestEnvironment(vcsType);
-		try {
-			// Build disposable repositories and redirect the real CLI configuration to this scenario's files.
-			monorepoEnvironment.generate();
-			configureEnvironment(monorepoEnvironment);
-			repoFactory = monorepoEnvironment.getRepositoryFactory();
-			monorepoContext = new ScenarioContext(monorepoEnvironment);
-
-			// Every scenario must use one physical repository with two independently identified components.
-			assertEquals(monorepoContext.postgresRepo.getUrl(), monorepoContext.sqliteRepo.getUrl());
-			assertNotEquals(monorepoContext.postgresRepo.getComponentLocation(),
-					monorepoContext.sqliteRepo.getComponentLocation());
-
-			scenario.run(monorepoContext);
-		} finally {
-			try {
-				closeMonorepoEnvironment();
-			} finally {
-				clearReleaseState();
-			}
-		}
-	}
-
-	private void closeMonorepoEnvironment() throws Exception {
-		if (monorepoEnvironment == null) {
+	private void closeMonorepoRepositories() throws Exception {
+		if (monorepoRepositories == null) {
 			return;
 		}
-		MonorepoTestEnvironment environment = monorepoEnvironment;
 		try {
 			// Check sentinels before deleting the repositories so a component operation cannot silently touch root metadata.
 			assertDisposableMonorepoRootFilesUnchanged();
 		} finally {
 			try {
-				environment.close();
+				monorepoRepositories.close();
 			} finally {
-				monorepoEnvironment = null;
-				monorepoContext = null;
+				monorepoRepositories = null;
 			}
 		}
 	}
 
 	private void assertDisposableMonorepoRootFilesUnchanged() {
-		IVCS vcs = monorepoEnvironment.getMonorepoVCS();
-		if (vcs == null) {
+		// A failed setup still needs cleanup, but may not have seeded the root files yet.
+		if (repoPostgres == null || repoSqlite == null) {
 			return;
 		}
+		IVCS vcs = monorepoRepositories.getMonorepoVCS();
 		// Component-local operations must leave root metadata untouched on develop and every created release branch.
-		String developBranch = monorepoContext == null
-				? VCSRepository.DEFAULT_DEVELOP_BRANCH : monorepoContext.postgresRepo.getDevelopBranch();
-		assertDisposableMonorepoRootFilesUnchanged(vcs, developBranch);
-		if (monorepoContext == null) {
-			return;
-		}
-		Set<String> svnBranchNamespaces = monorepoEnvironment.getVcsType() == VCSType.SVN
+		assertDisposableMonorepoRootFilesUnchanged(vcs, repoPostgres.getDevelopBranch());
+		Set<String> svnBranchNamespaces = monorepoRepositories.getVcsType() == VCSType.SVN
 				? vcs.getBranches(null) : null;
-		for (VCSRepository repository : monorepoContext.sharedRepositories()) {
+		for (VCSRepository repository : new VCSRepository[] {repoPostgres, repoSqlite}) {
 			String releaseBranchPrefix = repository.getName() + "/" + repository.getReleaseBranchPrefix();
 			boolean releaseNamespaceExists = svnBranchNamespaces == null
 					|| svnBranchNamespaces.contains(repository.getName());
@@ -344,12 +323,12 @@ public abstract class WorkflowTestBase {
 	}
 
 	@SuppressWarnings("deprecation")
-	private void configureEnvironment(MonorepoTestEnvironment environment) {
+	private void configureMonorepoEnvironment() {
 		// Each CLI invocation reloads configuration from environment variables, so point it at the fixture files.
 		environmentVariables.set(DefaultConfigUrls.REPOS_LOCATION_ENV_VAR, null);
-		environmentVariables.set(DefaultConfigUrls.CC_URLS_ENV_VAR, environment.getCcFile().toString());
+		environmentVariables.set(DefaultConfigUrls.CC_URLS_ENV_VAR, monorepoRepositories.getCcFile().toString());
 		environmentVariables.set(DefaultConfigUrls.CREDENTIALS_URL_ENV_VAR,
-				environment.getCredentialsFile().toString());
+				monorepoRepositories.getCredentialsFile().toString());
 	}
 
 	private void cleanupReleases() throws Exception {
@@ -408,41 +387,6 @@ public abstract class WorkflowTestBase {
 		return repository.getVCS().getTags().stream()
 				.filter(tag -> Utils.isTagForRepository(repository, tag.getTagName()))
 				.collect(Collectors.toList());
-	}
-
-	@FunctionalInterface
-	protected interface Scenario {
-		void run(ScenarioContext context) throws Exception;
-	}
-
-	// All monorepo scenarios use the same components to exercise identical repository identities and topology.
-	protected class ScenarioContext {
-
-		final MonorepoTestEnvironment environment;
-		final Component unTill;
-		final Component ubl;
-		final Component postgres;
-		final Component sqlite;
-		final VCSRepository unTillRepo;
-		final VCSRepository ublRepo;
-		final VCSRepository postgresRepo;
-		final VCSRepository sqliteRepo;
-
-		private ScenarioContext(MonorepoTestEnvironment environment) {
-			this.environment = environment;
-			unTill = new Component(MonorepoTestEnvironment.PRODUCT_UNTILL);
-			ubl = new Component(MonorepoTestEnvironment.PRODUCT_UBL);
-			postgres = new Component(MonorepoTestEnvironment.PRODUCT_POSTGRES);
-			sqlite = new Component(MonorepoTestEnvironment.PRODUCT_SQLITE);
-			unTillRepo = repoFactory.getVCSRepository(unTill);
-			ublRepo = repoFactory.getVCSRepository(ubl);
-			postgresRepo = repoFactory.getVCSRepository(postgres);
-			sqliteRepo = repoFactory.getVCSRepository(sqlite);
-		}
-
-		private VCSRepository[] sharedRepositories() {
-			return new VCSRepository[] {postgresRepo, sqliteRepo};
-		}
 	}
 
 	private enum StandardComponentRole {

@@ -26,7 +26,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
 
-public class MonorepoTestEnvironment implements AutoCloseable {
+/**
+ * Preconfigured unTill and UBL repositories plus a shared postgres/sqlite repository.
+ * unTill depends on postgres and an existing UBL release; sqlite is an independent sibling component.
+ * Each instance owns disposable repositories, working copies, and CLI configuration files for one test.
+ */
+public class MonorepoTestRepositories implements AutoCloseable {
 	public static final String PRODUCT_UNTILL = "eu.untill:unTill";
 	public static final String PRODUCT_UBL = "eu.untill:UBL";
 	public static final String PRODUCT_POSTGRES = "eu.untill:postgres";
@@ -40,7 +45,7 @@ public class MonorepoTestEnvironment implements AutoCloseable {
 	private static final String FEATURE_FILE_NAME = "feature.txt";
 
 	private final VCSType vcsType;
-	private final File environmentDir;
+	private final File testDir;
 	private final File vcsWorkspacesDir;
 	private final File remoteRepositoriesDir;
 	private final File ccFile;
@@ -57,19 +62,19 @@ public class MonorepoTestEnvironment implements AutoCloseable {
 	private IVCS monorepoVCS;
 	private VCSCommit ublReleaseCommit;
 
-	public MonorepoTestEnvironment(VCSType vcsType) {
+	public MonorepoTestRepositories(VCSType vcsType) {
 		this.vcsType = vcsType;
-		environmentDir = new File(System.getProperty("java.io.tmpdir"),
+		testDir = new File(System.getProperty("java.io.tmpdir"),
 				"scm4j-releaser-monorepo-test-" + UUID.randomUUID());
-		vcsWorkspacesDir = new File(environmentDir, "vcs-workspaces");
-		remoteRepositoriesDir = new File(environmentDir, "remote-repos");
-		ccFile = new File(environmentDir, "repos");
-		credentialsFile = new File(environmentDir, "credentials");
+		vcsWorkspacesDir = new File(testDir, "vcs-workspaces");
+		remoteRepositoriesDir = new File(testDir, "remote-repos");
+		ccFile = new File(testDir, "repos");
+		credentialsFile = new File(testDir, "credentials");
 	}
 
 	public void generate() throws Exception {
-		if (!environmentDir.mkdirs()) {
-			throw new IOException("failed to create test environment " + environmentDir);
+		if (!testDir.mkdirs()) {
+			throw new IOException("failed to create test directory " + testDir);
 		}
 		if (!remoteRepositoriesDir.mkdirs()) {
 			throw new IOException("failed to create remote repositories directory " + remoteRepositoriesDir);
@@ -186,6 +191,7 @@ public class MonorepoTestEnvironment implements AutoCloseable {
 		return subfolder + "/" + relativePath;
 	}
 
+	// Updates the component's <subfolder>/feature.txt file.
 	public VCSCommit generateComponentCommit(String branchName, String subfolder, String message) {
 		return monorepoVCS.setFileContent(branchName, componentPath(subfolder, FEATURE_FILE_NAME),
 				"feature content " + UUID.randomUUID(), message);
@@ -247,8 +253,8 @@ public class MonorepoTestEnvironment implements AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-		if (environmentDir.exists()) {
-			Utils.waitForDeleteDir(environmentDir);
+		if (testDir.exists()) {
+			Utils.waitForDeleteDir(testDir);
 		}
 	}
 }

@@ -6,7 +6,7 @@ import org.scm4j.releaser.actions.IAction;
 import org.scm4j.releaser.branch.ReleaseBranchFactory;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
-import org.scm4j.releaser.testutils.MonorepoTestEnvironment;
+import org.scm4j.releaser.testutils.MonorepoTestRepositories;
 import org.scm4j.releaser.testutils.TestBuilder;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
@@ -53,112 +53,96 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 	}
 
 	@Test
-	public void testMonorepoComponents() throws Exception {
-		// Run the complete workflow through both adapters because their history and branch models differ.
-		runForSelectedVcs(this::runScenario);
-	}
-
-	private void runScenario(ScenarioContext context) {
-		MonorepoTestEnvironment monorepoEnvironment = context.environment;
-		Component unTill = context.unTill;
-		Component ubl = context.ubl;
-		Component postgres = context.postgres;
-		Component sqlite = context.sqlite;
-		VCSRepository unTillRepo = context.unTillRepo;
-		VCSRepository ublRepo = context.ublRepo;
-		VCSRepository postgresRepo = context.postgresRepo;
-		VCSRepository sqliteRepo = context.sqliteRepo;
-
+	public void testDependencyReleasesIgnoreSiblingChanges() {
 		// Capture the negative control before any application workflow runs: UBL is already released and DONE.
-		assertUblBaselineUnchanged(ubl, ublRepo, monorepoEnvironment);
+		assertUblBaselineUnchanged();
 
 		// The shared develop branch gets one postgres change and the first of two sqlite changes.
-		monorepoEnvironment.generateComponentCommit(postgresRepo.getDevelopBranch(),
-				MonorepoTestEnvironment.POSTGRES_SUBFOLDER, "postgres feature added");
-		monorepoEnvironment.generateComponentCommit(sqliteRepo.getDevelopBranch(),
-				MonorepoTestEnvironment.SQLITE_SUBFOLDER, "sqlite feature added");
+		monorepoRepositories.generateComponentCommit(repoPostgres.getDevelopBranch(),
+				MonorepoTestRepositories.POSTGRES_SUBFOLDER, "postgres feature added");
+		monorepoRepositories.generateComponentCommit(repoSqlite.getDevelopBranch(),
+				MonorepoTestRepositories.SQLITE_SUBFOLDER, "sqlite feature added");
 
-		IAction forkAction = execAndGetActionFork(unTill);
+		IAction forkAction = execAndGetActionFork(compUnTill);
 		// postgres and unTill need their first release branches; the existing UBL release must be reused.
-		assertActionDoesFork(forkAction, postgres, unTill);
-		assertActionDoesNothing(forkAction, ubl);
+		assertActionDoesFork(forkAction, compPostgres, compUnTill, compPostgres);
+		assertActionDoesNothing(forkAction, compUBL);
 
-		Version firstPostgresRelease = monorepoEnvironment.getPostgresVersion().toReleaseZeroPatch();
-		Version firstUnTillRelease = monorepoEnvironment.getUnTillVersion().toReleaseZeroPatch();
-		String postgresReleaseBranch = Utils.getReleaseBranchName(postgresRepo, firstPostgresRelease);
-		VCSCommit postgresBuildCommit = latestComponentCommit(postgresRepo, postgresReleaseBranch);
+		Version firstPostgresRelease = monorepoRepositories.getPostgresVersion().toReleaseZeroPatch();
+		Version firstUnTillRelease = monorepoRepositories.getUnTillVersion().toReleaseZeroPatch();
+		String postgresReleaseBranch = Utils.getReleaseBranchName(repoPostgres, firstPostgresRelease);
+		VCSCommit postgresBuildCommit = latestComponentCommit(repoPostgres, postgresReleaseBranch);
 
 		// Move the release branch head with the second sqlite change. The postgres build must stay on
 		// the earlier postgres revision selected by component-filtered history.
-		VCSCommit sqliteRepositoryHead = monorepoEnvironment.generateComponentCommit(postgresReleaseBranch,
-				MonorepoTestEnvironment.SQLITE_SUBFOLDER, "second sqlite feature added");
+		VCSCommit sqliteRepositoryHead = monorepoRepositories.generateComponentCommit(postgresReleaseBranch,
+				MonorepoTestRepositories.SQLITE_SUBFOLDER, "second sqlite feature added");
 		assertEquals(sqliteRepositoryHead.getRevision(),
-				postgresRepo.getVCS().getHeadCommit(postgresReleaseBranch).getRevision());
+				repoPostgres.getVCS().getHeadCommit(postgresReleaseBranch).getRevision());
 
-		IAction buildAction = execAndGetActionBuild(unTill);
+		IAction buildAction = execAndGetActionBuild(compUnTill);
 		// Building the root application must first build postgres, then lock that release into unTill.
-		assertActionDoesBuild(buildAction, postgres);
-		assertActionDoesBuild(buildAction, unTill, BuildStatus.BUILD_MDEPS);
-		assertActionDoesNothing(buildAction, ubl);
+		assertActionDoesBuild(buildAction, compPostgres);
+		assertActionDoesBuild(buildAction, compUnTill, BuildStatus.BUILD_MDEPS);
+		assertActionDoesNothing(buildAction, compUBL);
 		// The builder environment and tag must both identify the postgres revision, not the newer sqlite head.
-		assertBuildRevision(postgres, postgresRepo, firstPostgresRelease, postgresBuildCommit);
-		assertTagRevision(postgresRepo, firstPostgresRelease, postgresBuildCommit);
+		assertBuildRevision(compPostgres, repoPostgres, firstPostgresRelease, postgresBuildCommit);
+		assertTagRevision(repoPostgres, firstPostgresRelease, postgresBuildCommit);
 		assertNotEquals(sqliteRepositoryHead.getRevision(), postgresBuildCommit.getRevision());
 		// Verify the externally durable result: locked dependencies and exactly one release of each built component.
-		assertUnTillMDeps(unTillRepo, firstUnTillRelease, firstPostgresRelease, monorepoEnvironment);
-		assertTagExists(unTillRepo, firstUnTillRelease);
-		assertReleaseCounts(postgresRepo, unTillRepo, 1);
-		assertUnchangedComponents(sqlite, sqliteRepo, ubl, ublRepo, monorepoEnvironment);
+		assertUnTillMDeps(firstUnTillRelease, firstPostgresRelease);
+		assertTagExists(repoUnTill, firstUnTillRelease);
+		assertReleaseCounts(1);
+		assertUnchangedComponents();
 		// Once released, postgres has no work of its own left to execute.
-		assertActionDoesNothing(execAndGetActionBuild(postgres), postgres);
+		assertActionDoesNothing(execAndGetActionBuild(compPostgres), compPostgres);
 
 		// A sibling-only develop change must not schedule another postgres or unTill release.
-		monorepoEnvironment.generateComponentCommit(sqliteRepo.getDevelopBranch(),
-				MonorepoTestEnvironment.SQLITE_SUBFOLDER, "third sqlite feature added");
+		monorepoRepositories.generateComponentCommit(repoSqlite.getDevelopBranch(),
+				MonorepoTestRepositories.SQLITE_SUBFOLDER, "third sqlite feature added");
 		// Check postgres directly as well as through the unTill dependency tree: a sqlite change must
 		// not produce any action for the unchanged component that shares its repository.
-		assertActionDoesNothing(execAndGetActionBuild(postgres), postgres);
-		IAction siblingOnlyAction = execAndGetActionBuild(unTill);
+		assertActionDoesNothing(execAndGetActionBuild(compPostgres), compPostgres);
+		IAction siblingOnlyAction = execAndGetActionBuild(compUnTill);
 		// The application tree must also remain a complete no-op after the sibling-only change.
-		assertActionDoesNothing(siblingOnlyAction, postgres, ubl, unTill);
-		assertReleaseCounts(postgresRepo, unTillRepo, 1);
-		assertUnchangedComponents(sqlite, sqliteRepo, ubl, ublRepo, monorepoEnvironment);
+		assertActionDoesNothing(siblingOnlyAction, compPostgres, compUBL, compUnTill);
+		assertReleaseCounts(1);
+		assertUnchangedComponents();
 
 		// A new postgres change must release postgres and propagate its new version to unTill.
-		monorepoEnvironment.generateComponentCommit(postgresRepo.getDevelopBranch(),
-				MonorepoTestEnvironment.POSTGRES_SUBFOLDER, "second postgres feature added");
-		IAction secondForkAction = execAndGetActionFork(unTill);
-		assertActionDoesFork(secondForkAction, postgres, unTill);
-		assertActionDoesNothing(secondForkAction, ubl);
+		monorepoRepositories.generateComponentCommit(repoPostgres.getDevelopBranch(),
+				MonorepoTestRepositories.POSTGRES_SUBFOLDER, "second postgres feature added");
+		IAction secondForkAction = execAndGetActionFork(compUnTill);
+		assertActionDoesFork(secondForkAction, compPostgres, compUnTill);
+		assertActionDoesNothing(secondForkAction, compUBL);
 
 		Version secondPostgresRelease = firstPostgresRelease.toNextMinor();
 		Version secondUnTillRelease = firstUnTillRelease.toNextMinor();
-		String secondPostgresBranch = Utils.getReleaseBranchName(postgresRepo, secondPostgresRelease);
-		VCSCommit secondPostgresBuildCommit = latestComponentCommit(postgresRepo, secondPostgresBranch);
-		String secondUnTillBranch = Utils.getReleaseBranchName(unTillRepo, secondUnTillRelease);
-		VCSCommit secondUnTillBuildCommit = unTillRepo.getVCS().getHeadCommit(secondUnTillBranch);
+		String secondPostgresBranch = Utils.getReleaseBranchName(repoPostgres, secondPostgresRelease);
+		VCSCommit secondPostgresBuildCommit = latestComponentCommit(repoPostgres, secondPostgresBranch);
+		String secondUnTillBranch = Utils.getReleaseBranchName(repoUnTill, secondUnTillRelease);
+		VCSCommit secondUnTillBuildCommit = repoUnTill.getVCS().getHeadCommit(secondUnTillBranch);
 		assertNotNull(secondUnTillBuildCommit);
-		IAction secondBuildAction = execAndGetActionBuild(unTill);
+		IAction secondBuildAction = execAndGetActionBuild(compUnTill);
 		// The postgres change must now build both the dependency and its consuming application, but not UBL.
-		assertActionDoesBuild(secondBuildAction, postgres);
-		assertActionDoesBuild(secondBuildAction, unTill, BuildStatus.BUILD_MDEPS);
-		assertActionDoesNothing(secondBuildAction, ubl);
+		assertActionDoesBuild(secondBuildAction, compPostgres);
+		assertActionDoesBuild(secondBuildAction, compUnTill, BuildStatus.BUILD_MDEPS);
+		assertActionDoesNothing(secondBuildAction, compUBL);
 		// Confirm both builds and tags use the captured revisions, and unTill locks the new postgres version only.
-		assertBuildRevision(postgres, postgresRepo, secondPostgresRelease, secondPostgresBuildCommit);
-		assertTagRevision(postgresRepo, secondPostgresRelease, secondPostgresBuildCommit);
-		assertBuildRevision(unTill, unTillRepo, secondUnTillRelease, secondUnTillBuildCommit);
-		assertTagRevision(unTillRepo, secondUnTillRelease, secondUnTillBuildCommit);
-		assertUnTillMDeps(unTillRepo, secondUnTillRelease, secondPostgresRelease, monorepoEnvironment);
-		assertReleaseCounts(postgresRepo, unTillRepo, 2);
-		assertUnchangedComponents(sqlite, sqliteRepo, ubl, ublRepo, monorepoEnvironment);
+		assertBuildRevision(compPostgres, repoPostgres, secondPostgresRelease, secondPostgresBuildCommit);
+		assertTagRevision(repoPostgres, secondPostgresRelease, secondPostgresBuildCommit);
+		assertBuildRevision(compUnTill, repoUnTill, secondUnTillRelease, secondUnTillBuildCommit);
+		assertTagRevision(repoUnTill, secondUnTillRelease, secondUnTillBuildCommit);
+		assertUnTillMDeps(secondUnTillRelease, secondPostgresRelease);
+		assertReleaseCounts(2);
+		assertUnchangedComponents();
 	}
 
-	private void assertUnTillMDeps(VCSRepository unTillRepo, Version unTillRelease,
-			Version postgresRelease, MonorepoTestEnvironment monorepoEnvironment) {
+	private void assertUnTillMDeps(Version unTillRelease, Version postgresRelease) {
 		Map<String, Version> expected = new LinkedHashMap<>();
-		expected.put(MonorepoTestEnvironment.PRODUCT_UBL, monorepoEnvironment.getUblReleaseVersion());
-		expected.put(MonorepoTestEnvironment.PRODUCT_POSTGRES, postgresRelease);
-		assertLockedMDeps(unTillRepo, unTillRelease, expected);
+		expected.put(MonorepoTestRepositories.PRODUCT_UBL, monorepoRepositories.getUblReleaseVersion());
+		expected.put(MonorepoTestRepositories.PRODUCT_POSTGRES, postgresRelease);
+		assertLockedMDeps(repoUnTill, unTillRelease, expected);
 	}
 
 	private void assertLockedMDeps(VCSRepository repository, Version releaseVersion,
@@ -176,43 +160,40 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 		}
 	}
 
-	private void assertReleaseCounts(VCSRepository postgresRepo, VCSRepository unTillRepo, int expected) {
-		assertEquals(expected, componentTags(postgresRepo).size());
-		assertEquals(expected, componentTags(unTillRepo).size());
+	private void assertReleaseCounts(int expected) {
+		assertEquals(expected, componentTags(repoPostgres).size());
+		assertEquals(expected, componentTags(repoUnTill).size());
 	}
 
-	private void assertUnchangedComponents(Component sqlite, VCSRepository sqliteRepo,
-			Component ubl, VCSRepository ublRepo, MonorepoTestEnvironment monorepoEnvironment) {
-		assertNoSqliteRelease(sqlite, sqliteRepo, monorepoEnvironment);
-		assertUblBaselineUnchanged(ubl, ublRepo, monorepoEnvironment);
+	private void assertUnchangedComponents() {
+		assertNoSqliteRelease();
+		assertUblBaselineUnchanged();
 	}
 
-	private void assertNoSqliteRelease(Component sqlite, VCSRepository sqliteRepo,
-			MonorepoTestEnvironment monorepoEnvironment) {
+	private void assertNoSqliteRelease() {
 		// sqlite has repository activity but is not an unTill dependency, so the workflow must create no
 		// sqlite release branch, tag, or builder invocation.
-		String releaseBranch = Utils.getReleaseBranchName(sqliteRepo,
-				monorepoEnvironment.getSqliteVersion().toReleaseZeroPatch());
-		assertNull(sqliteRepo.getVCS().getHeadCommit(releaseBranch));
-		assertTrue(componentTags(sqliteRepo).isEmpty());
-		assertFalse(TestBuilder.getBuilders().containsKey(sqlite.getName()));
+		String releaseBranch = Utils.getReleaseBranchName(repoSqlite,
+				monorepoRepositories.getSqliteVersion().toReleaseZeroPatch());
+		assertNull(repoSqlite.getVCS().getHeadCommit(releaseBranch));
+		assertTrue(componentTags(repoSqlite).isEmpty());
+		assertFalse(TestBuilder.getBuilders().containsKey(compSqlite.getName()));
 	}
 
-	private void assertUblBaselineUnchanged(Component ubl, VCSRepository ublRepo,
-			MonorepoTestEnvironment monorepoEnvironment) {
+	private void assertUblBaselineUnchanged() {
 		// UBL is the standalone control dependency: its development version, release version, original tag,
 		// and lack of a new build must remain stable across both unTill release cycles.
-		Version releaseVersion = monorepoEnvironment.getUblReleaseVersion();
-		String releaseBranch = Utils.getReleaseBranchName(ublRepo, releaseVersion);
-		assertEquals(monorepoEnvironment.getUblDevelopmentVersion().toString(),
-				ublRepo.getVCS().getFileContent(ublRepo.getDevelopBranch(), Constants.VER_FILE_NAME, null));
+		Version releaseVersion = monorepoRepositories.getUblReleaseVersion();
+		String releaseBranch = Utils.getReleaseBranchName(repoUBL, releaseVersion);
+		assertEquals(monorepoRepositories.getUblDevelopmentVersion().toString(),
+				repoUBL.getVCS().getFileContent(repoUBL.getDevelopBranch(), Constants.VER_FILE_NAME, null));
 		assertEquals(releaseVersion.toNextPatch().toString(),
-				ublRepo.getVCS().getFileContent(releaseBranch, Constants.VER_FILE_NAME, null));
-		List<VCSTag> tags = componentTags(ublRepo);
+				repoUBL.getVCS().getFileContent(releaseBranch, Constants.VER_FILE_NAME, null));
+		List<VCSTag> tags = componentTags(repoUBL);
 		assertEquals(1, tags.size());
-		assertEquals(Utils.getTagDesc(ublRepo, releaseVersion.toString()).getName(), tags.get(0).getTagName());
-		assertEquals(monorepoEnvironment.getUblReleaseCommit().getRevision(),
+		assertEquals(Utils.getTagDesc(repoUBL, releaseVersion.toString()).getName(), tags.get(0).getTagName());
+		assertEquals(monorepoRepositories.getUblReleaseCommit().getRevision(),
 				tags.get(0).getRelatedCommit().getRevision());
-		assertFalse(TestBuilder.getBuilders().containsKey(ubl.getName()));
+		assertFalse(TestBuilder.getBuilders().containsKey(compUBL.getName()));
 	}
 }
