@@ -1,6 +1,8 @@
 # scm4j
 
-scm4j is a Java toolkit for source-control, release, build, and deployment automation. This repository is a Gradle monorepo containing the releaser CLI and its supporting modules.
+scm4j (Software Configuration Management for Java) is a Java toolkit for source-control, release, build, and deployment automation. This repository is a Gradle monorepo containing the releaser CLI and its supporting modules.
+
+Configuration management is the practice of handling changes systematically so that a system maintains its integrity over time.
 
 For releaser usage and concepts, see [scm4j-releaser](scm4j-releaser/README.md).
 
@@ -12,7 +14,7 @@ Create and push to main branch a tag named:
 scm4j-releaser-<version>
 ```
 
-The maving artifact with the following coords will be published to github maven repository:
+The Maven artifact with the following coordinates will be published to the GitHub Maven repository:
 
 ```text
 io.github.untillpro:scm4j-releaser:<version>
@@ -105,3 +107,32 @@ The published artifact is an executable fat JAR with `org.scm4j.releaser.cli.CLI
 ```shell
 java -jar scm4j-releaser-36.0.0.jar <arguments>
 ```
+
+## The SCM process
+
+According to [SCMQuest](http://scmquest.com/software-configuration-management-scm/), the SCM process includes:
+
+- Identification of configuration items and baseline management
+- Documentation of characteristics
+- Change control
+- Configuration status accounting
+- Auditing and reproducibility
+- Build and deployment management
+- Process and environment management
+- Continuous integration and continuous deployment
+- Defect tracking and traceability
+- Ensuring integrity, visibility, project coordination, and project evolution
+
+## Further reading
+
+- [SCM versus DevOps](https://softwareengineering.stackexchange.com/questions/130850/difference-between-devops-and-software-configuration-management) — Software Engineering Stack Exchange
+- [DevOps Defined](https://www.hashicorp.com/devops-defined) — HashiCorp
+- [Software Configuration Management Patterns](https://dzone.com/storage/assets/7529578-rc-167-softwareconfigurationmanagementpatterns.pdf) — DZone
+- [Configuration Management](https://en.wikipedia.org/wiki/Configuration_management) — Wikipedia
+- [Конфигурационное управление](https://goo.gl/ReJrjH) — Russian-language reference
+
+### Related material
+
+- [ITIL, Information Technology Infrastructure Library](https://en.wikipedia.org/wiki/ITIL)
+- [ITIL on Russian Wikipedia](https://ru.wikipedia.org/wiki/ITIL)
+- [ITIL books in Russian](http://www.wikiitil.ru/books.html)
