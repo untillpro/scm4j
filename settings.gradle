@@ -9,7 +9,6 @@ def moduleNames = [
         'scm4j-jenkins',
         'scm4j-releaser',
         'scm4j-releaser-gradle-plugin',
-        'scm4j-test-jitpack',
         'scm4j-vcs',
 ]
 

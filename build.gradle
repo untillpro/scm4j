@@ -14,7 +14,6 @@ def moduleMetadata = [
     'scm4j-jenkins'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_7],
     'scm4j-releaser'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-vcs'                   : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-test-jitpack'          : [group: '',              java: JavaVersion.VERSION_1_7],
     'scm4j-releaser-gradle-plugin': [group: 'io.github.untillpro', version: '0.4.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
 ]
 
