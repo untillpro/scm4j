@@ -13,11 +13,7 @@ def moduleMetadata = [
     'scm4j-installer'             : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-jenkins'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_7],
     'scm4j-releaser'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-template'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-api'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-git'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-svn'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-vcs-test'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
+    'scm4j-vcs'                   : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-test-jitpack'          : [group: '',              java: JavaVersion.VERSION_1_7],
     'scm4j-releaser-gradle-plugin': [group: 'io.github.untillpro', version: '0.4.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
 ]
@@ -183,8 +179,7 @@ project(':scm4j-releaser') {
     }
 
     dependencies {
-        api project(':scm4j-vcs-git')
-        api project(':scm4j-vcs-svn')
+        api project(':scm4j-vcs')
         api project(':scm4j-commons')
         api 'com.google.guava:guava:23.0'
         api 'org.yaml:snakeyaml:1.18'
@@ -372,12 +367,6 @@ public final class ManagableDependencyParser {
     }
 }
 
-project(':scm4j-template') {
-    dependencies {
-        testImplementation 'junit:junit:4.12'
-    }
-}
-
 project(':scm4j-test-jitpack') {
     dependencies {
         api 'org.apache.commons:commons-lang3:3.5'
@@ -385,49 +374,16 @@ project(':scm4j-test-jitpack') {
     }
 }
 
-project(':scm4j-vcs-api') {
+project(':scm4j-vcs') {
     dependencies {
-        api 'commons-io:commons-io:2.5'
-
-        testImplementation 'junit:junit:4.12'
-        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
-        testImplementation 'nl.jqno.equalsverifier:equalsverifier:2.3'
-    }
-}
-
-project(':scm4j-vcs-test') {
-    dependencies {
-        api project(':scm4j-vcs-api')
-        api 'junit:junit:4.12'
-        api 'org.mockito:mockito-core:2.0.62-beta'
-        api 'commons-io:commons-io:2.4'
-        api 'org.apache.commons:commons-lang3:3.5'
-    }
-}
-
-project(':scm4j-vcs-git') {
-    dependencies {
-        api project(':scm4j-vcs-api')
         api 'org.eclipse.jgit:org.eclipse.jgit:5.13.5.202508271544-r'
-        api 'org.apache.commons:commons-lang3:3.5'
-        api 'commons-io:commons-io:2.6'
-
-        testImplementation project(':scm4j-vcs-test')
-        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
-        testImplementation 'junit:junit:4.12'
-    }
-}
-
-project(':scm4j-vcs-svn') {
-    dependencies {
-        api project(':scm4j-vcs-api')
         api 'org.tmatesoft.svnkit:svnkit:1.8.14'
         api 'org.apache.commons:commons-lang3:3.5'
         api 'commons-io:commons-io:2.6'
 
-        testImplementation project(':scm4j-vcs-test')
         testImplementation 'junit:junit:4.12'
         testImplementation 'org.mockito:mockito-core:2.0.62-beta'
+        testImplementation 'nl.jqno.equalsverifier:equalsverifier:2.3'
     }
 }
 

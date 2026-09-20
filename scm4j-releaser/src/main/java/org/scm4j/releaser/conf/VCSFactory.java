@@ -1,6 +1,6 @@
 package org.scm4j.releaser.conf;
 
-import org.scm4j.vcs.GitVCS;
+import org.scm4j.vcs.git.GitVCS;
 import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
 import org.scm4j.vcs.svn.SVNVCS;

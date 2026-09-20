@@ -47,9 +47,7 @@ For version definitions ref. [semantic Versioning 2.0.0](http://semver.org/).
 
 # Related repositories
 
-  - [scm4j-vcs-api](../scm4j-vcs-api)
-  - [scm4j-vcs-git](../scm4j-vcs-git)
-  - [scm4j-vcs-svn](../scm4j-vcs-svn)
+  - [scm4j-vcs](../scm4j-vcs)
 
 # Problems
 - Subversion is very slow on VMs if network type is `NAT`. `Bridge` type gives  much better  perfomance. See similar problem  [here](https://blog.inventic.eu/2012/08/very-slow-svn-updates-from-virtual-machines-vmware/)
