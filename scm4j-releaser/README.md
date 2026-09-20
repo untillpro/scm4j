@@ -34,6 +34,15 @@ For version definitions ref. [semantic Versioning 2.0.0](http://semver.org/).
 - `ActionTreeBuilder` converts ExtendedStatusTree to ActionTree (IAction)
 - IAction is executed
 
+The release utilities are part of this module under `org.scm4j.releaser`:
+
+- [Version](src/main/java/org/scm4j/releaser/Version.java) handles release and snapshot versions.
+- [Coordinate parsers](src/main/java/org/scm4j/releaser/coords) read Maven and Gradle dependency coordinates.
+- [Regex configuration](src/main/java/org/scm4j/releaser/regexconfig), [URLContentLoader](src/main/java/org/scm4j/releaser/URLContentLoader.java), and [CommentedString](src/main/java/org/scm4j/releaser/CommentedString.java) support configuration and dependency files.
+- [Progress reporting](src/main/java/org/scm4j/releaser/progress) supplies progress callbacks and console output.
+
+Their unit tests and configuration fixtures run with `./gradlew :scm4j-releaser:test` from the repository root.
+
 # Data Structure
 
 - [data-structure](docs/data-structure.md)
@@ -55,3 +64,5 @@ For version definitions ref. [semantic Versioning 2.0.0](http://semver.org/).
 # Historical version
 
 [scm4j-releaser standalone repository](https://github.com/scm4j/scm4j-releaser)
+
+[Former scm4j-commons utilities](https://github.com/scm4j/scm4j-commons) are now included in this module.

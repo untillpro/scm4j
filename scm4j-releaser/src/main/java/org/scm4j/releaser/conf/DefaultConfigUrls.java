@@ -1,8 +1,8 @@
 package org.scm4j.releaser.conf;
 
 import org.apache.commons.io.FileUtils;
-import org.scm4j.commons.CommentedString;
-import org.scm4j.commons.URLContentLoader;
+import org.scm4j.releaser.CommentedString;
+import org.scm4j.releaser.URLContentLoader;
 import org.scm4j.releaser.Constants;
 
 import java.io.File;

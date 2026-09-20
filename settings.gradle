@@ -1,7 +1,6 @@
 rootProject.name = 'scm4j'
 
 def moduleNames = [
-        'scm4j-commons',
         'scm4j-deployer-api',
         'scm4j-deployer-engine',
         'scm4j-deployer-installers',

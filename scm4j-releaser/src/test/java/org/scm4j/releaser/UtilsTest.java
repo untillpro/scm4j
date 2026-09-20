@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import java.util.function.Supplier;
 
 import org.junit.Test;
-import org.scm4j.commons.Version;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.TagDesc;
 import org.scm4j.releaser.conf.VCSRepository;

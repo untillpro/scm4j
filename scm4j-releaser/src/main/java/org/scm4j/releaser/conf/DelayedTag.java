@@ -1,6 +1,6 @@
 package org.scm4j.releaser.conf;
 
-import org.scm4j.commons.Version;
+import org.scm4j.releaser.Version;
 
 public class DelayedTag {
 	private final Version version;

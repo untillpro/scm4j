@@ -17,8 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.junit.Test;
-import org.scm4j.commons.Version;
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.branch.ReleaseBranchPatch;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.DelayedTag;

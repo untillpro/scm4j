@@ -3,7 +3,7 @@ package org.scm4j.releaser.branch;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.scm4j.commons.Version;
+import org.scm4j.releaser.Version;
 import org.scm4j.releaser.Constants;
 import org.scm4j.releaser.Utils;
 import org.scm4j.releaser.conf.Component;

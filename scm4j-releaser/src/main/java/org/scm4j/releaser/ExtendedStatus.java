@@ -1,6 +1,5 @@
 package org.scm4j.releaser;
 
-import org.scm4j.commons.Version;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
 

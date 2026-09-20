@@ -3,8 +3,8 @@ package org.scm4j.releaser.conf;
 import com.google.common.io.Resources;
 import org.junit.Before;
 import org.junit.Test;
-import org.scm4j.commons.URLContentLoader;
-import org.scm4j.commons.regexconfig.RegexConfig;
+import org.scm4j.releaser.URLContentLoader;
+import org.scm4j.releaser.regexconfig.RegexConfig;
 import org.scm4j.releaser.exceptions.EComponentConfigNoUrl;
 
 import java.io.File;

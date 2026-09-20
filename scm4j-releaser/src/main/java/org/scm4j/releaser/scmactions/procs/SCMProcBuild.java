@@ -1,8 +1,8 @@
 package org.scm4j.releaser.scmactions.procs;
 
 import lombok.SneakyThrows;
-import org.scm4j.commons.Version;
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.Version;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.*;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.DelayedTagsFile;

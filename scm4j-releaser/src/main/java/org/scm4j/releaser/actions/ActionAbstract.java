@@ -1,7 +1,7 @@
 package org.scm4j.releaser.actions;
 
 import lombok.SneakyThrows;
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSComponentLocation;
 import org.scm4j.releaser.conf.VCSRepository;

@@ -1,8 +1,7 @@
 package org.scm4j.releaser;
 
-import org.scm4j.commons.Version;
-import org.scm4j.commons.progress.IProgress;
-import org.scm4j.commons.progress.ProgressConsole;
+import org.scm4j.releaser.progress.IProgress;
+import org.scm4j.releaser.progress.ProgressConsole;
 import org.scm4j.releaser.branch.DevelopBranch;
 import org.scm4j.releaser.branch.ReleaseBranchCurrent;
 import org.scm4j.releaser.branch.ReleaseBranchFactory;

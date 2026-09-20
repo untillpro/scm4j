@@ -2,8 +2,8 @@ package org.scm4j.releaser.scmactions;
 
 import java.util.ArrayList;
 
-import org.scm4j.commons.Version;
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.Version;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.Constants;
 import org.scm4j.releaser.Utils;
 import org.scm4j.releaser.actions.ActionAbstract;

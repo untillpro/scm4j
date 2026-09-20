@@ -5,7 +5,7 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.exceptions.EBuilder;
 import org.scm4j.releaser.testutils.TestEnvironment;

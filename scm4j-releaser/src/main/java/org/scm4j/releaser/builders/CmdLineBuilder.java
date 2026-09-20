@@ -1,7 +1,7 @@
 package org.scm4j.releaser.builders;
 
 import org.apache.commons.io.IOUtils;
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.exceptions.EBuilder;
 

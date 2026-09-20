@@ -2,7 +2,7 @@ package org.scm4j.releaser;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
-import org.scm4j.commons.progress.ProgressConsole;
+import org.scm4j.releaser.progress.ProgressConsole;
 import org.scm4j.releaser.actions.IAction;
 import org.scm4j.releaser.branch.ReleaseBranchCurrent;
 import org.scm4j.releaser.branch.ReleaseBranchFactory;

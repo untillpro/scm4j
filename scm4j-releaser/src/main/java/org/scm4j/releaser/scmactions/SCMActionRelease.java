@@ -3,8 +3,8 @@ package org.scm4j.releaser.scmactions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.scm4j.commons.Version;
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.Version;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.BuildStatus;
 import org.scm4j.releaser.CachedStatuses;
 import org.scm4j.releaser.ExtendedStatus;

@@ -2,7 +2,6 @@ package org.scm4j.releaser;
 
 import com.google.common.base.Strings;
 import org.junit.Test;
-import org.scm4j.commons.Version;
 import org.scm4j.releaser.actions.IAction;
 import org.scm4j.releaser.branch.ReleaseBranchCurrent;
 import org.scm4j.releaser.branch.ReleaseBranchFactory;

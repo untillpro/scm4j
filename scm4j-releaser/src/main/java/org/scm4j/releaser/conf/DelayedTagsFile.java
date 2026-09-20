@@ -1,7 +1,7 @@
 package org.scm4j.releaser.conf;
 
 import org.apache.commons.io.FileUtils;
-import org.scm4j.commons.Version;
+import org.scm4j.releaser.Version;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;

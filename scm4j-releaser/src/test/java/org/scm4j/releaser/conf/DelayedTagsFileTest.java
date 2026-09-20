@@ -3,7 +3,7 @@ package org.scm4j.releaser.conf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.scm4j.commons.Version;
+import org.scm4j.releaser.Version;
 
 import java.io.IOException;
 

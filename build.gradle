@@ -6,7 +6,6 @@ plugins {
 def moduleMetadata = [
     // io.github.untillpro is verifiable through the Untill GitHub organization;
     // org.untillpro would require control of the corresponding untillpro.org site.
-    'scm4j-commons'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-deployer-api'          : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-deployer-engine'       : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-deployer-installers'   : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
@@ -59,19 +58,6 @@ subprojects {
         dependsOn(tasks.named('sourcesJar'), tasks.named('javadocJar'))
     }
 
-}
-
-project(':scm4j-commons') {
-    dependencies {
-        api 'com.google.guava:guava:20.0'
-        api 'org.apache.commons:commons-lang3:3.5'
-        api 'commons-io:commons-io:2.5'
-        api 'org.yaml:snakeyaml:1.18'
-
-        testImplementation 'junit:junit:4.12'
-        testImplementation 'org.mockito:mockito-core:2.0.62-beta'
-        testImplementation 'nl.jqno.equalsverifier:equalsverifier:2.3'
-    }
 }
 
 project(':scm4j-deployer-api') {
@@ -179,8 +165,9 @@ project(':scm4j-releaser') {
 
     dependencies {
         api project(':scm4j-vcs')
-        api project(':scm4j-commons')
         api 'com.google.guava:guava:23.0'
+        api 'org.apache.commons:commons-lang3:3.5'
+        api 'commons-io:commons-io:2.6'
         api 'org.yaml:snakeyaml:1.18'
         api 'org.slf4j:slf4j-simple:1.7.21'
         api 'com.diogonunes:JCDP:2.0.3.1'
@@ -363,13 +350,6 @@ public final class ManagableDependencyParser {
                 tags.set(['scm', 'release-automation', 'release-helper', 'dependencies'])
             }
         }
-    }
-}
-
-project(':scm4j-test-jitpack') {
-    dependencies {
-        api 'org.apache.commons:commons-lang3:3.5'
-        testImplementation 'junit:junit:4.12'
     }
 }
 

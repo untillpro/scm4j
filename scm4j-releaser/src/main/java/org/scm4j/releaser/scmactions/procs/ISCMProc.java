@@ -1,6 +1,6 @@
 package org.scm4j.releaser.scmactions.procs;
 
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.progress.IProgress;
 
 public interface ISCMProc {
 	

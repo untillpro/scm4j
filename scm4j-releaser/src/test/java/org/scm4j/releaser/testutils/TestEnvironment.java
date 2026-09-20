@@ -3,7 +3,7 @@ package org.scm4j.releaser.testutils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.scm4j.commons.Version;
+import org.scm4j.releaser.Version;
 import org.scm4j.releaser.Constants;
 import org.scm4j.releaser.Utils;
 import org.scm4j.releaser.builders.BuilderFactory;

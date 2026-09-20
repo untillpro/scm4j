@@ -1,6 +1,6 @@
 package org.scm4j.releaser.testutils;
 
-import org.scm4j.commons.progress.IProgress;
+import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.builders.IBuilder;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.exceptions.EBuilder;

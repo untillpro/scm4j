@@ -1,7 +1,7 @@
 package org.scm4j.releaser.conf;
 
-import org.scm4j.commons.CommentedString;
-import org.scm4j.commons.coords.CoordsGradle;
+import org.scm4j.releaser.CommentedString;
+import org.scm4j.releaser.coords.CoordsGradle;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
