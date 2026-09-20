@@ -1,0 +1,12 @@
+name: Test Workflow on Git and SVN
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+      timezone: Europe/Moscow
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+    with:
+      all_vcs: true

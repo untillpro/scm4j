@@ -1,13 +1,16 @@
 name: Test
 
 on:
-  pull_request:
   push:
     branches:
       - main
-  schedule:
-    - cron: '0 4 * * *'
-      timezone: Europe/Moscow
+  workflow_call:
+    inputs:
+      all_vcs:
+        description: Run workflow integration tests on Git and SVN
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -15,6 +18,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      SCM4J_WORKFLOW_TEST_ALL_VCS: ${{ inputs.all_vcs }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
@@ -33,11 +38,4 @@ jobs:
           cache-provider: basic
 
       - name: Run tests
-        if: github.event_name != 'schedule'
         run: ./gradlew test
-
-      - name: Run scheduled releaser workflow tests on Git and SVN
-        if: github.event_name == 'schedule'
-        env:
-          SCM4J_WORKFLOW_TEST_ALL_VCS: 'true'
-        run: ./gradlew :scm4j-releaser:test --tests 'org.scm4j.releaser.Workflow*Test'
