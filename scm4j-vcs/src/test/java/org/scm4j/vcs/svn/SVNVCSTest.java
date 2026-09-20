@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -47,7 +48,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		svnRepo = SVNVCSUtils.createRepository(new File(repoUrl.replace("file://", "")));
+		svnRepo = SVNVCSUtils.createRepository(new File(URI.create(repoUrl)));
 		SVNVCSUtils.createFolderStructure(svn, FOLDER_STRUCT_CREATED_COMMIT_MESSAGE);
 	}
 
