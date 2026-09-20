@@ -2,7 +2,7 @@ package org.scm4j.releaser.conf;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.scm4j.vcs.GitVCS;
+import org.scm4j.vcs.git.GitVCS;
 import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
 import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;

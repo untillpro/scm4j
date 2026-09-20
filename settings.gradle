@@ -11,10 +11,7 @@ def moduleNames = [
         'scm4j-releaser-gradle-plugin',
         'scm4j-template',
         'scm4j-test-jitpack',
-        'scm4j-vcs-api',
-        'scm4j-vcs-git',
-        'scm4j-vcs-svn',
-        'scm4j-vcs-test',
+        'scm4j-vcs',
 ]
 
 include(*moduleNames)
