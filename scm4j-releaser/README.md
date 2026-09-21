@@ -46,6 +46,7 @@ Their unit tests and configuration fixtures run with `./gradlew :scm4j-releaser:
 # Data Structure
 
 - [data-structure](docs/data-structure.md)
+- [monorepo component release model](docs/monorepo-components.md)
 - [release statuses](docs/minor-release-status.md)
 
 # Features
