@@ -52,7 +52,7 @@ Build and test the plugin from the monorepo root:
 ./gradlew :scm4j-releaser-gradle-plugin:build
 ```
 
-The module is configured with the Gradle Plugin Development and Plugin Publish plugins. To publish a non-SNAPSHOT release to the Plugin Portal, set its release version in the root `moduleMetadata`, configure `GRADLE_PUBLISH_KEY` and `GRADLE_PUBLISH_SECRET`, then run:
+The module is configured with the Gradle Plugin Development and Plugin Publish plugins. To publish a non-SNAPSHOT release to the Plugin Portal, switch to the release branch for this module such as `scm4j-releaser-gradle-plugin/release/0.4`, then update the `version` file in the plugin directory to the release version (for example `0.4.0`), configure `GRADLE_PUBLISH_KEY` and `GRADLE_PUBLISH_SECRET`, then run:
 
 ```text
 ./gradlew :scm4j-releaser-gradle-plugin:publishPlugins
