@@ -1,6 +1,5 @@
 plugins {
     id 'base'
-    id 'com.gradle.plugin-publish' version '1.3.1' apply false
 }
 
 def moduleMetadata = [
@@ -11,7 +10,7 @@ def moduleMetadata = [
     'scm4j-jenkins'               : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_7],
     'scm4j-releaser'              : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-vcs'                   : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
-    'scm4j-releaser-gradle-plugin': [group: 'io.github.untillpro', version: '0.4.0-SNAPSHOT', java: JavaVersion.VERSION_1_8],
+    'scm4j-releaser-gradle-plugin': [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
 ]
 
 subprojects {
@@ -19,12 +18,8 @@ subprojects {
 
     def metadata = moduleMetadata[project.name]
     group = metadata.group
-    if (metadata.containsKey('version')) {
-        version = metadata.version
-    } else {
-        tasks.withType(AbstractArchiveTask).configureEach {
-            archiveVersion.set('')
-        }
+    tasks.withType(AbstractArchiveTask).configureEach {
+        archiveVersion.set('')
     }
 
     java {
@@ -45,7 +40,7 @@ subprojects {
         useJUnit()
         testLogging {
             events 'failed'
-            exceptionFormat 'full'
+            exceptionFormat = 'full'
         }
     }
 
@@ -233,117 +228,6 @@ project(':scm4j-releaser') {
         classpath = sourceSets.main.runtimeClasspath
         if (project.hasProperty('a')) {
             args(project.property('a').toString().split(','))
-        }
-    }
-}
-
-project(':scm4j-releaser-gradle-plugin') {
-    apply plugin: 'com.gradle.plugin-publish'
-
-    tasks.named('jar', Jar) {
-        manifest.attributes(
-                'Specification-Title': project.name,
-                'Specification-Version': project.version.toString().replaceAll(/-SNAPSHOT$/, ''),
-                'Implementation-Title': project.name,
-                'Implementation-Version': "${project.version} (${new Date().format('yyyy-MM-dd')})",
-        )
-    }
-
-    def legacyApiSourceDir = layout.buildDirectory.dir('generated/sources/legacyApi/java/main')
-    def generateLegacyApiSources = tasks.register('generateLegacyApiSources') {
-        outputs.dir(legacyApiSourceDir)
-        doLast {
-            def packageDir = legacyApiSourceDir.get().dir('org/scm4j/releaser/gradle').asFile
-            packageDir.mkdirs()
-
-            new File(packageDir, 'ManagableDependency.java').text = '''package org.scm4j.releaser.gradle;
-
-public class ManagableDependency {
-    private String group;
-    private String name;
-    private String classifier;
-    private String ext;
-    private String version;
-    private String configuration;
-
-    public String getGroup() { return group; }
-    public void setGroup(String group) { this.group = group; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getClassifier() { return classifier; }
-    public void setClassifier(String classifier) { this.classifier = classifier; }
-    public String getExt() { return ext; }
-    public void setExt(String ext) { this.ext = ext; }
-    public String getVersion() { return version; }
-    public void setVersion(String version) { this.version = version; }
-    public String getConfiguration() { return configuration; }
-    public void setConfiguration(String configuration) { this.configuration = configuration; }
-}
-'''
-
-            new File(packageDir, 'ManagableDependencyParser.java').text = '''package org.scm4j.releaser.gradle;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-public final class ManagableDependencyParser {
-    private ManagableDependencyParser() {
-    }
-
-    public static List<ManagableDependency> parse(InputStream is) throws IOException {
-        if (is == null) return null;
-        List<ManagableDependency> result = new ArrayList<>();
-        Pattern pattern = Pattern.compile(String.format("%1$s(?<group>%2$s):(?<name>%2$s):(?<ver>%2$s)?"
-                + "(?::(?<clf>%2$s))?(?:@(?<ext>%2$s))?%1$s(?:#%1$s(?<cfg>%2$s)?%1$s)?",
-                "[ \\t]*", "[a-zA-Z0-9._-]+"));
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                Matcher matcher = pattern.matcher(line);
-                if (matcher.matches()) {
-                    ManagableDependency dependency = new ManagableDependency();
-                    dependency.setGroup(matcher.group("group"));
-                    dependency.setName(matcher.group("name"));
-                    dependency.setClassifier(matcher.group("clf"));
-                    dependency.setExt(matcher.group("ext"));
-                    dependency.setVersion(matcher.group("ver"));
-                    dependency.setConfiguration(matcher.group("cfg"));
-                    result.add(dependency);
-                }
-            }
-        }
-        return result;
-    }
-}
-'''
-        }
-    }
-
-    sourceSets.main.java.srcDir(generateLegacyApiSources)
-
-    dependencies {
-        testImplementation 'junit:junit:4.13.2'
-        testImplementation 'org.hamcrest:hamcrest-all:1.3'
-    }
-
-    gradlePlugin {
-        website = 'https://github.com/untillpro/scm4j/tree/main/scm4j-releaser-gradle-plugin'
-        vcsUrl = 'https://github.com/untillpro/scm4j.git'
-
-        plugins {
-            scm4jReleaserGradlePlugin {
-                id = 'io.github.untillpro.scm4j-releaser-gradle-plugin'
-                displayName = 'scm4j-releaser Gradle plugin'
-                description = 'This plugin loads version and manageable dependencies from external files (version and mdeps)'
-                implementationClass = 'io.github.scm4j.releaser.gradle.ReleaserGradlePlugin'
-                tags.set(['scm', 'release-automation', 'release-helper', 'dependencies'])
-            }
         }
     }
 }

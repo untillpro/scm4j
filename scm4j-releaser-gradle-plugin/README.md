@@ -6,12 +6,12 @@ The plugin sets the Gradle project version from a `version` file and adds depend
 
 # Usage
 
-Apply the plugin from the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.scm4j.scm4j-releaser-gradle-plugin):
+Apply the plugin from the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.untillpro.scm4j-releaser-gradle-plugin):
 
 ```groovy
 plugins {
     id 'base'
-    id 'io.github.scm4j.scm4j-releaser-gradle-plugin' version '0.3.1'
+    id 'io.github.untillpro.scm4j-releaser-gradle-plugin' version '0.4.0'
 }
 ```
 
