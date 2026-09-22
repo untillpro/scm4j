@@ -4,8 +4,6 @@ plugins {
 }
 
 def moduleMetadata = [
-    // io.github.untillpro is verifiable through the Untill GitHub organization;
-    // org.untillpro would require control of the corresponding untillpro.org site.
     'scm4j-deployer-api'          : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-deployer-engine'       : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
     'scm4j-deployer-installers'   : [group: 'io.github.untillpro', java: JavaVersion.VERSION_1_8],
