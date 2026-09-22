@@ -7,6 +7,7 @@ import static org.junit.Assert.*;
 import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 
 import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -28,11 +29,11 @@ public class ReleaserGradlePluginTest {
     	Project project = ProjectBuilder.builder()
 				.withProjectDir(testProjectDir.getRoot())
 				.build();
-    	Map<String, Class<?>> arg = new HashMap<>();	
+    	Map<String, Class<?>> arg = new HashMap<>();
     	arg.put("plugin", ReleaserGradlePlugin.class);
     	project.apply(arg);
     	return project;
-    }	
+    }
 
 	private void createFile(String fileName, String fileContent) throws IOException {
 		File file = testProjectDir.newFile(fileName);
@@ -89,6 +90,15 @@ public class ReleaserGradlePluginTest {
 						hasProperty("version", is("latest.integration"))
 				)
 		));
+	}
+
+	@Test public void parserIgnoresIndentedComments() throws Exception {
+		assertThat(ManageableDependencyParser.parse(new ByteArrayInputStream(
+				"  # comment\n\t# another comment\n".getBytes())), empty());
+	}
+
+	@Test public void parserReturnsEmptyListForNullInput() throws Exception {
+		assertThat(ManageableDependencyParser.parse(null), empty());
 	}
 
 }

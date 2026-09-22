@@ -24,9 +24,9 @@ public final class ManageableDependencyParser {
 	}
 
 	public static List<ManageableDependency> parse(InputStream is) throws IOException, InvalidLineFormatException {
-		if (is == null)
-			return null;
 		List<ManageableDependency> result = new ArrayList<>();
+		if (is == null)
+			return result;
 		Pattern pattern = Pattern.compile(String.format("%1$s(?<group>%2$s):(?<name>%2$s):(?<ver>%2$s)?"
 				+ "(?::(?<clf>%2$s))?(?:@(?<ext>%2$s))?%1$s(?:#%1$s(?<cfg>%2$s)?%1$s)?",
 				"[ \t]*", "[a-zA-Z0-9._-]+"));
@@ -35,7 +35,7 @@ public final class ManageableDependencyParser {
 			String line;
 			while ((line = br.readLine()) != null) {
 				lineNo++;
-				if (!line.trim().isEmpty() && !line.startsWith("#")) {
+				if (!line.trim().isEmpty() && !line.trim().startsWith("#")) {
 					Matcher m = pattern.matcher(line);
 					if (m.matches()) {
 						ManageableDependency mdep = new ManageableDependency();
