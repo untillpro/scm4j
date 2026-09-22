@@ -8,7 +8,6 @@ Is represented by `product-list.json` file inside `product artifact`
   "repositories": [
         "https://dev.untill.com/artifactory/repo",
 	"http://central.maven.org/maven2",
-	"https://jitpack.io"
   ],
   "products": {
  	"art1": {
@@ -22,7 +21,7 @@ Is represented by `product-list.json` file inside `product artifact`
 	  "hidden": true
   	}
 }
-  
+
  ```
 
 # product-versions.json
