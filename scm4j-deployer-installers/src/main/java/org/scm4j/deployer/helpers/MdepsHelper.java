@@ -5,25 +5,25 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
 
-import org.scm4j.releaser.gradle.ManagableDependency;
-import org.scm4j.releaser.gradle.ManagableDependencyParser;
+import io.github.scm4j.releaser.gradle.ManageableDependency;
+import io.github.scm4j.releaser.gradle.ManageableDependencyParser;
 
 public class MdepsHelper {
 
-	List<ManagableDependency> mdeps;
+	List<ManageableDependency> mdeps;
 
 	public MdepsHelper(ClassLoader classLoader) {
 		try (InputStream is = classLoader.getResourceAsStream("META-INF/mdeps")) {
 			if (is == null)
 				throw new RuntimeException("File 'META-INF/mdeps' is not found");
-			mdeps = ManagableDependencyParser.parse(is);
-		} catch (IOException e) {
+			mdeps = ManageableDependencyParser.parse(is);
+		} catch (IOException | ManageableDependencyParser.InvalidLineFormatException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	public String getDepWithVersion(String configuration, String group, String name, String classifier, String ext) {
-		for (ManagableDependency mdep : mdeps) {
+		for (ManageableDependency mdep : mdeps) {
 			if (Objects.equals(group, mdep.getGroup()) && Objects.equals(name, mdep.getName())
 					&& Objects.equals(classifier, mdep.getClassifier()) && Objects.equals(ext, mdep.getExt())
 					&& Objects.equals(configuration, mdep.getConfiguration())) {
