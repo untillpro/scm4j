@@ -13,7 +13,12 @@ public class VCSWorkspace implements IVCSWorkspace {
 
 	@Override
 	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl) {
-		return new VCSRepositoryWorkspace(repoUrl, this);
+		return getVCSRepositoryWorkspace(repoUrl, true);
+	}
+
+	@Override
+	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl, boolean reuseWorkingCopies) {
+		return new VCSRepositoryWorkspace(repoUrl, this, reuseWorkingCopies);
 	}
 
 	@Override

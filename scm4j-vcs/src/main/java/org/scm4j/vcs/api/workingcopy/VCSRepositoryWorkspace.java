@@ -14,11 +14,17 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	private static final String FILE_PREFIX_3 = "file" + String.join("", Collections.nCopies(4, UNPRINTABLE_CHAR_PLACEHOLDER));
 	private final IVCSWorkspace workspace;
 	private final String repoUrl;
+	private final boolean reuseWorkingCopies;
 	private File repoFolder;
 
 	protected VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace) {
+		this(repoUrl, workspace, true);
+	}
+
+	protected VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace, boolean reuseWorkingCopies) {
 		this.workspace = workspace;
 		this.repoUrl = repoUrl;
+		this.reuseWorkingCopies = reuseWorkingCopies;
 		initRepoFolder();
 	}
 
@@ -29,7 +35,7 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
 	@Override
 	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() throws IOException {
-		return new VCSLockedWorkingCopy(this, false);
+		return new VCSLockedWorkingCopy(this, !reuseWorkingCopies);
 	}
 
 	private String getRepoFolderName() {

@@ -85,7 +85,8 @@ public class VCSRepositoryFactory {
 		IVCSWorkspace ws = new VCSWorkspace(DEFAULT_VCS_WORKSPACE_DIR);
 		return new VCSRepository(comp.getCoords().getArtifactId(), componentLocation, credentials, type,
 				developBranch, releaseBranchPrefix,
-				VCSFactory.getVCS(type, credentials, url, ws), BuilderFactory.getBuilder(releaseCommand));
+				VCSFactory.getVCS(type, credentials, url, ws, componentLocation.getSubfolder().isEmpty()),
+				BuilderFactory.getBuilder(releaseCommand));
 	}
 	
 	private VCSType getVCSType(String type, String url) {
