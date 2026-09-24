@@ -13,8 +13,9 @@ if not defined GIT_EXE (
 	exit /b 1
 )
 
-for %%I in ("%GIT_EXE%") do set "GIT_DIR=%%~dpI"
-set "PATH=%PATH%;%GIT_DIR%..\usr\bin"
+rem GIT_DIR is reserved by Git and JGit as an override for the repository path.
+for %%I in ("%GIT_EXE%") do set "GIT_EXE_DIR=%%~dpI"
+set "PATH=%PATH%;%GIT_EXE_DIR%..\usr\bin"
 
 where.exe /q sh.exe
 if errorlevel 1 (
