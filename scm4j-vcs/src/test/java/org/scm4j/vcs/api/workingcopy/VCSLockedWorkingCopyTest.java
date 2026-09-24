@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 
 import org.junit.Before;
@@ -53,6 +54,25 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 				assertNotEquals(w1.getFolder().getName(), w2.getFolder().getName());
 				assertNotEquals(w1.getLockFile().getName(), w2.getLockFile().getName());
 			}
+		}
+	}
+
+	@Test
+	public void testNewWorkingCopyIsNotPublishedBeforeLockIsAcquired() throws Exception {
+		String workingCopyId = "new-working-copy";
+		File lockFile = new File(r.getRepoFolder(), VCSLockedWorkingCopy.LOCK_FILE_PREFIX + workingCopyId);
+		assertTrue(lockFile.createNewFile());
+
+		try (FileOutputStream stream = new FileOutputStream(lockFile);
+			 FileLock ignored = stream.getChannel().lock()) {
+			try {
+				new VCSLockedWorkingCopy(r, false, workingCopyId);
+				fail();
+			} catch (OverlappingFileLockException e) {
+				// Expected: the new working-copy directory must not be visible unless its lock is owned.
+			}
+
+			assertFalse(new File(r.getRepoFolder(), workingCopyId).exists());
 		}
 	}
 
