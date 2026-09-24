@@ -1,0 +1,12 @@
+[package]
+name = "scm4j-releaser"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "A small, single-component scm4j releaser"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+
