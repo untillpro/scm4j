@@ -55,6 +55,9 @@ public class ExtendedStatusBuilder {
 	}
 
 	public ExtendedStatus getAndCacheStatus(Component comp, CachedStatuses cache, IProgress progress, boolean patch) {
+		Thread currentThread = Thread.currentThread();
+		String originalThreadName = currentThread.getName();
+		currentThread.setName(comp.getName());
 		VCSRepository repo = null;
 		try {
 			repo = repoFactory.getVCSRepository(comp);
@@ -95,6 +98,8 @@ public class ExtendedStatusBuilder {
 				throw e;
 			}
 			throw new EBuildStatus(e, comp);
+		} finally {
+			currentThread.setName(originalThreadName);
 		}
 	}
 	

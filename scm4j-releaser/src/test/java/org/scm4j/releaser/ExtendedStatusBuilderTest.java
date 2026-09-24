@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.scm4j.releaser.progress.IProgress;
@@ -29,6 +30,33 @@ import org.scm4j.vcs.api.VCSTag;
 import org.scm4j.vcs.api.WalkDirection;
 
 public class ExtendedStatusBuilderTest {
+	@Test
+	public void testStatusCalculationThreadIsNamedAfterComponent() {
+		Component component = new Component("test:thread-name:1.0");
+		VCSRepository repository = repository("thread-name");
+		VCSRepositoryFactory repositoryFactory = mock(VCSRepositoryFactory.class);
+		when(repositoryFactory.getVCSRepository(component)).thenReturn(repository);
+		AtomicReference<String> calculationThreadName = new AtomicReference<>();
+		ExtendedStatusBuilder builder = new ExtendedStatusBuilder(repositoryFactory) {
+			@Override
+			ExtendedStatus getMinorStatus(Component comp, CachedStatuses cache, IProgress progress,
+					VCSRepository repo, DelayedTag dt) {
+				calculationThreadName.set(Thread.currentThread().getName());
+				return status("1.0", comp, repo);
+			}
+		};
+		Thread currentThread = Thread.currentThread();
+		String originalThreadName = currentThread.getName();
+
+		try {
+			builder.getAndCacheMinorStatus(component, new CachedStatuses());
+
+			assertEquals(component.getName(), calculationThreadName.get());
+			assertEquals(originalThreadName, currentThread.getName());
+		} finally {
+			currentThread.setName(originalThreadName);
+		}
+	}
 
 	@Test
 	public void testStatusesAreCachedByRepositorySubfolder() {
@@ -103,7 +131,7 @@ public class ExtendedStatusBuilderTest {
 	}
 
 	private VCSRepository repository(String subfolder) {
-		return repository("name", subfolder, null);
+		return repository("name", subfolder, mock(IVCS.class));
 	}
 
 	private VCSRepository repository(String name, String subfolder, IVCS vcs) {
