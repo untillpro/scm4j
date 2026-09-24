@@ -58,6 +58,10 @@ public class ExtendedStatusBuilder {
 		VCSRepository repo = null;
 		try {
 			repo = repoFactory.getVCSRepository(comp);
+			if (progress != null) {
+				repo.getVCS().setRetryStatusReporter((operation, failure) -> progress.reportStatus(String.format(
+						"retrying %s for %s due to %s", operation, comp.getCoordsNoComment(), failure)));
+			}
 			VCSComponentLocation componentLocation = repo.getComponentLocation();
 			ExtendedStatus existing = cache.putIfAbsent(componentLocation, ExtendedStatus.DUMMY);
 			

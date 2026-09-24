@@ -1,5 +1,9 @@
 package org.scm4j.vcs.git;
 
+import dev.failsafe.Failsafe;
+import dev.failsafe.FailsafeException;
+import dev.failsafe.RetryPolicy;
+import dev.failsafe.function.CheckedRunnable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.api.*;
@@ -40,7 +44,9 @@ import java.io.*;
 import java.net.*;
 import java.net.Proxy.Type;
 import java.nio.charset.StandardCharsets;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class GitVCS implements IVCS {
 
@@ -51,7 +57,8 @@ public class GitVCS implements IVCS {
 	private CredentialsProvider credentials;
 	private final IVCSRepositoryWorkspace repo;
 	private String defaultBranchName;
-	
+	private BiConsumer<String, Throwable> retryStatusReporter = (operation, failure) -> {};
+
 	public CredentialsProvider getCredentials() {
 		return credentials;
 	}
@@ -62,6 +69,11 @@ public class GitVCS implements IVCS {
 
 	private void setCredentials(CredentialsProvider credentials) {
 		this.credentials = credentials;
+	}
+
+	@Override
+	public void setRetryStatusReporter(BiConsumer<String, Throwable> reporter) {
+		retryStatusReporter = reporter;
 	}
 
 	private String getRealBranchName(String branchName) throws GitAPIException {
@@ -462,22 +474,48 @@ public class GitVCS implements IVCS {
 	private void pullAndFetch(Git git) throws GitAPIException, WrongRepositoryStateException,
 			InvalidConfigurationException, DetachedHeadException, InvalidRemoteException, CanceledException,
 			RefNotFoundException, RefNotAdvertisedException, NoHeadException, TransportException {
-		git
-				.pull()
-				.setCredentialsProvider(credentials)
-				.call();
+		runWithTransportRetry("Git pull", () -> git
+					.pull()
+					.setCredentialsProvider(credentials)
+					.call());
 
 		// remove local branches and tags which are not exists on remote
 		// See https://github.com/scm4j/scm4j-releaser/issues/59
 		// if executed first then version is considered as modified. So have uncommited change: 19.5-SNAPSHOT -> 18.5-SNAPSHOT
-		git
-				.fetch()
-				.setRefSpecs(
-						new RefSpec("+refs/heads/*:refs/heads/*"),
-						new RefSpec("+refs/tags/*:refs/tags/*"))
-				.setRemoveDeletedRefs(true)
-				.setCredentialsProvider(credentials)
-				.call();
+		runWithTransportRetry("Git fetch", () -> git
+					.fetch()
+					.setRefSpecs(
+							new RefSpec("+refs/heads/*:refs/heads/*"),
+							new RefSpec("+refs/tags/*:refs/tags/*"))
+					.setRemoveDeletedRefs(true)
+					.setCredentialsProvider(credentials)
+					.call());
+	}
+
+	private void runWithTransportRetry(String operation, CheckedRunnable command) throws GitAPIException {
+		try {
+			Failsafe.with(RetryPolicy.builder()
+					.handleIf(GitVCS::isTransientTransportFailure)
+					.withBackoff(500, 2000, ChronoUnit.MILLIS)
+					.withJitter(.25)
+					.withMaxRetries(10)
+					.onRetryScheduled(event -> retryStatusReporter.accept(operation, event.getLastException()))
+					.build()).run(command);
+		} catch (FailsafeException e) {
+			if (e.getCause() instanceof GitAPIException) {
+				throw (GitAPIException) e.getCause();
+			}
+			throw e;
+		}
+	}
+
+	private static boolean isTransientTransportFailure(Throwable failure) {
+		for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+			if (cause instanceof SocketException || cause instanceof EOFException) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import org.scm4j.vcs.api.exceptions.EVCSTagExists;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public interface IVCS {
 	void createBranch(String srcBranchName, String dstBranchName, String commitMessage) throws EVCSBranchExists;
@@ -17,6 +18,8 @@ public interface IVCS {
 	void setCredentials(String user, String password);
 
 	void setProxy(String host, int port, String proxyUser, String proxyPassword);
+
+	default void setRetryStatusReporter(BiConsumer<String, Throwable> reporter) {}
 
 	String getRepoUrl();
 
