@@ -1,3 +1,4 @@
+mod catalog;
 mod config;
 mod git;
 mod svn;
@@ -5,6 +6,7 @@ mod version;
 
 use config::{Config, ScmType};
 use git::Git;
+use std::collections::HashSet;
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -12,11 +14,20 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use version::Version;
 
-const CONFIG_FILE: &str = "scm4j-releaser.conf";
 const WORK_DIR: &str = ".scm4j-releaser";
 const LOCK_FILE: &str = ".scm4j-releaser.lock";
 
 fn main() {
+    if env::var_os("SCM4J_ASKPASS").is_some() {
+        let prompt = env::args().nth(1).unwrap_or_default().to_ascii_lowercase();
+        let variable = if prompt.contains("username") {
+            "SCM4J_ASKPASS_USERNAME"
+        } else {
+            "SCM4J_ASKPASS_PASSWORD"
+        };
+        println!("{}", env::var(variable).unwrap_or_default());
+        return;
+    }
     if let Err(error) = execute() {
         eprintln!("EXECUTION FAILED: {error}");
         std::process::exit(1);
@@ -30,9 +41,22 @@ fn execute() -> Result<(), String> {
         print_help();
         return Ok(());
     }
-    if args.len() != 1 && !(args.len() == 2 && args[1] == "--delayed-tag" && command == "build") {
-        return Err("invalid arguments; use --help".to_owned());
+    let delayed = args.iter().skip(1).any(|arg| arg == "--delayed-tag");
+    if delayed && command != "build" {
+        return Err("--delayed-tag is valid for build only".to_owned());
     }
+    if let Some(option) = args
+        .iter()
+        .skip(1)
+        .find(|arg| arg.starts_with('-') && *arg != "--delayed-tag")
+    {
+        return Err(format!("unknown option `{option}`"));
+    }
+    let components: Vec<_> = args
+        .iter()
+        .skip(1)
+        .filter(|arg| !arg.starts_with('-'))
+        .collect();
 
     let executable = env::current_exe().map_err(|e| format!("cannot locate executable: {e}"))?;
     let home = executable
@@ -55,62 +79,331 @@ fn execute() -> Result<(), String> {
     if command == "init" {
         return init(&home);
     }
-    let config = Config::load(&home.join(CONFIG_FILE))?;
     let work = home.join(WORK_DIR);
     fs::create_dir_all(&work).map_err(|e| format!("cannot create {}: {e}", work.display()))?;
+    if components.is_empty() {
+        return Err("component coordinates are required; use group:artifact".to_owned());
+    }
+
+    let catalog = Catalog::load(&home)?;
+    let configs = resolve_component_graph(&catalog, &components, &work)?;
+    for config in configs {
+        let component_work = work.join("components").join(safe_name(&config.component));
+        fs::create_dir_all(&component_work)
+            .map_err(|e| format!("cannot create {}: {e}", component_work.display()))?;
+        println!("=== {} ===", display_component(&config));
+        if command == "tag" && !component_work.join("delayed-tag").is_file() {
+            println!("No delayed tag for {}", config.component);
+            continue;
+        }
+        if command == "build" {
+            lock_git_mdeps(&catalog, &config, &work)?;
+        }
+        execute_config(command, &config, &work, &component_work, delayed)?;
+        if command == "fork" {
+            lock_git_mdeps(&catalog, &config, &work)?;
+        }
+    }
+    Ok(())
+}
+
+fn resolve_component_graph(
+    catalog: &Catalog,
+    roots: &[&String],
+    shared_work: &Path,
+) -> Result<Vec<Config>, String> {
+    let mut visiting = HashSet::new();
+    let mut completed = HashSet::new();
+    let mut result = Vec::new();
+    for root in roots {
+        visit_component(
+            catalog,
+            root,
+            shared_work,
+            &mut visiting,
+            &mut completed,
+            &mut result,
+        )?;
+    }
+    Ok(result)
+}
+
+fn visit_component(
+    catalog: &Catalog,
+    coordinates: &str,
+    shared_work: &Path,
+    visiting: &mut HashSet<String>,
+    completed: &mut HashSet<String>,
+    result: &mut Vec<Config>,
+) -> Result<(), String> {
+    let config = catalog.resolve(coordinates)?;
+    if completed.contains(&config.component) {
+        return Ok(());
+    }
+    if !visiting.insert(config.component.clone()) {
+        return Err(format!("cyclic mdeps dependency at `{}`", config.component));
+    }
+    let mdeps = read_develop_mdeps(&config, shared_work)?;
+    for dependency in parse_mdeps(&mdeps) {
+        visit_component(
+            catalog,
+            &dependency,
+            shared_work,
+            visiting,
+            completed,
+            result,
+        )?;
+    }
+    visiting.remove(&config.component);
+    completed.insert(config.component.clone());
+    result.push(config);
+    Ok(())
+}
+
+fn read_develop_mdeps(config: &Config, shared_work: &Path) -> Result<String, String> {
     match config.scm_type {
         ScmType::Git => {
-            let git = prepare_repository(&config, &work)?;
-            let develop = discover_develop_branch(&git, &config)?;
+            let git = prepare_repository(config, shared_work)?;
+            let revision = match &config.release_line {
+                Some(line) => format!("origin/{}", release_branch_name_for_line(config, line)),
+                None => format!("origin/{}", discover_develop_branch(&git, config)?),
+            };
+            let path = component_path(config, "mdeps");
+            if git.succeeds(["cat-file", "-e", &format!("{revision}:{path}")]) {
+                git.show_file(&revision, &path)
+            } else {
+                Ok(String::new())
+            }
+        }
+        ScmType::Svn => svn::read_develop_mdeps(config, shared_work),
+    }
+}
+
+fn parse_mdeps(content: &str) -> Vec<String> {
+    content
+        .lines()
+        .filter_map(|line| {
+            let value = line.split('#').next().unwrap_or_default().trim();
+            (!value.is_empty()).then(|| value.to_owned())
+        })
+        .collect()
+}
+
+fn replace_coordinate_version(coordinates: &str, version: &str) -> Result<String, String> {
+    let extension_pos = coordinates.find('@').unwrap_or(coordinates.len());
+    let base = &coordinates[..extension_pos];
+    let extension = &coordinates[extension_pos..];
+    let first_colon = base
+        .find(':')
+        .ok_or_else(|| format!("invalid component coordinates `{coordinates}`"))?;
+    let second_colon = base[first_colon + 1..]
+        .find(':')
+        .map(|index| first_colon + 1 + index);
+    let (name, classifier) = match second_colon {
+        Some(second_colon) => {
+            let version_and_classifier = &base[second_colon + 1..];
+            let classifier = version_and_classifier
+                .find(':')
+                .map_or("", |index| &version_and_classifier[index..]);
+            (&base[..second_colon], classifier)
+        }
+        None => (base, ""),
+    };
+    Ok(format!("{name}:{version}{classifier}{extension}"))
+}
+
+fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Result<(), String> {
+    if config.scm_type != ScmType::Git {
+        return Ok(());
+    }
+    let git = prepare_repository(config, shared_work)?;
+    let Ok((_, branch)) = latest_release(&git, config) else {
+        return Ok(());
+    };
+    let revision = format!("origin/{branch}");
+    let path = component_path(config, "mdeps");
+    if !git.succeeds(["cat-file", "-e", &format!("{revision}:{path}")]) {
+        return Ok(());
+    }
+    let original = git.show_file(&revision, &path)?;
+    let mut changed = false;
+    let mut output = Vec::new();
+    for line in original.lines() {
+        let (value, comment) = match line.split_once('#') {
+            Some((value, comment)) => (value.trim(), Some(comment)),
+            None => (line.trim(), None),
+        };
+        if value.is_empty() {
+            output.push(line.to_owned());
+            continue;
+        }
+        let dependency = catalog.resolve(value)?;
+        if dependency.scm_type != ScmType::Git {
+            return Err(format!(
+                "Git component `{}` cannot lock non-Git dependency `{}`",
+                config.component, dependency.component
+            ));
+        }
+        let dependency_git = prepare_repository(&dependency, shared_work)?;
+        let (_, dependency_branch) = latest_release(&dependency_git, &dependency)?;
+        let dependency_revision = format!("origin/{dependency_branch}");
+        let current = read_version(&dependency_git, &dependency_revision, &dependency)?;
+        let dependency_head = dependency_git.run(["rev-parse", &dependency_revision])?;
+        let locked = if release_is_done(&dependency_git, &dependency, &current, &dependency_head)? {
+            current.previous_patch().unwrap_or(current)
+        } else {
+            current
+        };
+        let coords = replace_coordinate_version(value, &locked.to_string())?;
+        let replacement = match comment {
+            Some(comment) => format!("{coords} #{comment}"),
+            None => coords,
+        };
+        changed |= replacement != line;
+        output.push(replacement);
+    }
+    if !changed {
+        return Ok(());
+    }
+    git.checkout_remote(&branch)?;
+    let root = PathBuf::from(git.run(["rev-parse", "--show-toplevel"])?);
+    let file = root.join(&path);
+    fs::write(&file, format!("{}\n", output.join("\n")))
+        .map_err(|e| format!("cannot write {}: {e}", file.display()))?;
+    git.run(["add", "--", &path])?;
+    git.run(["commit", "-m", "#scm-mdeps"])?;
+    git.run(["push", "origin", &format!("{branch}:{branch}")])?;
+    println!("Locked mdeps in {branch}");
+    Ok(())
+}
+
+fn execute_config(
+    command: &str,
+    config: &Config,
+    shared_work: &Path,
+    component_work: &Path,
+    delayed: bool,
+) -> Result<(), String> {
+    match config.scm_type {
+        ScmType::Git => {
+            let git = prepare_repository(config, shared_work)?;
+            let develop = discover_develop_branch(&git, config)?;
             match command {
-                "status" => status(&git, &config, &develop),
-                "fork" => fork(&git, &config, &develop),
-                "build" => build(&git, &config, &work, args.get(1).is_some()),
-                "tag" => tag(&git, &config, &work),
+                "status" => status(&git, config, &develop),
+                "fork" => fork(&git, config, &develop),
+                "build" => build(&git, config, component_work, delayed),
+                "tag" => tag(&git, config, component_work),
                 _ => Err(format!("unknown command `{command}`; use --help")),
             }
         }
-        ScmType::Svn => svn::execute(command, &config, &work, args.get(1).is_some()),
+        ScmType::Svn => svn::execute(command, config, component_work, delayed),
     }
 }
 
 fn print_help() {
-    println!("scm4j-releaser - single-component Git/SVN release tool\n\n\
-Usage:\n  scm4j-releaser init\n  scm4j-releaser status\n  scm4j-releaser fork\n  scm4j-releaser build [--delayed-tag]\n  scm4j-releaser tag\n  scm4j-releaser unlock\n\n\
+    println!("scm4j-releaser - multi-component Git/SVN release tool\n\n\
+Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n  scm4j-releaser unlock\n\n\
 Configuration and all working data are stored beside the executable.\n\
 Only run `unlock` after making sure no other releaser process is active.");
 }
 
 fn init(home: &Path) -> Result<(), String> {
-    let path = home.join(CONFIG_FILE);
-    if path.exists() {
-        return Err(format!("{} already exists", path.display()));
+    let templates = [
+        ("cc.yml", catalog::CC_TEMPLATE),
+        ("cc", catalog::CC_LIST_TEMPLATE),
+        ("credentials.yml", catalog::CREDENTIALS_TEMPLATE),
+    ];
+    let mut created = 0;
+    for (name, content) in templates {
+        let path = home.join(name);
+        if path.exists() {
+            continue;
+        }
+        fs::write(&path, content).map_err(|e| format!("cannot create {}: {e}", path.display()))?;
+        println!("Created {}", path.display());
+        created += 1;
     }
-    fs::write(&path, config::TEMPLATE)
-        .map_err(|e| format!("cannot create {}: {e}", path.display()))?;
-    println!("Created {}", path.display());
+    if created == 0 {
+        println!("Configuration files already exist");
+    }
     Ok(())
 }
 
 fn prepare_repository(config: &Config, work: &Path) -> Result<Git, String> {
-    let directory = work.join("repository");
+    let repositories = work.join("repositories");
+    let named_directory = repositories.join(repository_key(&config.repository));
+    let legacy_directory = repositories.join(repository_hash(&config.repository));
+    let directory =
+        if named_directory.join(".git").is_dir() || !legacy_directory.join(".git").is_dir() {
+            named_directory
+        } else {
+            legacy_directory
+        };
+    fs::create_dir_all(
+        directory
+            .parent()
+            .expect("repository directory has a parent"),
+    )
+    .map_err(|e| format!("cannot create repository workspace: {e}"))?;
     let git = if directory.join(".git").is_dir() {
-        let git = Git::new(directory);
+        let git = Git::new(directory, config.username.clone(), config.password.clone());
         let origin = git.run(["remote", "get-url", "origin"])?;
         if origin != config.repository {
             return Err(format!("managed clone belongs to `{origin}`, configured repository is `{}`; remove {} to re-clone",
-                config.repository, git_path(work).display()));
+                config.repository, git.directory().display()));
         }
         git
     } else {
-        Git::clone(&config.repository, &directory)?
+        Git::clone(
+            &config.repository,
+            &directory,
+            config.username.clone(),
+            config.password.clone(),
+        )?
     };
     git.fetch()?;
     Ok(git)
 }
 
-fn git_path(work: &Path) -> PathBuf {
-    work.join("repository")
+fn repository_key(repository: &str) -> String {
+    let normalized = repository.trim_end_matches(['/', '\\']);
+    let repository_name = normalized
+        .rsplit(['/', '\\', ':'])
+        .next()
+        .unwrap_or_default();
+    let repository_name = repository_name
+        .strip_suffix(".git")
+        .unwrap_or(repository_name);
+    let repository_name: String = safe_name(repository_name).chars().take(48).collect();
+    let repository_name = repository_name.trim_matches('_');
+    let repository_name = if repository_name.is_empty() {
+        "repository"
+    } else {
+        repository_name
+    };
+    format!("{repository_name}-{}", repository_hash(repository))
+}
+
+fn repository_hash(repository: &str) -> String {
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in repository.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{hash:016x}")
+}
+
+fn safe_name(value: &str) -> String {
+    value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-') {
+                ch
+            } else {
+                '_'
+            }
+        })
+        .collect()
 }
 
 fn discover_develop_branch(git: &Git, config: &Config) -> Result<String, String> {
@@ -175,42 +468,54 @@ fn component_head(git: &Git, revision: &str, config: &Config) -> Result<String, 
     }
 }
 
-fn release_branches(git: &Git, config: &Config) -> Result<Vec<(Version, String)>, String> {
-    let refs = git.run([
-        "for-each-ref",
-        "--format=%(refname:strip=3)",
-        "refs/remotes/origin",
-    ])?;
-    let mut branches = Vec::new();
-    for branch in refs.lines() {
-        if let Some(line) = branch.strip_prefix(&config.release_branch_prefix) {
-            let synthetic = format!("{line}.0");
-            if let Ok(version) = synthetic.parse::<Version>() {
-                branches.push((version, branch.to_owned()));
-            }
-        }
-    }
-    branches.sort_by(|a, b| a.0.cmp(&b.0));
-    Ok(branches)
-}
-
 fn latest_release(git: &Git, config: &Config) -> Result<(Version, String), String> {
-    release_branches(git, config)?
-        .pop()
-        .ok_or_else(|| "no release branch; run `fork`".to_owned())
+    let release = match &config.release_line {
+        Some(line) => format!("{line}.0").parse::<Version>()?,
+        None => {
+            let develop = discover_develop_branch(git, config)?;
+            read_version(git, &format!("origin/{develop}"), config)?
+                .previous_minor_release()
+                .ok_or_else(|| "no release branch; run `fork`".to_owned())?
+        }
+    };
+    let branch = release_branch_name(config, &release);
+    if git.succeeds([
+        "show-ref",
+        "--verify",
+        "--quiet",
+        &format!("refs/remotes/origin/{branch}"),
+    ]) {
+        Ok((release, branch))
+    } else {
+        Err("no release branch; run `fork`".to_owned())
+    }
 }
 
 fn status(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
+    if config.release_line.is_some() {
+        let (_, branch) = latest_release(git, config)?;
+        let version = read_version(git, &format!("origin/{branch}"), config)?;
+        let head = git.run(["rev-parse", &format!("origin/{branch}")])?;
+        println!("release: {branch} ({version})");
+        println!(
+            "next action: {}",
+            if release_is_done(git, config, &version, &head)? {
+                "DONE"
+            } else {
+                "BUILD"
+            }
+        );
+        return Ok(());
+    }
     let dev_ref = format!("origin/{develop}");
     let dev_version = read_version(git, &dev_ref, config)?;
     if !dev_version.snapshot {
         return Err(format!("develop version must be a SNAPSHOT: {dev_version}"));
     }
-    let expected_branch = format!(
-        "{}{}",
-        config.release_branch_prefix,
-        dev_version.release_line()
-    );
+    if !dev_version.has_zero_patch() {
+        return Err(format!("develop SNAPSHOT patch must be 0: {dev_version}"));
+    }
+    let expected_branch = release_branch_name(config, &dev_version);
     let last_message = component_log(git, &dev_ref, config, 1, "%B")?;
     let needs_fork = !git.succeeds([
         "show-ref",
@@ -243,6 +548,9 @@ fn status(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
 }
 
 fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
+    if config.release_line.is_some() {
+        return Err("fork does not accept a locked release version".to_owned());
+    }
     let dev_ref = format!("origin/{develop}");
     let version = read_version(git, &dev_ref, config)?;
     if !version.snapshot {
@@ -250,15 +558,24 @@ fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
             "develop version must end with -SNAPSHOT: {version}"
         ));
     }
+    if !version.has_zero_patch() {
+        return Err(format!("develop SNAPSHOT patch must be 0: {version}"));
+    }
     let release = version.release_zero();
-    let branch = format!("{}{}", config.release_branch_prefix, release.release_line());
+    let branch = release_branch_name(config, &release);
     if git.succeeds([
         "show-ref",
         "--verify",
         "--quiet",
         &format!("refs/remotes/origin/{branch}"),
     ]) {
-        return Err(format!("release branch `{branch}` already exists"));
+        println!("Release branch `{branch}` already exists");
+        return Ok(());
+    }
+    let last_message = component_log(git, &dev_ref, config, 1, "%B")?;
+    if last_message.contains("#scm-ver") && latest_release(git, config).is_ok() {
+        println!("No fork needed for {}", display_component(config));
+        return Ok(());
     }
 
     git.checkout_remote(develop)?;
@@ -269,19 +586,14 @@ fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
     git.checkout_remote(develop)?;
     let next = version.next_minor_snapshot();
     write_and_commit_version(git, config, &next)?;
-    if config.push {
-        git.run([
-            "push",
-            "--atomic",
-            "origin",
-            &format!("{develop}:{develop}"),
-            &format!("{branch}:{branch}"),
-        ])?;
-    }
-    println!(
-        "Forked {branch} at {release}; develop is now {next}{}",
-        local_suffix(config)
-    );
+    git.run([
+        "push",
+        "--atomic",
+        "origin",
+        &format!("{develop}:{develop}"),
+        &format!("{branch}:{branch}"),
+    ])?;
+    println!("Forked {branch} at {release}; develop is now {next}");
     Ok(())
 }
 
@@ -307,17 +619,17 @@ fn build(git: &Git, config: &Config, work: &Path, delayed: bool) -> Result<(), S
     }
     let branch_head = git.run(["rev-parse", "HEAD"])?;
     if release_is_done(git, config, &version, &branch_head)? {
-        return Err(format!(
-            "{branch} is already built; add a release commit before building another patch"
-        ));
+        println!("{branch} is already built");
+        return Ok(());
     }
+    let tag_name = git_tag_name(config, &version);
     if git.succeeds([
         "rev-parse",
         "--verify",
         "--quiet",
-        &format!("refs/tags/{version}"),
+        &format!("refs/tags/{tag_name}"),
     ]) {
-        return Err(format!("tag `{version}` already exists"));
+        return Err(format!("tag `{tag_name}` already exists"));
     }
     if delayed && work.join("delayed-tag").exists() {
         return Err("a delayed tag is already pending; run `tag` first".to_owned());
@@ -331,7 +643,8 @@ fn build(git: &Git, config: &Config, work: &Path, delayed: bool) -> Result<(), S
         println!("Built {version}; tag for {commit} was delayed");
     } else {
         tag_and_bump(git, config, &branch, &version, &commit)?;
-        println!("Built and tagged {version}{}", local_suffix(config));
+        run_after_tag(config, work, &version)?;
+        println!("Built and tagged {version}");
     }
     Ok(())
 }
@@ -351,7 +664,7 @@ fn release_is_done(
             "rev-parse",
             "--verify",
             "--quiet",
-            &format!("refs/tags/{previous}"),
+            &format!("refs/tags/{}", git_tag_name(config, &previous)),
         ])
     {
         return Ok(false);
@@ -361,7 +674,12 @@ fn release_is_done(
         Some(commit) => commit,
         None => return Ok(false),
     };
-    let tagged = git.run(["rev-list", "-n", "1", &format!("refs/tags/{previous}")])?;
+    let tagged = git.run([
+        "rev-list",
+        "-n",
+        "1",
+        &format!("refs/tags/{}", git_tag_name(config, &previous)),
+    ])?;
     Ok(parent == tagged)
 }
 
@@ -373,6 +691,16 @@ fn run_build(
     version: &Version,
     commit: &str,
 ) -> Result<(), String> {
+    if config.build_command.trim().is_empty() {
+        return Err(format!(
+            "releaseCommand is not configured for `{}`",
+            if config.component.is_empty() {
+                "component"
+            } else {
+                &config.component
+            }
+        ));
+    }
     let builds = work.join("builds");
     fs::create_dir_all(&builds).map_err(|e| format!("cannot create build directory: {e}"))?;
     let directory = builds.join(version.to_string());
@@ -448,8 +776,9 @@ fn tag(git: &Git, config: &Config, work: &Path) -> Result<(), String> {
     }
     git.checkout_remote(&branch)?;
     tag_and_bump(git, config, &branch, &version, &commit)?;
+    run_after_tag(config, work, &version)?;
     fs::remove_file(path).map_err(|e| format!("cannot remove delayed tag state: {e}"))?;
-    println!("Applied delayed tag {version}{}", local_suffix(config));
+    println!("Applied delayed tag {version}");
     Ok(())
 }
 
@@ -460,33 +789,78 @@ fn tag_and_bump(
     version: &Version,
     commit: &str,
 ) -> Result<(), String> {
+    let tag_name = git_tag_name(config, version);
     git.run([
         "tag",
         "-a",
-        &version.to_string(),
+        &tag_name,
         "-m",
         &format!("{version} release"),
         commit,
     ])?;
     let next = version.next_patch();
     write_and_commit_version(git, config, &next)?;
-    if config.push {
-        git.run([
-            "push",
-            "--atomic",
-            "origin",
-            &format!("{branch}:{branch}"),
-            &format!("refs/tags/{version}"),
-        ])?;
-    }
+    git.run([
+        "push",
+        "--atomic",
+        "origin",
+        &format!("{branch}:{branch}"),
+        &format!("refs/tags/{tag_name}"),
+    ])?;
     Ok(())
 }
 
-fn local_suffix(config: &Config) -> &'static str {
-    if config.push {
-        ""
+fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), String> {
+    let Some(hook) = config.after_tag.as_deref() else {
+        return Ok(());
+    };
+    let root = work.join("builds").join(version.to_string());
+    let directory = if config.subfolder.is_empty() {
+        root
     } else {
-        " (local only: push=false)"
+        root.join(&config.subfolder)
+    };
+    let mut command = if cfg!(windows) {
+        let mut command = Command::new("cmd");
+        command.args(["/D", "/S", "/C", hook]);
+        command
+    } else {
+        let mut command = Command::new("sh");
+        command.args(["-c", hook]);
+        command
+    };
+    let status = command
+        .current_dir(&directory)
+        .env("SCM4J_VERSION", version.to_string())
+        .status()
+        .map_err(|e| format!("cannot start afterTag command: {e}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("afterTag command failed with {status}"))
+    }
+}
+
+fn release_branch_name(config: &Config, version: &Version) -> String {
+    release_branch_name_for_line(config, &version.release_line())
+}
+
+fn release_branch_name_for_line(config: &Config, release_line: &str) -> String {
+    format!(
+        "{}{}{}",
+        config.reference_namespace, config.release_branch_prefix, release_line
+    )
+}
+
+fn git_tag_name(config: &Config, version: &Version) -> String {
+    format!("{}{version}", config.reference_namespace)
+}
+
+fn display_component(config: &Config) -> String {
+    match &config.release_line {
+        Some(line) => format!("{}:{line}", config.component),
+        None if config.component.is_empty() => "component".to_owned(),
+        None => config.component.clone(),
     }
 }
 
@@ -517,5 +891,38 @@ impl Lock {
 impl Drop for Lock {
     fn drop(&mut self) {
         let _ = fs::remove_file(&self.path);
+    }
+}
+use catalog::Catalog;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn repository_key_contains_readable_name_and_unique_hash() {
+        let first = repository_key("https://example.org/team/project.git");
+        let second = repository_key("ssh://git@example.net/other/project.git");
+
+        assert!(first.starts_with("project-"));
+        assert!(second.starts_with("project-"));
+        assert_ne!(first, second);
+    }
+
+    #[test]
+    fn repository_key_supports_scp_style_urls() {
+        assert!(repository_key("git@example.org:team/product.git").starts_with("product-"));
+    }
+
+    #[test]
+    fn replacing_mdep_version_preserves_classifier_and_extension() {
+        assert_eq!(
+            replace_coordinate_version("org.example:archive:2.3@zip", "2.4").unwrap(),
+            "org.example:archive:2.4@zip"
+        );
+        assert_eq!(
+            replace_coordinate_version("org.example:archive:2.3:all@zip", "2.4").unwrap(),
+            "org.example:archive:2.4:all@zip"
+        );
     }
 }

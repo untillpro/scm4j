@@ -4,23 +4,33 @@ use std::process::{Command, Output};
 
 pub struct Git {
     directory: PathBuf,
+    username: Option<String>,
+    password: Option<String>,
 }
 
 impl Git {
-    pub fn new(directory: PathBuf) -> Self {
-        Self { directory }
+    pub fn new(directory: PathBuf, username: Option<String>, password: Option<String>) -> Self {
+        Self {
+            directory,
+            username,
+            password,
+        }
     }
 
-    pub fn clone(repository: &str, directory: &Path) -> Result<Self, String> {
+    pub fn clone(
+        repository: &str,
+        directory: &Path,
+        username: Option<String>,
+        password: Option<String>,
+    ) -> Result<Self, String> {
         let parent = directory
             .parent()
             .ok_or_else(|| "invalid repository directory".to_owned())?;
         let name = directory
             .file_name()
             .ok_or_else(|| "invalid repository directory".to_owned())?;
-        run_in(
+        run_git_in(
             parent,
-            "git",
             [
                 OsStr::new("clone"),
                 OsStr::new("--origin"),
@@ -28,8 +38,10 @@ impl Git {
                 OsStr::new(repository),
                 name,
             ],
+            username.as_deref(),
+            password.as_deref(),
         )?;
-        Ok(Self::new(directory.to_owned()))
+        Ok(Self::new(directory.to_owned(), username, password))
     }
 
     pub fn run<I, S>(&self, args: I) -> Result<String, String>
@@ -37,7 +49,12 @@ impl Git {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        run_in(&self.directory, "git", args)
+        run_git_in(
+            &self.directory,
+            args,
+            self.username.as_deref(),
+            self.password.as_deref(),
+        )
     }
 
     pub fn succeeds<I, S>(&self, args: I) -> bool
@@ -45,12 +62,15 @@ impl Git {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        Command::new("git")
-            .args(args)
-            .current_dir(&self.directory)
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false)
+        git_command(
+            &self.directory,
+            args,
+            self.username.as_deref(),
+            self.password.as_deref(),
+        )
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
     }
 
     pub fn fetch(&self) -> Result<(), String> {
@@ -66,6 +86,64 @@ impl Git {
         self.run(["checkout", "-B", branch, &format!("origin/{branch}")])?;
         Ok(())
     }
+
+    pub fn directory(&self) -> &Path {
+        &self.directory
+    }
+}
+
+fn run_git_in<I, S>(
+    directory: &Path,
+    args: I,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> Result<String, String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    let Output {
+        status,
+        stdout,
+        stderr,
+    } = git_command(directory, args, username, password)
+        .output()
+        .map_err(|e| format!("failed to start git: {e}"))?;
+    if status.success() {
+        Ok(String::from_utf8_lossy(&stdout).trim().to_owned())
+    } else {
+        let detail = String::from_utf8_lossy(&stderr).trim().to_owned();
+        Err(if detail.is_empty() {
+            format!("git failed with {status}")
+        } else {
+            detail
+        })
+    }
+}
+
+fn git_command<I, S>(
+    directory: &Path,
+    args: I,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> Command
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    let mut command = Command::new("git");
+    command.args(args).current_dir(directory);
+    if username.is_some() || password.is_some() {
+        if let Ok(executable) = std::env::current_exe() {
+            command
+                .env("GIT_ASKPASS", executable)
+                .env("GIT_TERMINAL_PROMPT", "0")
+                .env("SCM4J_ASKPASS", "1")
+                .env("SCM4J_ASKPASS_USERNAME", username.unwrap_or_default())
+                .env("SCM4J_ASKPASS_PASSWORD", password.unwrap_or_default());
+        }
+    }
+    command
 }
 
 pub fn run_in<I, S>(directory: &Path, program: &str, args: I) -> Result<String, String>
