@@ -12,13 +12,8 @@ public class VCSWorkspace implements IVCSWorkspace {
 	private final File folder;
 
 	@Override
-	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl) {
-		return getVCSRepositoryWorkspace(repoUrl, true);
-	}
-
-	@Override
-	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl, boolean reuseWorkingCopies) {
-		return new VCSRepositoryWorkspace(repoUrl, this, reuseWorkingCopies);
+	public IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl, String componentSubfolder) {
+		return new VCSRepositoryWorkspace(repoUrl, componentSubfolder, this);
 	}
 
 	@Override

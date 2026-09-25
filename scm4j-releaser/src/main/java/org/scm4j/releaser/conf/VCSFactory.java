@@ -13,8 +13,9 @@ public final class VCSFactory {
 	}
 
 	public static IVCS getVCS(VCSType type, Credentials creds, String url, IVCSWorkspace ws,
-			boolean reuseWorkingCopies) {
-		return getVCS(type, creds, ws.getVCSRepositoryWorkspace(url, reuseWorkingCopies));
+			String componentSubfolder) {
+		IVCSRepositoryWorkspace repoWorkspace = ws.getVCSRepositoryWorkspace(url, componentSubfolder);
+		return getVCS(type, creds, repoWorkspace);
 	}
 
 	private static IVCS getVCS(VCSType type, Credentials creds, IVCSRepositoryWorkspace repoWorkspace) {
