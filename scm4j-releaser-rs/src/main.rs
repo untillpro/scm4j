@@ -59,11 +59,16 @@ fn execute() -> Result<(), String> {
         .collect();
 
     let executable = env::current_exe().map_err(|e| format!("cannot locate executable: {e}"))?;
-    let home = executable
+    let installation_dir = executable
         .parent()
         .ok_or_else(|| "executable has no parent directory".to_owned())?
         .to_owned();
-    let lock_path = home.join(LOCK_FILE);
+    let config_dir = env::home_dir()
+        .map(|home| home.join(".scm4j"))
+        .unwrap_or_else(|| installation_dir.clone());
+    let working_dir =
+        env::current_dir().map_err(|e| format!("cannot locate current working directory: {e}"))?;
+    let lock_path = working_dir.join(LOCK_FILE);
     if command == "unlock" {
         if lock_path.exists() {
             fs::remove_file(&lock_path)
@@ -77,15 +82,19 @@ fn execute() -> Result<(), String> {
     let _lock = Lock::acquire(&lock_path)?;
 
     if command == "init" {
-        return init(&home);
+        return init(&config_dir);
     }
-    let work = home.join(WORK_DIR);
+    let work = working_dir.join(WORK_DIR);
     fs::create_dir_all(&work).map_err(|e| format!("cannot create {}: {e}", work.display()))?;
     if components.is_empty() {
         return Err("component coordinates are required; use group:artifact".to_owned());
     }
 
-    let catalog = Catalog::load(&home)?;
+    let mut config_dirs = vec![config_dir];
+    if config_dirs[0] != installation_dir {
+        config_dirs.push(installation_dir);
+    }
+    let catalog = Catalog::load_search(&config_dirs)?;
     let configs = resolve_component_graph(&catalog, &components, &work)?;
     for config in configs {
         let component_work = work.join("components").join(safe_name(&config.component));
@@ -238,21 +247,20 @@ fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Res
             continue;
         }
         let dependency = catalog.resolve(value)?;
-        if dependency.scm_type != ScmType::Git {
-            return Err(format!(
-                "Git component `{}` cannot lock non-Git dependency `{}`",
-                config.component, dependency.component
-            ));
-        }
-        let dependency_git = prepare_repository(&dependency, shared_work)?;
-        let (_, dependency_branch) = latest_release(&dependency_git, &dependency)?;
-        let dependency_revision = format!("origin/{dependency_branch}");
-        let current = read_version(&dependency_git, &dependency_revision, &dependency)?;
-        let dependency_head = dependency_git.run(["rev-parse", &dependency_revision])?;
-        let locked = if release_is_done(&dependency_git, &dependency, &current, &dependency_head)? {
-            current.previous_patch().unwrap_or(current)
-        } else {
-            current
+        let locked = match dependency.scm_type {
+            ScmType::Git => {
+                let dependency_git = prepare_repository(&dependency, shared_work)?;
+                let (_, dependency_branch) = latest_release(&dependency_git, &dependency)?;
+                let dependency_revision = format!("origin/{dependency_branch}");
+                let current = read_version(&dependency_git, &dependency_revision, &dependency)?;
+                let dependency_head = dependency_git.run(["rev-parse", &dependency_revision])?;
+                if release_is_done(&dependency_git, &dependency, &current, &dependency_head)? {
+                    current.previous_patch().unwrap_or(current)
+                } else {
+                    current
+                }
+            }
+            ScmType::Svn => svn::released_version(&dependency, shared_work)?,
         };
         let coords = replace_coordinate_version(value, &locked.to_string())?;
         let replacement = match comment {
@@ -303,11 +311,13 @@ fn execute_config(
 fn print_help() {
     println!("scm4j-releaser - multi-component Git/SVN release tool\n\n\
 Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n  scm4j-releaser unlock\n\n\
-Configuration and all working data are stored beside the executable.\n\
+Configuration is read from <home_dir>/.scm4j; the executable directory is also searched for compatibility.\n\
+Working data is stored in the current directory.\n\
 Only run `unlock` after making sure no other releaser process is active.");
 }
 
 fn init(home: &Path) -> Result<(), String> {
+    fs::create_dir_all(home).map_err(|e| format!("cannot create {}: {e}", home.display()))?;
     let templates = [
         ("cc.yml", catalog::CC_TEMPLATE),
         ("cc", catalog::CC_LIST_TEMPLATE),

@@ -40,18 +40,31 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    pub fn load(home: &Path) -> Result<Self, String> {
-        let component_sources = component_sources(home)?;
-        if component_sources.is_empty() {
+    pub fn load_search(homes: &[PathBuf]) -> Result<Self, String> {
+        let primary = homes
+            .first()
+            .ok_or_else(|| "no configuration directories provided".to_owned())?;
+
+        let components = if let Some(value) = component_sources_from_env() {
+            load_rules(primary, &split_sources(&value.to_string_lossy()))?
+        } else {
+            load_rules_from_homes(homes, component_sources_from_files)?
+        };
+        if components.is_empty() {
             return Err(format!(
                 "no component configuration found; create {} or set SCM4J_CC",
-                home.join("cc.yml").display()
+                primary.join("cc.yml").display()
             ));
         }
-        let credential_sources = credential_sources(home);
+
+        let credentials = if let Some(value) = env::var_os("SCM4J_CREDENTIALS") {
+            load_rules(primary, &split_sources(&value.to_string_lossy()))?
+        } else {
+            load_rules_from_homes(homes, credential_sources_from_files)?
+        };
         Ok(Self {
-            components: load_rules(home, &component_sources)?,
-            credentials: load_rules(home, &credential_sources)?,
+            components,
+            credentials,
         })
     }
 
@@ -157,10 +170,11 @@ impl Catalog {
     }
 }
 
-fn component_sources(home: &Path) -> Result<Vec<String>, String> {
-    if let Some(value) = env::var_os("SCM4J_VCS_REPOS").or_else(|| env::var_os("SCM4J_CC")) {
-        return Ok(split_sources(&value.to_string_lossy()));
-    }
+fn component_sources_from_env() -> Option<std::ffi::OsString> {
+    env::var_os("SCM4J_CC").or_else(|| env::var_os("SCM4J_VCS_REPOS"))
+}
+
+fn component_sources_from_files(home: &Path) -> Result<Vec<String>, String> {
     let mut result = Vec::new();
     let priority = home.join("cc.yml");
     if priority.is_file() {
@@ -175,16 +189,24 @@ fn component_sources(home: &Path) -> Result<Vec<String>, String> {
     Ok(result)
 }
 
-fn credential_sources(home: &Path) -> Vec<String> {
-    if let Some(value) = env::var_os("SCM4J_CREDENTIALS") {
-        return split_sources(&value.to_string_lossy());
-    }
+fn credential_sources_from_files(home: &Path) -> Result<Vec<String>, String> {
     let path = home.join("credentials.yml");
     if path.is_file() {
-        vec![path.to_string_lossy().into_owned()]
+        Ok(vec![path.to_string_lossy().into_owned()])
     } else {
-        Vec::new()
+        Ok(Vec::new())
     }
+}
+
+fn load_rules_from_homes(
+    homes: &[PathBuf],
+    sources: fn(&Path) -> Result<Vec<String>, String>,
+) -> Result<Vec<Rule>, String> {
+    let mut result = Vec::new();
+    for home in homes {
+        result.extend(load_rules(home, &sources(home)?)?);
+    }
+    Ok(result)
 }
 
 fn split_sources(value: &str) -> Vec<String> {
@@ -394,12 +416,48 @@ mod tests {
             "'https://example\\.test/.*':\n  name: robot\n  password: secret\n",
         )
         .unwrap();
-        let catalog = Catalog::load(&home).unwrap();
+        let catalog = Catalog::load_search(&[home.clone()]).unwrap();
         let config = catalog.resolve("org.example:service").unwrap();
         let _ = fs::remove_dir_all(home);
         assert_eq!(config.subfolder, "components/service");
         assert_eq!(config.build_command, "make $1");
         assert_eq!(config.reference_namespace, "service/");
+        assert_eq!(config.username.as_deref(), Some("robot"));
+        assert_eq!(config.password.as_deref(), Some("secret"));
+    }
+
+    #[test]
+    fn searches_configuration_directories_in_order() {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let base = std::env::temp_dir().join(format!("scm4j-catalog-search-{suffix}"));
+        let primary = base.join("home");
+        let fallback = base.join("installation");
+        fs::create_dir_all(&primary).unwrap();
+        fs::create_dir_all(&fallback).unwrap();
+        fs::write(
+            primary.join("cc.yml"),
+            "'org.example:service':\n  url: https://primary.test/service.git\n",
+        )
+        .unwrap();
+        fs::write(
+            fallback.join("cc.yml"),
+            "'org.example:service':\n  url: https://fallback.test/service.git\n",
+        )
+        .unwrap();
+        fs::write(
+            fallback.join("credentials.yml"),
+            "'https://primary\\.test/.*':\n  name: robot\n  password: secret\n",
+        )
+        .unwrap();
+
+        let catalog = Catalog::load_search(&[primary, fallback]).unwrap();
+        let config = catalog.resolve("org.example:service").unwrap();
+        let _ = fs::remove_dir_all(base);
+
+        assert_eq!(config.repository, "https://primary.test/service.git");
         assert_eq!(config.username.as_deref(), Some("robot"));
         assert_eq!(config.password.as_deref(), Some("secret"));
     }

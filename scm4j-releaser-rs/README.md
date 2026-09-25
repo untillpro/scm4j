@@ -20,8 +20,9 @@ remain at their configured branch root. Execution is intentionally sequential.
 
 ## Configuration
 
-Run `scm4j-releaser init` to create `cc.yml`, `cc`, and `credentials.yml`. Component coordinates are
-required for all workflow commands:
+Configuration is searched first in `<home_dir>/.scm4j`, matching the Java releaser. For compatibility,
+the executable directory is searched afterwards. Run `scm4j-releaser init` to create `cc.yml`, `cc`, and
+`credentials.yml` in `<home_dir>/.scm4j`. Component coordinates are required for all workflow commands:
 
 ```text
 scm4j-releaser status org.example:product
@@ -93,9 +94,12 @@ SVN repositories use the conventional `trunk`, `branches`, and `tags` layout. A 
 cargo build --release
 ```
 
-Copy the resulting executable into a dedicated directory. The program stores everything there:
+Copy the resulting executable into a dedicated directory. Configuration is stored in `<home_dir>/.scm4j`:
 
 - `cc.yml`, `cc`, `credentials.yml` — compatible multi-component configuration;
+
+Working data is stored in the current directory from which the command is run:
+
 - `.scm4j-releaser.lock` — exclusive process lock;
 - `.scm4j-releaser/repositories/<repository-name>-<url-hash>` — deduplicated managed Git clones;
 - `.scm4j-releaser/components/<coords>/builds/<version>` — isolated build checkouts;

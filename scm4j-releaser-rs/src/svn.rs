@@ -53,6 +53,23 @@ pub fn read_develop_mdeps(config: &Config, work: &Path) -> Result<String, String
     }
 }
 
+pub fn released_version(config: &Config, work: &Path) -> Result<Version, String> {
+    validate_paths(config)?;
+    let svn = Svn::new(
+        &config.repository,
+        work.join("repository"),
+        config.username.clone(),
+        config.password.clone(),
+    );
+    let (_, branch) = latest_release(&svn, config)?;
+    let current = svn.read_version(&branch, &config.version_file)?;
+    if release_is_done(&svn, config, &branch, &current)? {
+        Ok(current.previous_patch().unwrap_or(current))
+    } else {
+        Ok(current)
+    }
+}
+
 fn validate_paths(config: &Config) -> Result<(), String> {
     for (name, value) in [
         (
