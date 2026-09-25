@@ -1,6 +1,6 @@
 # scm4j
 
-For a small, single-component and Git-only release workflow, see the
+For a small, single-component Git/SVN release workflow, see the
 [Rust scm4j-releaser](scm4j-releaser-rs/README.md). It is single-threaded and keeps its private clone,
 build directories, configuration, and process lock beside the executable.
 

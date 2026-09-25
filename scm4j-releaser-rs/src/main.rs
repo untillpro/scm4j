@@ -1,9 +1,10 @@
 mod config;
 mod git;
+mod svn;
 mod version;
 
-use config::Config;
-use git::{run_in, Git};
+use config::{Config, ScmType};
+use git::Git;
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -57,20 +58,24 @@ fn execute() -> Result<(), String> {
     let config = Config::load(&home.join(CONFIG_FILE))?;
     let work = home.join(WORK_DIR);
     fs::create_dir_all(&work).map_err(|e| format!("cannot create {}: {e}", work.display()))?;
-    let git = prepare_repository(&config, &work)?;
-    let develop = discover_develop_branch(&git, &config)?;
-
-    match command {
-        "status" => status(&git, &config, &develop),
-        "fork" => fork(&git, &config, &develop),
-        "build" => build(&git, &config, &work, args.get(1).is_some()),
-        "tag" => tag(&git, &config, &work),
-        _ => Err(format!("unknown command `{command}`; use --help")),
+    match config.scm_type {
+        ScmType::Git => {
+            let git = prepare_repository(&config, &work)?;
+            let develop = discover_develop_branch(&git, &config)?;
+            match command {
+                "status" => status(&git, &config, &develop),
+                "fork" => fork(&git, &config, &develop),
+                "build" => build(&git, &config, &work, args.get(1).is_some()),
+                "tag" => tag(&git, &config, &work),
+                _ => Err(format!("unknown command `{command}`; use --help")),
+            }
+        }
+        ScmType::Svn => svn::execute(command, &config, &work, args.get(1).is_some()),
     }
 }
 
 fn print_help() {
-    println!("scm4j-releaser - single-component Git release tool\n\n\
+    println!("scm4j-releaser - single-component Git/SVN release tool\n\n\
 Usage:\n  scm4j-releaser init\n  scm4j-releaser status\n  scm4j-releaser fork\n  scm4j-releaser build [--delayed-tag]\n  scm4j-releaser tag\n  scm4j-releaser unlock\n\n\
 Configuration and all working data are stored beside the executable.\n\
 Only run `unlock` after making sure no other releaser process is active.");
@@ -120,7 +125,54 @@ fn discover_develop_branch(git: &Git, config: &Config) -> Result<String, String>
 }
 
 fn read_version(git: &Git, revision: &str, config: &Config) -> Result<Version, String> {
-    git.show_file(revision, &config.version_file)?.parse()
+    git.show_file(revision, &component_path(config, &config.version_file))?
+        .parse()
+}
+
+fn component_path(config: &Config, relative: &str) -> String {
+    if config.subfolder.is_empty() {
+        relative.to_owned()
+    } else {
+        format!("{}/{relative}", config.subfolder)
+    }
+}
+
+fn component_log(
+    git: &Git,
+    revision: &str,
+    config: &Config,
+    count: usize,
+    format: &str,
+) -> Result<String, String> {
+    if config.subfolder.is_empty() {
+        git.run([
+            "log",
+            &format!("-{count}"),
+            &format!("--format={format}"),
+            revision,
+        ])
+    } else {
+        git.run([
+            "log",
+            &format!("-{count}"),
+            &format!("--format={format}"),
+            revision,
+            "--",
+            &config.subfolder,
+        ])
+    }
+}
+
+fn component_head(git: &Git, revision: &str, config: &Config) -> Result<String, String> {
+    let commit = component_log(git, revision, config, 1, "%H")?;
+    if commit.is_empty() {
+        Err(format!(
+            "no commits found for component `{}`",
+            config.subfolder
+        ))
+    } else {
+        Ok(commit)
+    }
 }
 
 fn release_branches(git: &Git, config: &Config) -> Result<Vec<(Version, String)>, String> {
@@ -159,7 +211,7 @@ fn status(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
         config.release_branch_prefix,
         dev_version.release_line()
     );
-    let last_message = git.run(["log", "-1", "--format=%B", &dev_ref])?;
+    let last_message = component_log(git, &dev_ref, config, 1, "%B")?;
     let needs_fork = !git.succeeds([
         "show-ref",
         "--verify",
@@ -178,7 +230,7 @@ fn status(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
             println!("release: {branch} ({version})");
             println!(
                 "next action: {}",
-                if release_is_done(git, &version, &head)? {
+                if release_is_done(git, config, &version, &head)? {
                     "DONE"
                 } else {
                     "BUILD"
@@ -235,10 +287,11 @@ fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
 
 fn write_and_commit_version(git: &Git, config: &Config, version: &Version) -> Result<(), String> {
     let root = PathBuf::from(git.run(["rev-parse", "--show-toplevel"])?);
-    let path = root.join(&config.version_file);
+    let relative_path = component_path(config, &config.version_file);
+    let path = root.join(&relative_path);
     fs::write(&path, format!("{version}\n"))
         .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
-    git.run(["add", "--", &config.version_file])?;
+    git.run(["add", "--", &relative_path])?;
     git.run(["commit", "-m", &format!("#scm-ver {version}")])?;
     Ok(())
 }
@@ -252,8 +305,8 @@ fn build(git: &Git, config: &Config, work: &Path, delayed: bool) -> Result<(), S
             "release branch contains snapshot version: {version}"
         ));
     }
-    let commit = git.run(["rev-parse", "HEAD"])?;
-    if release_is_done(git, &version, &commit)? {
+    let branch_head = git.run(["rev-parse", "HEAD"])?;
+    if release_is_done(git, config, &version, &branch_head)? {
         return Err(format!(
             "{branch} is already built; add a release commit before building another patch"
         ));
@@ -269,9 +322,10 @@ fn build(git: &Git, config: &Config, work: &Path, delayed: bool) -> Result<(), S
     if delayed && work.join("delayed-tag").exists() {
         return Err("a delayed tag is already pending; run `tag` first".to_owned());
     }
+    let commit = component_head(git, "HEAD", config)?;
     run_build(git, config, work, &branch, &version, &commit)?;
     if delayed {
-        let state = format!("branch={branch}\nversion={version}\ncommit={commit}\n");
+        let state = format!("scm=git\nbranch={branch}\nversion={version}\ncommit={commit}\n");
         fs::write(work.join("delayed-tag"), state)
             .map_err(|e| format!("cannot save delayed tag: {e}"))?;
         println!("Built {version}; tag for {commit} was delayed");
@@ -282,11 +336,16 @@ fn build(git: &Git, config: &Config, work: &Path, delayed: bool) -> Result<(), S
     Ok(())
 }
 
-fn release_is_done(git: &Git, version: &Version, head: &str) -> Result<bool, String> {
+fn release_is_done(
+    git: &Git,
+    config: &Config,
+    version: &Version,
+    head: &str,
+) -> Result<bool, String> {
     let Some(previous) = version.previous_patch() else {
         return Ok(false);
     };
-    let message = git.run(["log", "-1", "--format=%B", head])?;
+    let message = component_log(git, head, config, 1, "%B")?;
     if !message.contains("#scm-ver")
         || !git.succeeds([
             "rev-parse",
@@ -297,7 +356,11 @@ fn release_is_done(git: &Git, version: &Version, head: &str) -> Result<bool, Str
     {
         return Ok(false);
     }
-    let parent = git.run(["rev-parse", &format!("{head}^")])?;
+    let commits = component_log(git, head, config, 2, "%H")?;
+    let parent = match commits.lines().nth(1) {
+        Some(commit) => commit,
+        None => return Ok(false),
+    };
     let tagged = git.run(["rev-list", "-n", "1", &format!("refs/tags/{previous}")])?;
     Ok(parent == tagged)
 }
@@ -313,21 +376,29 @@ fn run_build(
     let builds = work.join("builds");
     fs::create_dir_all(&builds).map_err(|e| format!("cannot create build directory: {e}"))?;
     let directory = builds.join(version.to_string());
+    let directory_arg = directory.to_string_lossy().into_owned();
+    // This is normally a registered worktree. The fallback also handles build
+    // directories created by older releaser versions that used local clones.
+    let _ = git.succeeds(["worktree", "remove", "--force", &directory_arg]);
     if directory.exists() {
         fs::remove_dir_all(&directory)
             .map_err(|e| format!("cannot clear {}: {e}", directory.display()))?;
     }
-    let source = git.run(["rev-parse", "--show-toplevel"])?;
-    let directory_name = directory
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| "invalid build directory name".to_owned())?;
-    run_in(
-        &builds,
-        "git",
-        ["clone", "--no-checkout", &source, directory_name],
-    )?;
-    run_in(&directory, "git", ["checkout", "--detach", commit])?;
+    // Worktrees reuse the managed clone's object database, so a monorepo is
+    // fetched once even when many releases are built.
+    git.run(["worktree", "prune"])?;
+    git.run(["worktree", "add", "--detach", &directory_arg, commit])?;
+    let build_directory = if config.subfolder.is_empty() {
+        directory.clone()
+    } else {
+        directory.join(&config.subfolder)
+    };
+    if !build_directory.is_dir() {
+        return Err(format!(
+            "subfolder `{}` does not exist at revision {commit}",
+            config.subfolder
+        ));
+    }
     let mut command = if cfg!(windows) {
         let mut c = Command::new("cmd");
         c.args(["/D", "/S", "/C", &config.build_command]);
@@ -338,7 +409,7 @@ fn run_build(
         c
     };
     let status = command
-        .current_dir(&directory)
+        .current_dir(&build_directory)
         .env("GIT_COMMIT", commit)
         .env("GIT_BRANCH", branch)
         .env("GIT_URL", &config.repository)
@@ -361,6 +432,11 @@ fn tag(git: &Git, config: &Config, work: &Path) -> Result<(), String> {
             .map(str::to_owned)
             .ok_or_else(|| format!("invalid delayed tag state: missing {name}"))
     };
+    if let Ok(scm) = get("scm") {
+        if scm != "git" {
+            return Err("delayed tag belongs to a different SCM type".to_owned());
+        }
+    }
     let branch = get("branch")?;
     let version: Version = get("version")?.parse()?;
     let commit = get("commit")?;
