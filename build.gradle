@@ -148,9 +148,22 @@ project(':scm4j-releaser') {
     sourceSets {
         inv {
             java.srcDir 'src/inv/java'
-            compileClasspath = sourceSets.test.runtimeClasspath
+            compileClasspath += sourceSets.main.output + sourceSets.test.output
             runtimeClasspath = output + compileClasspath
         }
+    }
+
+    configurations {
+        invImplementation.extendsFrom testImplementation
+        invRuntimeOnly.extendsFrom testRuntimeOnly
+    }
+
+    tasks.register('invTest', Test) {
+        description = 'Runs investigation tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.inv.output.classesDirs
+        classpath = sourceSets.inv.runtimeClasspath
+        shouldRunAfter(tasks.named('test'))
     }
 
     dependencies {
