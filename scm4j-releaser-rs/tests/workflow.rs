@@ -386,6 +386,133 @@ fn dependency_graph_is_released_first_and_mdeps_are_locked() {
 }
 
 #[test]
+fn status_prints_dependency_tree_with_planned_actions() {
+    let mut harness = Harness::new("status-tree");
+    harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    harness.add_git(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:dependency\n"),
+        None,
+        Some("git --version"),
+    );
+
+    let output = harness.succeeds(&["status", "org.example:root"]);
+    let tree = output
+        .split_once("Dependency tree (dependencies execute first):\n")
+        .map(|(_, tree)| tree)
+        .expect("status output must contain a dependency tree");
+    assert!(tree.starts_with("org.example:root [FORK]\n└── org.example:dependency [FORK]\n"));
+}
+
+#[test]
+fn status_marks_done_parent_for_rebuild_when_dependency_will_build() {
+    let mut harness = Harness::new("status-build-mdeps");
+    let dependency = harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    harness.add_git(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:dependency\n"),
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:root"]);
+    harness.succeeds(&["build", "org.example:root"]);
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &dependency.bare,
+        "release/2.3",
+        "patch.txt",
+        "dependency patch",
+    );
+
+    let output = harness.succeeds(&["status", "org.example:root"]);
+    let tree = output
+        .split_once("Dependency tree (dependencies execute first):\n")
+        .map(|(_, tree)| tree)
+        .expect("status output must contain a dependency tree");
+    assert!(
+        tree.starts_with("org.example:root [BUILD_MDEPS]\n└── org.example:dependency [BUILD]\n")
+    );
+}
+
+#[test]
+fn status_hides_done_nodes_unless_requested() {
+    let mut harness = Harness::new("status-show-done");
+    harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    harness.add_git(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:dependency\n"),
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:root"]);
+    harness.succeeds(&["build", "org.example:root"]);
+
+    let hidden = harness.succeeds(&["status", "org.example:root"]);
+    assert!(hidden.contains("Dependency tree (dependencies execute first):\n(no actions)\n"));
+    assert!(!hidden.contains("[DONE]"));
+
+    let shown = harness.succeeds(&["status", "org.example:root", "--show-done"]);
+    assert!(shown.contains("org.example:root [DONE]\n└── org.example:dependency [DONE]\n"));
+}
+
+#[test]
+fn status_deduplicates_dependencies_with_different_classifiers() {
+    let mut harness = Harness::new("status-classifiers");
+    let dependency = harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    let root = harness.add_git(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:dependency\n"),
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:root"]);
+    harness.succeeds(&["build", "org.example:root"]);
+    assert!(dependency.has_ref("refs/heads/release/2.3"));
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &root.bare,
+        "main",
+        "mdeps",
+        "org.example:dependency:2.3.0:linux\norg.example:dependency:2.3.0:windows\n",
+    );
+
+    let output = harness.succeeds(&["status", "org.example:root", "--show-done"]);
+    let tree = output
+        .split_once("Dependency tree (dependencies execute first):\n")
+        .map(|(_, tree)| tree)
+        .expect("status output must contain a dependency tree");
+    assert_eq!(tree.matches("org.example:dependency").count(), 1);
+}
+
+#[test]
 fn patch_can_be_built_on_a_previous_release_line() {
     let mut harness = Harness::new("patch");
     let repository = harness.add_git(

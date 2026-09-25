@@ -41,6 +41,11 @@ Multiple roots can be passed explicitly; dependencies found in their `mdeps` fil
 scm4j-releaser build org.example:service-a org.example:service-b
 ```
 
+`status` prints the dependency tree and the planned action for each visible component. Components whose
+action is `DONE` are hidden by default; use `status org.example:product --show-done` to include them.
+Coordinates that differ only by version, extension, or classifier are shown once as the same
+`group:artifact` component.
+
 Example `cc.yml`:
 
 ```yaml

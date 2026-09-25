@@ -6,7 +6,7 @@ mod version;
 
 use config::{Config, ScmType};
 use git::Git;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -42,13 +42,17 @@ fn execute() -> Result<(), String> {
         return Ok(());
     }
     let delayed = args.iter().skip(1).any(|arg| arg == "--delayed-tag");
+    let show_done = args.iter().skip(1).any(|arg| arg == "--show-done");
     if delayed && command != "build" {
         return Err("--delayed-tag is valid for build only".to_owned());
+    }
+    if show_done && command != "status" {
+        return Err("--show-done is valid for status only".to_owned());
     }
     if let Some(option) = args
         .iter()
         .skip(1)
-        .find(|arg| arg.starts_with('-') && *arg != "--delayed-tag")
+        .find(|arg| arg.starts_with('-') && *arg != "--delayed-tag" && *arg != "--show-done")
     {
         return Err(format!("unknown option `{option}`"));
     }
@@ -95,7 +99,19 @@ fn execute() -> Result<(), String> {
         config_dirs.push(installation_dir);
     }
     let catalog = Catalog::load_search(&config_dirs)?;
-    let configs = resolve_component_graph(&catalog, &components, &work)?;
+    let (configs, dependencies) = resolve_component_graph(&catalog, &components, &work)?;
+    if command == "status" {
+        let mut actions = HashMap::new();
+        for config in &configs {
+            let component_work = work.join("components").join(safe_name(&config.component));
+            fs::create_dir_all(&component_work)
+                .map_err(|e| format!("cannot create {}: {e}", component_work.display()))?;
+            let action = inspect_status(config, &work, &component_work)?;
+            actions.insert(config.component.clone(), action);
+        }
+        print_dependency_tree(&catalog, &components, &dependencies, &actions, show_done)?;
+        return Ok(());
+    }
     for config in configs {
         let component_work = work.join("components").join(safe_name(&config.component));
         fs::create_dir_all(&component_work)
@@ -120,10 +136,11 @@ fn resolve_component_graph(
     catalog: &Catalog,
     roots: &[&String],
     shared_work: &Path,
-) -> Result<Vec<Config>, String> {
+) -> Result<(Vec<Config>, HashMap<String, Vec<String>>), String> {
     let mut visiting = HashSet::new();
     let mut completed = HashSet::new();
     let mut result = Vec::new();
+    let mut dependencies = HashMap::new();
     for root in roots {
         visit_component(
             catalog,
@@ -132,9 +149,10 @@ fn resolve_component_graph(
             &mut visiting,
             &mut completed,
             &mut result,
+            &mut dependencies,
         )?;
     }
-    Ok(result)
+    Ok((result, dependencies))
 }
 
 fn visit_component(
@@ -144,6 +162,7 @@ fn visit_component(
     visiting: &mut HashSet<String>,
     completed: &mut HashSet<String>,
     result: &mut Vec<Config>,
+    dependencies: &mut HashMap<String, Vec<String>>,
 ) -> Result<(), String> {
     let config = catalog.resolve(coordinates)?;
     if completed.contains(&config.component) {
@@ -153,7 +172,14 @@ fn visit_component(
         return Err(format!("cyclic mdeps dependency at `{}`", config.component));
     }
     let mdeps = read_develop_mdeps(&config, shared_work)?;
-    for dependency in parse_mdeps(&mdeps) {
+    let dependency_coordinates = parse_mdeps(&mdeps);
+    let mut dependency_names = Vec::new();
+    for dependency in dependency_coordinates {
+        let dependency_component = catalog.resolve(&dependency)?.component;
+        if dependency_names.contains(&dependency_component) {
+            continue;
+        }
+        dependency_names.push(dependency_component);
         visit_component(
             catalog,
             &dependency,
@@ -161,12 +187,121 @@ fn visit_component(
             visiting,
             completed,
             result,
+            dependencies,
         )?;
     }
+    dependencies.insert(config.component.clone(), dependency_names);
     visiting.remove(&config.component);
     completed.insert(config.component.clone());
     result.push(config);
     Ok(())
+}
+
+fn inspect_status(
+    config: &Config,
+    shared_work: &Path,
+    component_work: &Path,
+) -> Result<&'static str, String> {
+    match config.scm_type {
+        ScmType::Git => {
+            let git = prepare_repository(config, shared_work)?;
+            let develop = discover_develop_branch(&git, config)?;
+            status(&git, config, &develop, false)
+        }
+        ScmType::Svn => svn::status_action(config, component_work),
+    }
+}
+
+fn print_dependency_tree(
+    catalog: &Catalog,
+    roots: &[&String],
+    dependencies: &HashMap<String, Vec<String>>,
+    actions: &HashMap<String, &'static str>,
+    show_done: bool,
+) -> Result<(), String> {
+    println!("Dependency tree (dependencies execute first):");
+    let mut printed = HashSet::new();
+    for root in roots {
+        let component = catalog.resolve(root)?.component;
+        if !printed.insert(component.clone()) {
+            continue;
+        }
+        if show_done || planned_action(&component, dependencies, actions) != "DONE" {
+            print_dependency_node(&component, "", true, true, dependencies, actions, show_done);
+        }
+    }
+    if printed
+        .iter()
+        .all(|component| planned_action(component, dependencies, actions) == "DONE")
+        && !show_done
+    {
+        println!("(no actions)");
+    }
+    Ok(())
+}
+
+fn print_dependency_node(
+    component: &str,
+    prefix: &str,
+    last: bool,
+    root: bool,
+    dependencies: &HashMap<String, Vec<String>>,
+    actions: &HashMap<String, &'static str>,
+    show_done: bool,
+) {
+    let connector = if root {
+        ""
+    } else if last {
+        "└── "
+    } else {
+        "├── "
+    };
+    let action = planned_action(component, dependencies, actions);
+    println!("{prefix}{connector}{component} [{action}]");
+    let children: Vec<_> = dependencies
+        .get(component)
+        .map(Vec::as_slice)
+        .unwrap_or(&[])
+        .iter()
+        .filter(|child| show_done || planned_action(child, dependencies, actions) != "DONE")
+        .collect();
+    let child_prefix = if root {
+        prefix.to_owned()
+    } else if last {
+        format!("{prefix}    ")
+    } else {
+        format!("{prefix}│   ")
+    };
+    for (index, child) in children.iter().enumerate() {
+        print_dependency_node(
+            child,
+            &child_prefix,
+            index + 1 == children.len(),
+            false,
+            dependencies,
+            actions,
+            show_done,
+        );
+    }
+}
+
+fn planned_action(
+    component: &str,
+    dependencies: &HashMap<String, Vec<String>>,
+    actions: &HashMap<String, &'static str>,
+) -> &'static str {
+    let own = actions.get(component).copied().unwrap_or("UNKNOWN");
+    if own == "DONE"
+        && dependencies
+            .get(component)
+            .into_iter()
+            .flatten()
+            .any(|dependency| planned_action(dependency, dependencies, actions) != "DONE")
+    {
+        "BUILD_MDEPS"
+    } else {
+        own
+    }
 }
 
 fn read_develop_mdeps(config: &Config, shared_work: &Path) -> Result<String, String> {
@@ -297,7 +432,7 @@ fn execute_config(
             let git = prepare_repository(config, shared_work)?;
             let develop = discover_develop_branch(&git, config)?;
             match command {
-                "status" => status(&git, config, &develop),
+                "status" => status(&git, config, &develop, true).map(|_| ()),
                 "fork" => fork(&git, config, &develop),
                 "build" => build(&git, config, component_work, delayed),
                 "tag" => tag(&git, config, component_work),
@@ -310,7 +445,7 @@ fn execute_config(
 
 fn print_help() {
     println!("scm4j-releaser - multi-component Git/SVN release tool\n\n\
-Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n  scm4j-releaser unlock\n\n\
+Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...] [--show-done]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n  scm4j-releaser unlock\n\n\
 Configuration is read from <home_dir>/.scm4j; the executable directory is also searched for compatibility.\n\
 Working data is stored in the current directory.\n\
 Only run `unlock` after making sure no other releaser process is active.");
@@ -494,21 +629,28 @@ fn latest_release(git: &Git, config: &Config) -> Result<(Version, String), Strin
     }
 }
 
-fn status(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
+fn status(
+    git: &Git,
+    config: &Config,
+    develop: &str,
+    verbose: bool,
+) -> Result<&'static str, String> {
     if config.release_line.is_some() {
         let (_, branch) = latest_release(git, config)?;
         let version = read_version(git, &format!("origin/{branch}"), config)?;
         let head = git.run(["rev-parse", &format!("origin/{branch}")])?;
-        println!("release: {branch} ({version})");
-        println!(
-            "next action: {}",
-            if release_is_done(git, config, &version, &head)? {
-                "DONE"
-            } else {
-                "BUILD"
-            }
-        );
-        return Ok(());
+        if verbose {
+            println!("release: {branch} ({version})");
+        }
+        let action = if release_is_done(git, config, &version, &head)? {
+            "DONE"
+        } else {
+            "BUILD"
+        };
+        if verbose {
+            println!("next action: {action}");
+        }
+        return Ok(action);
     }
     let dev_ref = format!("origin/{develop}");
     let dev_version = read_version(git, &dev_ref, config)?;
@@ -526,28 +668,39 @@ fn status(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
         "--quiet",
         &format!("refs/remotes/origin/{expected_branch}"),
     ]) && !last_message.contains("#scm-ver");
-    println!("develop: {develop} ({dev_version})");
+    if verbose {
+        println!("develop: {develop} ({dev_version})");
+    }
     if needs_fork {
-        println!("next action: FORK -> {expected_branch}");
-        return Ok(());
+        if verbose {
+            println!("next action: FORK -> {expected_branch}");
+        }
+        return Ok("FORK");
     }
     match latest_release(git, config) {
         Ok((_, branch)) => {
             let version = read_version(git, &format!("origin/{branch}"), config)?;
             let head = git.run(["rev-parse", &format!("origin/{branch}")])?;
-            println!("release: {branch} ({version})");
-            println!(
-                "next action: {}",
-                if release_is_done(git, config, &version, &head)? {
-                    "DONE"
-                } else {
-                    "BUILD"
-                }
-            );
+            if verbose {
+                println!("release: {branch} ({version})");
+            }
+            let action = if release_is_done(git, config, &version, &head)? {
+                "DONE"
+            } else {
+                "BUILD"
+            };
+            if verbose {
+                println!("next action: {action}");
+            }
+            Ok(action)
         }
-        Err(_) => println!("next action: FORK"),
+        Err(_) => {
+            if verbose {
+                println!("next action: FORK");
+            }
+            Ok("FORK")
+        }
     }
-    Ok(())
 }
 
 fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {

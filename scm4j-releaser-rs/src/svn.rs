@@ -19,7 +19,7 @@ pub fn execute(command: &str, config: &Config, work: &Path, delayed: bool) -> Re
     );
     let develop = config.develop_branch.as_deref().unwrap_or("trunk");
     match command {
-        "status" => status(&svn, config, develop),
+        "status" => status(&svn, config, develop, true).map(|_| ()),
         "fork" => fork(&svn, config, develop),
         "build" => build(&svn, config, work, delayed),
         "tag" => tag(&svn, config, work),
@@ -51,6 +51,21 @@ pub fn read_develop_mdeps(config: &Config, work: &Path) -> Result<String, String
         Ok(content) => Ok(content),
         Err(_) => Ok(String::new()),
     }
+}
+
+pub fn status_action(config: &Config, work: &Path) -> Result<&'static str, String> {
+    if !config.subfolder.is_empty() {
+        return Err("subfolder is supported for Git only".to_owned());
+    }
+    validate_paths(config)?;
+    let svn = Svn::new(
+        &config.repository,
+        work.join("repository"),
+        config.username.clone(),
+        config.password.clone(),
+    );
+    let develop = config.develop_branch.as_deref().unwrap_or("trunk");
+    status(&svn, config, develop, false)
 }
 
 pub fn released_version(config: &Config, work: &Path) -> Result<Version, String> {
@@ -94,20 +109,27 @@ fn validate_paths(config: &Config) -> Result<(), String> {
     Ok(())
 }
 
-fn status(svn: &Svn, config: &Config, develop: &str) -> Result<(), String> {
+fn status(
+    svn: &Svn,
+    config: &Config,
+    develop: &str,
+    verbose: bool,
+) -> Result<&'static str, String> {
     if config.release_line.is_some() {
         let (_, branch) = latest_release(svn, config)?;
         let version = svn.read_version(&branch, &config.version_file)?;
-        println!("release: {branch} ({version})");
-        println!(
-            "next action: {}",
-            if release_is_done(svn, config, &branch, &version)? {
-                "DONE"
-            } else {
-                "BUILD"
-            }
-        );
-        return Ok(());
+        if verbose {
+            println!("release: {branch} ({version})");
+        }
+        let action = if release_is_done(svn, config, &branch, &version)? {
+            "DONE"
+        } else {
+            "BUILD"
+        };
+        if verbose {
+            println!("next action: {action}");
+        }
+        return Ok(action);
     }
     let dev_version = svn.read_version(develop, &config.version_file)?;
     if !dev_version.snapshot {
@@ -118,27 +140,38 @@ fn status(svn: &Svn, config: &Config, develop: &str) -> Result<(), String> {
     }
     let expected = release_path(config, &dev_version);
     let needs_fork = !svn.exists(&expected) && !svn.last_message(develop)?.contains("#scm-ver");
-    println!("develop: {develop} ({dev_version})");
+    if verbose {
+        println!("develop: {develop} ({dev_version})");
+    }
     if needs_fork {
-        println!("next action: FORK -> {expected}");
-        return Ok(());
+        if verbose {
+            println!("next action: FORK -> {expected}");
+        }
+        return Ok("FORK");
     }
     match latest_release(svn, config) {
         Ok((_, branch)) => {
             let version = svn.read_version(&branch, &config.version_file)?;
-            println!("release: {branch} ({version})");
-            println!(
-                "next action: {}",
-                if release_is_done(svn, config, &branch, &version)? {
-                    "DONE"
-                } else {
-                    "BUILD"
-                }
-            );
+            if verbose {
+                println!("release: {branch} ({version})");
+            }
+            let action = if release_is_done(svn, config, &branch, &version)? {
+                "DONE"
+            } else {
+                "BUILD"
+            };
+            if verbose {
+                println!("next action: {action}");
+            }
+            Ok(action)
         }
-        Err(_) => println!("next action: FORK"),
+        Err(_) => {
+            if verbose {
+                println!("next action: FORK");
+            }
+            Ok("FORK")
+        }
     }
-    Ok(())
 }
 
 fn fork(svn: &Svn, config: &Config, develop: &str) -> Result<(), String> {
