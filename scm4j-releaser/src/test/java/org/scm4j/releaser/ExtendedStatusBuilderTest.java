@@ -2,7 +2,9 @@ package org.scm4j.releaser;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -16,6 +18,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.junit.Test;
 import org.scm4j.releaser.progress.IProgress;
@@ -24,6 +27,7 @@ import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.DelayedTag;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSRepositoryFactory;
+import org.scm4j.releaser.exceptions.EBuildStatus;
 import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
@@ -33,18 +37,9 @@ public class ExtendedStatusBuilderTest {
 	@Test
 	public void testStatusCalculationThreadIsNamedAfterComponent() {
 		Component component = new Component("test:thread-name:1.0");
-		VCSRepository repository = repository("thread-name");
-		VCSRepositoryFactory repositoryFactory = mock(VCSRepositoryFactory.class);
-		when(repositoryFactory.getVCSRepository(component)).thenReturn(repository);
 		AtomicReference<String> calculationThreadName = new AtomicReference<>();
-		ExtendedStatusBuilder builder = new ExtendedStatusBuilder(repositoryFactory) {
-			@Override
-			ExtendedStatus getMinorStatus(Component comp, CachedStatuses cache, IProgress progress,
-					VCSRepository repo, DelayedTag dt) {
-				calculationThreadName.set(Thread.currentThread().getName());
-				return status("1.0", comp, repo);
-			}
-		};
+		ExtendedStatusBuilder builder = threadNameCapturingBuilder(component, calculationThreadName,
+				repository -> status("1.0", component, repository));
 		Thread currentThread = Thread.currentThread();
 		String originalThreadName = currentThread.getName();
 
@@ -56,6 +51,49 @@ public class ExtendedStatusBuilderTest {
 		} finally {
 			currentThread.setName(originalThreadName);
 		}
+	}
+
+	@Test
+	public void testStatusCalculationThreadNameIsRestoredAfterFailure() {
+		Component component = new Component("test:failed-thread-name:1.0");
+		AtomicReference<String> calculationThreadName = new AtomicReference<>();
+		RuntimeException calculationFailure = new RuntimeException("status calculation failed");
+		ExtendedStatusBuilder builder = threadNameCapturingBuilder(component, calculationThreadName,
+				repository -> {
+				throw calculationFailure;
+			});
+		Thread currentThread = Thread.currentThread();
+		String originalThreadName = currentThread.getName();
+
+		try {
+			try {
+				builder.getAndCacheMinorStatus(component, new CachedStatuses());
+				fail("Expected status calculation to fail");
+			} catch (EBuildStatus e) {
+				assertSame(calculationFailure, e.getCause());
+			}
+
+			assertEquals(component.getName(), calculationThreadName.get());
+			assertEquals(originalThreadName, currentThread.getName());
+		} finally {
+			currentThread.setName(originalThreadName);
+		}
+	}
+
+	private ExtendedStatusBuilder threadNameCapturingBuilder(Component component,
+			AtomicReference<String> calculationThreadName,
+			Function<VCSRepository, ExtendedStatus> calculation) {
+		VCSRepository repository = repository("thread-name");
+		VCSRepositoryFactory repositoryFactory = mock(VCSRepositoryFactory.class);
+		when(repositoryFactory.getVCSRepository(component)).thenReturn(repository);
+		return new ExtendedStatusBuilder(repositoryFactory) {
+			@Override
+			ExtendedStatus getMinorStatus(Component comp, CachedStatuses cache, IProgress progress,
+					VCSRepository repo, DelayedTag dt) {
+				calculationThreadName.set(Thread.currentThread().getName());
+				return calculation.apply(repo);
+			}
+		};
 	}
 
 	@Test

@@ -52,6 +52,35 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 	}
 
 	@Test
+	public void testStatusCalculatesSharedRepositoryComponentsIndependently() {
+		// Change only unTill's dependency metadata so one status calculation must traverse both
+		// component subfolders of the shared monorepo. Neither monorepo component is updated here.
+		repoUnTill.getVCS().setFileContent(repoUnTill.getDevelopBranch(),
+				repoUnTill.getComponentPath(Constants.MDEPS_FILE_NAME),
+				MonorepoTestRepositories.PRODUCT_POSTGRES + ":" + monorepoRepositories.getPostgresVersion() + "\r\n"
+						+ MonorepoTestRepositories.PRODUCT_SQLITE + ":" + monorepoRepositories.getSqliteVersion()
+						+ "\r\n",
+				Constants.SCM_IGNORE + " both monorepo components added to status graph");
+
+		ExtendedStatus rootStatus = new ExtendedStatusBuilder(repoFactory)
+				.getAndCacheMinorStatus(compUnTill, new CachedStatuses());
+		Map<String, ExtendedStatus> componentStatuses = rootStatus.getSubComponents().values().stream()
+				.collect(Collectors.toMap(status -> status.getComp().getName(), status -> status));
+
+		// Each result must come from its component's own subfolder despite both status tasks using
+		// the same physical repository. This guards against shared-working-copy interference.
+		assertEquals(2, componentStatuses.size());
+		ExtendedStatus postgresStatus = componentStatuses.get(compPostgres.getName());
+		ExtendedStatus sqliteStatus = componentStatuses.get(compSqlite.getName());
+		assertEquals(BuildStatus.FORK, postgresStatus.getStatus());
+		assertEquals(BuildStatus.FORK, sqliteStatus.getStatus());
+		assertEquals(monorepoRepositories.getPostgresVersion().toReleaseZeroPatch(),
+				postgresStatus.getNextVersion());
+		assertEquals(monorepoRepositories.getSqliteVersion().toReleaseZeroPatch(),
+				sqliteStatus.getNextVersion());
+	}
+
+	@Test
 	public void testDependencyReleasesIgnoreSiblingChanges() {
 		// Capture the negative control before any application workflow runs: UBL is already released and DONE.
 		assertUblBaselineUnchanged();

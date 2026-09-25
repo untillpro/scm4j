@@ -82,10 +82,11 @@ public class VCSRepositoryFactory {
 		String releaseBranchPrefix = cc.getPropByName(componentName, "releaseBranchPrefix",
 				VCSRepository.DEFAULT_RELEASE_BRANCH_PREFIX);
 		String releaseCommand = cc.getPropByName(componentName, "releaseCommand", null);
+		String componentSubfolder = componentLocation.getSubfolder();
 		IVCSWorkspace ws = new VCSWorkspace(DEFAULT_VCS_WORKSPACE_DIR);
 		return new VCSRepository(comp.getCoords().getArtifactId(), componentLocation, credentials, type,
 				developBranch, releaseBranchPrefix,
-				VCSFactory.getVCS(type, credentials, url, ws, componentLocation.getSubfolder().isEmpty()),
+				VCSFactory.getVCS(type, credentials, url, ws, componentSubfolder),
 				BuilderFactory.getBuilder(releaseCommand));
 	}
 	

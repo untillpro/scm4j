@@ -14,17 +14,17 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 	private static final String FILE_PREFIX_3 = "file" + String.join("", Collections.nCopies(4, UNPRINTABLE_CHAR_PLACEHOLDER));
 	private final IVCSWorkspace workspace;
 	private final String repoUrl;
-	private final boolean reuseWorkingCopies;
+	private final String componentSubfolder;
 	private File repoFolder;
 
 	protected VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace) {
-		this(repoUrl, workspace, true);
+		this(repoUrl, null, workspace);
 	}
 
-	protected VCSRepositoryWorkspace(String repoUrl, IVCSWorkspace workspace, boolean reuseWorkingCopies) {
+	protected VCSRepositoryWorkspace(String repoUrl, String componentSubfolder, IVCSWorkspace workspace) {
 		this.workspace = workspace;
 		this.repoUrl = repoUrl;
-		this.reuseWorkingCopies = reuseWorkingCopies;
+		this.componentSubfolder = componentSubfolder == null ? "" : componentSubfolder;
 		initRepoFolder();
 	}
 
@@ -35,11 +35,11 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
 	@Override
 	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() throws IOException {
-		return new VCSLockedWorkingCopy(this, !reuseWorkingCopies);
+		return new VCSLockedWorkingCopy(this, !componentSubfolder.isEmpty());
 	}
 
 	private String getRepoFolderName() {
-		String tmp = repoUrl.replaceAll("[^a-zA-Z0-9.-]", UNPRINTABLE_CHAR_PLACEHOLDER);
+		String tmp = toFileSystemSafeName(repoUrl);
 		if (tmp.toLowerCase().startsWith(HTTPS_PREFIX)) {
 			tmp = tmp.substring(HTTPS_PREFIX.length());
 		} else if (tmp.toLowerCase().startsWith(HTTP_PREFIX)) {
@@ -51,7 +51,14 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 		} else if (tmp.toLowerCase().startsWith(FILE_PREFIX_1)) {
 			tmp = tmp.substring(FILE_PREFIX_1.length());
 		}
+		if (!componentSubfolder.isEmpty()) {
+			tmp += UNPRINTABLE_CHAR_PLACEHOLDER + toFileSystemSafeName(componentSubfolder);
+		}
 		return new File(workspace.getHomeFolder(), tmp).getPath().replace("\\", File.separator);
+	}
+
+	private static String toFileSystemSafeName(String value) {
+		return value.replaceAll("[^a-zA-Z0-9.-]", UNPRINTABLE_CHAR_PLACEHOLDER);
 	}
 
 	private void initRepoFolder() {

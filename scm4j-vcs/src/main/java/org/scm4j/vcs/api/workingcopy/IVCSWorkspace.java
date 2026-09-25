@@ -4,15 +4,19 @@ import java.io.File;
 
 public interface IVCSWorkspace {
 
-	IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl);
+	/**
+	 * Creates a repository workspace for a repository root or an isolated component subfolder.
+	 *
+	 * @param repoUrl repository URL
+	 * @param componentSubfolder normalized component path, or {@code null} or empty for the repository root
+	 */
+	IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl, String componentSubfolder);
 
-	default IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl, boolean reuseWorkingCopies) {
-		if (!reuseWorkingCopies) {
-			throw new UnsupportedOperationException("Non-reusable working copies are not supported");
-		}
-		return getVCSRepositoryWorkspace(repoUrl);
+	// Creates a reusable workspace for the repository root.
+	default IVCSRepositoryWorkspace getVCSRepositoryWorkspace(String repoUrl) {
+		return getVCSRepositoryWorkspace(repoUrl, null);
 	}
-	
+
 	File getHomeFolder();
 
 }
