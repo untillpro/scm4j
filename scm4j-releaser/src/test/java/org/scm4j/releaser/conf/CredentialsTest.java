@@ -3,12 +3,10 @@ package org.scm4j.releaser.conf;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.scm4j.releaser.conf.Credentials;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class CredentialsTest {
-	
+
 	private static final String PWD = "pwd";
 	private static final String NAME = "name";
 
@@ -20,7 +18,7 @@ public class CredentialsTest {
 				.usingGetClass()
 				.verify();
 	}
-	
+
 	@Test
 	public void testCredentials() {
 		Credentials creds = new Credentials(NAME, PWD, true);
@@ -28,7 +26,7 @@ public class CredentialsTest {
 		assertEquals(PWD, creds.getPassword());
 		assertTrue(creds.getIsDefault());
 	}
-	
+
 	@Test
 	public void testToString() {
 		Credentials creds = new Credentials(NAME, PWD, true);

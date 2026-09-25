@@ -113,7 +113,6 @@ class Deployer {
 		return comparedComponents;
 	}
 
-	@SuppressWarnings("unchecked")
 	@SneakyThrows
 	private void writeProductDescriptionInDeployedProductsJson(String coords, String simpleName, String version) {
 		ProductDescription productDescription = new ProductDescription(simpleName, Instant.now().toString(), deploymentPath,
@@ -123,7 +122,6 @@ class Deployer {
 		Utils.writeJson(deployedProducts, deployedProductsFile);
 	}
 
-	@SuppressWarnings("unchecked")
 	@SneakyThrows
 	DeploymentResult deploy(Artifact art, String simpleName) {
 		String coords = String.format("%s:%s", art.getGroupId(), art.getArtifactId());
@@ -406,7 +404,6 @@ class Deployer {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	Map<String, ProductDescription> listDeployedProducts() {
 		return Utils.readJson(new File(workingFolder, DEPLOYED_PRODUCTS), deployedProductsType);
 	}

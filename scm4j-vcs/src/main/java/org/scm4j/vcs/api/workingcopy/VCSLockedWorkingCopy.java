@@ -9,7 +9,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.UUID;
 
-public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy, AutoCloseable {
+public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy {
 
 	private final IVCSRepositoryWorkspace vcsRepo;
 

@@ -45,7 +45,6 @@ class AITestEnvironment {
 		envFolder = Files.createDirectory(new File(baseTestFolder, "env").toPath()).toFile();
 	}
 
-	@SuppressWarnings("unchecked")
 	private void writeReposInProductList(String version) throws IOException {
 		File productListFile = new File(artifactory1Folder, Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
 				ProductList.PRODUCT_LIST_ARTIFACT_ID, version, ".json", null));

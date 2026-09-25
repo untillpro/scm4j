@@ -10,7 +10,6 @@ import org.scm4j.releaser.conf.*;
 import org.scm4j.releaser.exceptions.EBuildStatus;
 import org.scm4j.releaser.exceptions.EMinorUpgradeDowngrade;
 import org.scm4j.releaser.exceptions.ENoReleaseBranchForPatch;
-import org.scm4j.releaser.exceptions.ENoReleases;
 import org.scm4j.releaser.exceptions.EReleaseMDepsNotLocked;
 import org.scm4j.releaser.exceptions.EReleaserException;
 import org.scm4j.vcs.api.IVCS;
@@ -30,9 +29,9 @@ public class ExtendedStatusBuilder {
 
 	private static final int PARALLEL_CALCULATION_AWAIT_TIME = 500;
 	private static final int COMMITS_RANGE_LIMIT = 10;
-	
+
 	private final VCSRepositoryFactory repoFactory;
-	
+
 	public ExtendedStatusBuilder(VCSRepositoryFactory repoFactory) {
 		this.repoFactory = repoFactory;
 	}
@@ -44,11 +43,11 @@ public class ExtendedStatusBuilder {
 	public ExtendedStatus getAndCacheMinorStatus(String coords, CachedStatuses cache) {
 		return getAndCacheMinorStatus(new Component(coords), cache);
 	}
-	
+
 	public ExtendedStatus getAndCachePatchStatus(Component comp, CachedStatuses cache) {
 		return getAndCacheStatus(comp, cache, new ProgressConsole(), true);
 	}
-	
+
 	public ExtendedStatus getAndCachePatchStatus(String coords, CachedStatuses cache) {
 		Component comp = new Component(coords);
 		return getAndCachePatchStatus(comp, cache);
@@ -67,7 +66,7 @@ public class ExtendedStatusBuilder {
 			}
 			VCSComponentLocation componentLocation = repo.getComponentLocation();
 			ExtendedStatus existing = cache.putIfAbsent(componentLocation, ExtendedStatus.DUMMY);
-			
+
 			while (ExtendedStatus.DUMMY == existing) {
 				try {
 					Thread.sleep(PARALLEL_CALCULATION_AWAIT_TIME);
@@ -76,18 +75,18 @@ public class ExtendedStatusBuilder {
 					throw new RuntimeException(e);
 				}
 			}
-			
+
 			if (null != existing) {
 				return new ExtendedStatus(existing.getNextVersion(), existing.getStatus(), existing.getSubComponents(), comp, repo);
 			}
-			
+
 			DelayedTagsFile dtf = new DelayedTagsFile();
 			DelayedTag dt = dtf.getDelayedTag(componentLocation);
 
-			ExtendedStatus res = patch ? 
+			ExtendedStatus res = patch ?
 				getPatchStatus(comp, cache, progress, repo, dt) :
 				getMinorStatus(comp, cache, progress, repo, dt);
-			
+
 			cache.replace(componentLocation, res);
 			return res;
 		} catch (Exception e) {
@@ -102,12 +101,12 @@ public class ExtendedStatusBuilder {
 			currentThread.setName(originalThreadName);
 		}
 	}
-	
+
 	ExtendedStatus getMinorStatus(Component comp, CachedStatuses cache, IProgress progress, VCSRepository repo, DelayedTag dt) {
 		ReleaseBranchCurrent rb = reportDuration(() -> ReleaseBranchFactory.getCRB(repo), "CRB created", comp, progress);
 		Boolean hasDelayedTag = dt != null && rb.getName().equals(Utils.getReleaseBranchName(repo,  dt.getVersion()));
 		LinkedHashMap<Component, ExtendedStatus> subComponents = new LinkedHashMap<>();
-		
+
 		BuildStatus status;
 		if (comp.getVersion().isLocked()) {
 			ConcurrentHashMap<Component, ExtendedStatus> subComponentsLocal = new ConcurrentHashMap<>();
@@ -151,7 +150,7 @@ public class ExtendedStatusBuilder {
 				"RB created", comp, progress);
 		Boolean hasDelayedTag = dt != null && rb.getName().equals(Utils.getReleaseBranchName(repo, dt.getVersion()));
 		LinkedHashMap<Component, ExtendedStatus> subComponents = new LinkedHashMap<>();
-		
+
 		BuildStatus buildStatus;
 		if (!rb.exists()) {
 			throw new ENoReleaseBranchForPatch("Release Branch does not exists for the requested Component version: " + comp);
@@ -160,18 +159,18 @@ public class ExtendedStatusBuilder {
 		if (Integer.parseInt(rb.getVersion().getPatch()) < 1) {
 			//throw new ENoReleases("Release Branch version patch is " + rb.getVersion().getPatch() + ". Component release should be created before patch");
 		}
-		
+
 		List<Component> nonLockedMDeps = new ArrayList<>();
 		if (!areMDepsLocked(rb.getMDeps(), nonLockedMDeps)) {
 			throw new EReleaseMDepsNotLocked(nonLockedMDeps);
 		}
-		
+
 		ConcurrentHashMap<Component, ExtendedStatus> subComponentsLocal = new ConcurrentHashMap<>();
 		Utils.async(rb.getMDeps(), (mdep) -> recursiveGetAndCacheStatus(cache, progress, subComponentsLocal, mdep, true));
 		for (Component mdep : rb.getMDeps()) {
 			subComponents.put(mdep, subComponentsLocal.get(mdep));
 		}
-		
+
 		if (hasMDepsNotInDONEStatus(rb.getMDeps(), cache)) {
 			buildStatus = BuildStatus.BUILD_MDEPS;
 		} else if (!areMDepsPatchesActualForPatch(comp, repo, rb.getMDeps(), cache)) {
@@ -186,7 +185,7 @@ public class ExtendedStatusBuilder {
 		if (hasDelayedTag) {
 			nextVersion = nextVersion.toNextPatch();
 		}
-		
+
 		return new ExtendedStatus(nextVersion, buildStatus, subComponents, comp, repo);
 	}
 
@@ -221,7 +220,7 @@ public class ExtendedStatusBuilder {
 		});
 		return res == null ? true : res;
 	}
-	
+
 	private <T> T walkOnCommits(VCSRepository repo, ReleaseBranchPatch rb, Function<VCSCommit, T> func) {
 		IVCS vcs = repo.getVCS();
 		String startingFromRevision = null;
@@ -241,7 +240,7 @@ public class ExtendedStatusBuilder {
 		} while (commits.size() >= COMMITS_RANGE_LIMIT);
 		return null;
 	}
-	
+
 	private boolean areMDepsPatchesActualForMinor(List<Component> mDeps, CachedStatuses cache) {
 		for (Component mDep : mDeps) {
 			VCSComponentLocation componentLocation = repoFactory.getVCSComponentLocation(mDep);
@@ -255,17 +254,17 @@ public class ExtendedStatusBuilder {
 		}
 		return true;
 	}
-	
+
 	private boolean areMDepsPatchesActualForPatch(Component rootComp, VCSRepository repo, List<Component> mDeps, CachedStatuses cache) {
 		for (Component mDep : mDeps) {
 			VCSComponentLocation componentLocation = repoFactory.getVCSComponentLocation(mDep);
 			Version nextVersion = cache.get(componentLocation).getNextVersion();
-			
+
 			// Any component `nextVersion`.truncatePatch is not equal to one mentioned in `mdeps` -> error (disallow minor upgrade/downgrade)
 			if (!nextVersion.toReleaseNoPatch().equals(mDep.getVersion().toReleaseNoPatch())) {
 				throw new EMinorUpgradeDowngrade(rootComp, mDep, nextVersion.toPreviousPatch());
 			}
-			
+
 			DelayedTagsFile mdf = new DelayedTagsFile();
 			Version verToActualizeOn ;
 			if (mdf.getDelayedTag(componentLocation) != null) { // if delayed tag
@@ -273,15 +272,15 @@ public class ExtendedStatusBuilder {
 			} else {
 				verToActualizeOn = nextVersion.toPreviousPatch();
 			}
-			
+
 			Integer mDepPatch = Integer.parseInt(mDep.getVersion().getPatch());
 			Integer nextVersionPatch = Integer.parseInt(verToActualizeOn.getPatch());
-			
+
 			// Any component `nextVersion`.patch is less than one mentioned in `mdeps` -> error (patch upgrade only is allowed)
 			if (nextVersionPatch < mDepPatch) {
 				throw new EMinorUpgradeDowngrade(rootComp, mDep, verToActualizeOn);
 			}
-			
+
 			if (nextVersionPatch > mDepPatch) {
 				return false;
 			}
@@ -304,29 +303,29 @@ public class ExtendedStatusBuilder {
 
 	private Boolean isNeedToFork(Component comp, ReleaseBranchCurrent rb, CachedStatuses cache, IProgress progress,
 								 LinkedHashMap<Component, ExtendedStatus> subComponents, VCSRepository repo, Boolean hasDelayedTag) {
-		
+
 		ConcurrentHashMap<Component, ExtendedStatus> subComponentsLocal = new ConcurrentHashMap<>();
 		recursiveGetAndCacheStatusAsync(rb, cache, progress, repo, subComponentsLocal);
 
 		for (Component mdep : rb.getMDeps()) {
 			subComponents.put(mdep, subComponentsLocal.get(mdep));
 		}
-	
+
 		if (!rb.exists()) {
 			return true;
-		} 
+		}
 
 		if (rb.getVersion().getPatch().equals(Constants.ZERO_PATCH)) {
 			if (!hasDelayedTag) {
 				return false;
 			}
 		}
-		
+
 		// develop branch has valuable commits => YES
 		if (reportDuration(() -> new DevelopBranch(comp, repo).isModified(), "is develop modified check", comp, progress)) {
 			return true;
 		}
-		
+
 		for (Component mdep : rb.getCRBMDeps(progress, repo, comp)) {
 			ExtendedStatus mdepStatus = cache.get(repoFactory.getVCSComponentLocation(mdep));
 			// any mdeps needs FORK => YES

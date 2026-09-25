@@ -56,7 +56,7 @@ public class GitVCSTest extends VCSAbstractTest {
 	private ProxySelector proxySelectorBackup;
 	private final RuntimeException testGitResetException = new RuntimeException("test exception on git.reset()");
 	private GitVCS git;
-	
+
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
@@ -66,14 +66,14 @@ public class GitVCSTest extends VCSAbstractTest {
 		ProxySelector.setDefault(null);
 		git = (GitVCS) vcs;
 	}
-	
+
 	@After
 	public void tearDown() throws IOException {
 		localGitRepo.close();
 	    FileUtils.deleteDirectory(localGitRepo.getDirectory());
 		ProxySelector.setDefault(proxySelectorBackup);
 	}
-	
+
 	@Override
 	protected IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo) {
 		return Mockito.spy(new GitVCS(mockedVCSRepo));
@@ -190,7 +190,6 @@ public class GitVCSTest extends VCSAbstractTest {
 
 	@Test
 	public void testExceptions() throws Exception {
-		@SuppressWarnings("serial")
 		GitAPIException eApi = new GitAPIException("test git exception") {};
 		Exception eCommon = new Exception("test common exception");
 		for (Method m : ArrayUtils.addAll(IVCS.class.getDeclaredMethods(), GitVCS.class.getMethod("createUnannotatedTag", String.class, String.class, String.class))) {
@@ -205,7 +204,7 @@ public class GitVCSTest extends VCSAbstractTest {
 			testExceptionThrowing(eCommon, m, params);
 		}
 	}
-	
+
 	private void testExceptionThrowingNoMock(Exception testException, Method m, Object[] params) throws Exception {
 		try {
 			m.invoke(vcs, params);
@@ -214,7 +213,7 @@ public class GitVCSTest extends VCSAbstractTest {
 			}
 		} catch (InvocationTargetException e) {
 			if (!m.getName().equals("checkout") && wasGetLocalGitInvoked()) {
-				// InvocationTargetException <- EVCSException <- GitAPIException 
+				// InvocationTargetException <- EVCSException <- GitAPIException
 				assertTrue(e.getCause().getCause().getClass().isAssignableFrom(testException.getClass()));
 				assertTrue(e.getCause().getMessage().contains(testException.getMessage()));
 			}
@@ -344,7 +343,7 @@ public class GitVCSTest extends VCSAbstractTest {
 					ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_EOL));
 		}
 	}
-	
+
 	@Test
 	public void testGetTagsUnannotated() throws Exception {
 		// create tag in different working copy
@@ -362,10 +361,9 @@ public class GitVCSTest extends VCSAbstractTest {
 		assertEquals(tag.getTagName(), TAG_NAME_1);
 		assertEquals(tag.getRelatedCommit(), vcs.getHeadCommit(null));
 	}
-	
+
 	@Test
 	public void testCheckoutExceptions() throws Exception {
-		@SuppressWarnings("serial")
 		GitAPIException eApi = new GitAPIException("test git exception") {};
 		Exception eCommon = new Exception("test common exception");
 		Mockito.doThrow(eCommon).when(git).getLocalGit((String) null);
@@ -376,7 +374,7 @@ public class GitVCSTest extends VCSAbstractTest {
 			assertTrue(e.getCause().getClass().isAssignableFrom(eCommon.getClass()));
 			assertTrue(e.getCause().getMessage().contains(eCommon.getMessage()));
 		}
-		
+
 		Mockito.doThrow(eApi).when(git).getLocalGit((String) null);
 		try {
 			git.checkout(null, null, null);
@@ -404,7 +402,7 @@ public class GitVCSTest extends VCSAbstractTest {
 		assertTrue(vcs.getTagsOnRevision(c3.getRevision()).containsAll(Arrays.asList(
 				tag3)));
 	}
-	
+
 	@Test
 	public void testPruneOnBranchCreate() throws Exception {
 		// create a local branch, push failed
@@ -415,9 +413,9 @@ public class GitVCSTest extends VCSAbstractTest {
 			fail();
 		} catch (RuntimeException e) {
 		}
-		
+
 		Mockito.doCallRealMethod().when(git).push(Mockito.any(Git.class), Mockito.any(RefSpec.class));
-		
+
 		// expect no EVCSBRanchExists exception
 		vcs.createBranch(null, "branch", "branch created");
 		assertTrue(vcs.getBranches("").contains("branch"));
@@ -433,21 +431,21 @@ public class GitVCSTest extends VCSAbstractTest {
 
 		assertFalse(vcs.getBranches("").contains("HEAD"));
 	}
-	
+
 	@Test
 	public void testPruneOnTagCreate() throws Exception {
 		// create a local tag, push failed
 		RuntimeException eCommon = new RuntimeException("test common exception");
 		Mockito.doThrow(eCommon).when(git).push(Mockito.any(Git.class), Mockito.any(RefSpec.class));
-	
+
 		try {
 			vcs.createTag(null, "tag", "tag desc", null);
 			fail();
 		} catch (RuntimeException e) {
 		}
-		
+
 		Mockito.doCallRealMethod().when(git).push(Mockito.any(Git.class), Mockito.any(RefSpec.class));
-		
+
 		// expect no exceptions
 		vcs.createTag(null, "tag", "tag desc", null);
 		assertEquals("tag", vcs.getTags().get(0).getTagName());
