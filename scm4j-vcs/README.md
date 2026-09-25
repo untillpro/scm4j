@@ -6,9 +6,10 @@ history, and managing tags.
 scm4j-vcs provides:
 - A simple interface to implement basic VCS-related operations
 - Working copies management for operations which must be executed on a local file system
-- `org.scm4j.vcs.git.GitVCS`, backed by JGit
+- A native Git command-line adapter available for explicit construction
+- `org.scm4j.vcs.git.GitVCS`, the unchanged JGit-backed adapter used by existing call sites
 - `SVNVCS`, backed by SVNKit
-- A shared conformance suite for both implementations
+- A shared conformance suite for all adapters
 
 Detailed documentation:
 - [Git adapter](docs/git.md)
@@ -45,7 +46,22 @@ IVCS git = new GitVCS(gitRepository);
 IVCS svn = new SVNVCS(svnRepository, "username", "password");
 ```
 
-Both adapters implement `IVCS` and use the same working-copy infrastructure.
+Both adapters shown above implement `IVCS` and use the same working-copy infrastructure; the
+native Git adapter implements the same contract.
+
+## Native Git prerequisites
+
+- Always: a Java 8-compatible runtime and Git 2.25 or later as `git` on `PATH`.
+- With explicit SCM4J credentials: a POSIX-compatible `sh` for the ask-pass helper.
+- With SSH remotes: OpenSSH `ssh` and host-key configuration; `ssh-agent` and `ssh-add` are optional.
+- Without explicit credentials: Git may use the host credential helper. Git for Windows bundles
+  Git Credential Manager, `sh`, OpenSSH, and Git's transport helpers.
+
+The adapter launches Git directly, uses the existing Failsafe dependency, and adds no Java library;
+existing call sites remain on JGit. Builds use JDK 8, Git 2.25+, and `gradlew` or
+`gradlew.bat`, not system Gradle. No SVN CLI, `curl`, `rsync`, `sed`, `awk`, `grep`, `git-lfs`, or
+submodule initialization is required. See the complete [dependency matrix and command
+contract](docs/git.md#native-cli-dependency-matrix).
 
 # Terms
 - `IVCS`

@@ -4,11 +4,30 @@ Shell runner for [scm4j-releaser](../scm4j-releaser).
 
 # Usage
 
-- Install `jdk8`, `git`, `sh` (on Windows `sh` normally comes with `git`)
+- Install JDK 8, Git, and a POSIX-compatible `sh` (Git for Windows supplies both commands)
 - Clone the scm4j monorepo
 - Run `releaser.cmd` or `releaser` to build and run scm4j-releaser
 - Use Git in the monorepo checkout to select the branch, tag, or commit to run
 - For more details, see [scm4j-releaser](../scm4j-releaser)
+
+## Windows operator checklist
+
+Run in PowerShell:
+
+```powershell
+java -version
+git --version
+Get-Command git
+Get-Command sh
+ssh -V
+```
+
+- Shell runner: Java 8 from a JDK and the intended `git.exe` and `sh.exe` are mandatory.
+  `releaser.cmd` can find Git for Windows' bundled `sh.exe` even when `Get-Command sh` cannot.
+- Native-driver tests: `git --version` must report 2.25+. The driver is not wired into the releaser.
+- Native-driver SSH tests only: `ssh -V` must report OpenSSH; HTTPS tests do not require `ssh`.
+- Builds use the checked-in `gradlew.bat` (`..\gradlew.bat` from this directory); system Gradle is
+  not required.
 
 # Under the Hood
 

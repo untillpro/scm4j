@@ -37,5 +37,59 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: Verify native Git 2.25+
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git_version="$(git --version)"
+          if [[ ! "$git_version" =~ ^git\ version\ ([0-9]+)\.([0-9]+) ]]; then
+            echo "Could not parse Git version: $git_version" >&2
+            exit 1
+          fi
+          major="${BASH_REMATCH[1]}"
+          minor="${BASH_REMATCH[2]}"
+          if (( major < 2 || (major == 2 && minor < 25) )); then
+            echo "Git 2.25 or later is required, found: $git_version" >&2
+            exit 1
+          fi
+          echo "Using $git_version"
+
       - name: Run tests
         run: ./gradlew test
+
+  test-native-git-windows:
+    name: Test native Git on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Temurin JDK 8
+        uses: actions/setup-java@v6.0.0
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Verify native Git 2.25+
+        shell: pwsh
+        run: |
+          $gitVersion = git --version
+          if ($LASTEXITCODE -ne 0 -or $gitVersion -notmatch '^git version (\d+)\.(\d+)') {
+            throw "Could not parse Git version: $gitVersion"
+          }
+          $major = [int]$Matches[1]
+          $minor = [int]$Matches[2]
+          if ($major -lt 2 -or ($major -eq 2 -and $minor -lt 25)) {
+            throw "Git 2.25 or later is required, found: $gitVersion"
+          }
+          Write-Host "Using $gitVersion"
+
+      - name: Run native Git adapter tests
+        shell: pwsh
+        run: .\gradlew.bat :scm4j-vcs:test
