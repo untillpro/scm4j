@@ -574,6 +574,45 @@ fn delayed_tag_preserves_revision_until_tag_command() {
 }
 
 #[test]
+fn delayed_tag_applies_only_to_command_line_roots() {
+    let mut harness = Harness::new("delayed-tag-root-only");
+    let dependency = harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    let root = harness.add_git(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:dependency\n"),
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:root"]);
+    harness.succeeds(&["build", "org.example:root", "--delayed-tag"]);
+
+    assert!(dependency.has_ref("refs/tags/2.3.0"));
+    assert_eq!(
+        dependency.show("refs/heads/release/2.3", "version"),
+        "2.3.1"
+    );
+    assert!(!root.has_ref("refs/tags/1.0.0"));
+    assert_eq!(root.show("refs/heads/release/1.0", "version"), "1.0.0");
+
+    let components = harness.work.join(".scm4j-releaser/components");
+    assert!(!components
+        .join("org.example_dependency/delayed-tag")
+        .exists());
+    assert!(components.join("org.example_root/delayed-tag").is_file());
+
+    harness.succeeds(&["tag", "org.example:root"]);
+    assert!(root.has_ref("refs/tags/1.0.0"));
+    assert_eq!(root.show("refs/heads/release/1.0", "version"), "1.0.1");
+}
+
+#[test]
 fn delayed_tag_rejects_an_advanced_release_branch() {
     let mut harness = Harness::new("delayed-tag-advanced");
     let repository = harness.add_git(

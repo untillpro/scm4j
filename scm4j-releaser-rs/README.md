@@ -11,7 +11,8 @@ Supported workflow:
    zero there, and advances develop to the next minor `-SNAPSHOT` version.
 3. `build` checks the release revision out into an isolated build directory, runs the configured command,
    creates a version tag, and increments the patch version.
-4. `build --delayed-tag` builds without tagging; `tag` later applies the saved tag and patch increment.
+4. `build --delayed-tag` delays tagging only for components explicitly named on the command line;
+   dependencies are tagged immediately. `tag` later applies the saved root tags and patch increments.
 
 Managed dependencies from `mdeps` are discovered recursively, deduplicated, checked for cycles, and processed
 dependency-first. Before a Git parent component is built, dependency versions in its release-branch `mdeps`

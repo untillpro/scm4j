@@ -112,6 +112,10 @@ fn execute() -> Result<(), String> {
         print_dependency_tree(&catalog, &components, &dependencies, &actions, show_done)?;
         return Ok(());
     }
+    let root_components = components
+        .iter()
+        .map(|coordinates| catalog.resolve(coordinates).map(|config| config.component))
+        .collect::<Result<HashSet<_>, _>>()?;
     for config in configs {
         let component_work = work.join("components").join(safe_name(&config.component));
         fs::create_dir_all(&component_work)
@@ -124,7 +128,14 @@ fn execute() -> Result<(), String> {
         if command == "build" {
             lock_git_mdeps(&catalog, &config, &work)?;
         }
-        execute_config(command, &config, &work, &component_work, delayed)?;
+        let delay_this_component = delayed && root_components.contains(&config.component);
+        execute_config(
+            command,
+            &config,
+            &work,
+            &component_work,
+            delay_this_component,
+        )?;
         if command == "fork" {
             lock_git_mdeps(&catalog, &config, &work)?;
         }
