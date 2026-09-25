@@ -331,14 +331,7 @@ fn init(home: &Path) -> Result<(), String> {
 
 fn prepare_repository(config: &Config, work: &Path) -> Result<Git, String> {
     let repositories = work.join("repositories");
-    let named_directory = repositories.join(repository_key(&config.repository));
-    let legacy_directory = repositories.join(repository_hash(&config.repository));
-    let directory =
-        if named_directory.join(".git").is_dir() || !legacy_directory.join(".git").is_dir() {
-            named_directory
-        } else {
-            legacy_directory
-        };
+    let directory = repositories.join(repository_key(&config.repository));
     fs::create_dir_all(
         directory
             .parent()
