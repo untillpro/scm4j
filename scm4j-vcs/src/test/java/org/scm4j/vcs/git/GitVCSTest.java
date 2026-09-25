@@ -20,6 +20,7 @@ import java.net.ProxySelector;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,6 +29,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate;
@@ -299,6 +301,49 @@ public class GitVCSTest extends VCSAbstractTest {
 		IVCSWorkspace workspace = new VCSWorkspace(new File(TEST_BASE_DIR, workspaceName).getPath());
 		return new GitVCS(workspace.getVCSRepositoryWorkspace(remoteDir.toURI().toString()));
 	}
+
+	@Test
+	public void testCheckoutUsesJGit43CompatibleLineEndings() throws Exception {
+		File remoteDir = new File(TEST_BASE_DIR, "line-endings-repo");
+		try (Git remote = GitVCSUtils.createRepository(remoteDir)) {
+			FileUtils.write(new File(remoteDir, ".gitattributes"), "* text=auto\n", StandardCharsets.UTF_8);
+			FileUtils.write(new File(remoteDir, "text.txt"), "first\nsecond\n", StandardCharsets.UTF_8);
+			remote.add().addFilepattern(".").call();
+			remote.commit().setMessage("text files added").call();
+		}
+		GitVCS compatibleVcs = createVCS(remoteDir, "line-endings-workspace");
+		File checkoutDir = new File(TEST_BASE_DIR, "line-endings-checkout");
+
+		compatibleVcs.checkout(null, checkoutDir.getPath(), null);
+
+		assertEquals("first\nsecond\n", FileUtils.readFileToString(
+				new File(checkoutDir, "text.txt"), StandardCharsets.UTF_8));
+		try (Git checkout = compatibleVcs.getLocalGit(checkoutDir.getPath());
+			 Repository checkoutRepo = checkout.getRepository()) {
+			assertEquals("lf", checkoutRepo.getConfig().getString(
+					ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_EOL));
+
+			// Compatibility configuration is retried rather than overwriting local work.
+			checkoutRepo.getConfig().setString(ConfigConstants.CONFIG_CORE_SECTION, null,
+					ConfigConstants.CONFIG_KEY_EOL, "native");
+			checkoutRepo.getConfig().save();
+		}
+		FileUtils.write(new File(checkoutDir, "text.txt"), "local change\n", StandardCharsets.UTF_8);
+		try (Git checkout = compatibleVcs.getLocalGit(checkoutDir.getPath());
+			 Repository checkoutRepo = checkout.getRepository()) {
+			assertEquals("native", checkoutRepo.getConfig().getString(
+					ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_EOL));
+			assertEquals("local change\n", FileUtils.readFileToString(
+					new File(checkoutDir, "text.txt"), StandardCharsets.UTF_8));
+		}
+
+		FileUtils.write(new File(checkoutDir, "text.txt"), "first\nsecond\n", StandardCharsets.UTF_8);
+		try (Git checkout = compatibleVcs.getLocalGit(checkoutDir.getPath());
+			 Repository checkoutRepo = checkout.getRepository()) {
+			assertEquals("lf", checkoutRepo.getConfig().getString(
+					ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_EOL));
+		}
+	}
 	
 	@Test
 	public void testGetTagsUnannotated() throws Exception {
@@ -408,4 +453,3 @@ public class GitVCSTest extends VCSAbstractTest {
 		assertEquals("tag", vcs.getTags().get(0).getTagName());
 	}
 }
-

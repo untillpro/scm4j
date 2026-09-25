@@ -129,22 +129,57 @@ public class GitVCS implements IVCS {
 	}
 
 	Git getLocalGit(String folder) throws Exception {
-		Repository gitRepo = new FileRepositoryBuilder()
-				.setGitDir(new File(folder, ".git"))
-				.build();
-		Boolean repoInited = gitRepo
-				.getObjectDatabase()
-				.exists();
+		File checkoutDir = new File(folder);
+		boolean repoInited;
+		try (Repository gitRepo = new FileRepositoryBuilder()
+				.setGitDir(new File(checkoutDir, ".git"))
+				.build()) {
+			repoInited = gitRepo.getObjectDatabase().exists();
+		}
 		if (!repoInited) {
 			Git
 					.cloneRepository()
-					.setDirectory(new File(folder))
+					.setDirectory(checkoutDir)
 					.setURI(repo.getRepoUrl())
 					.setCredentialsProvider(credentials)
 					.call()
 					.close();
 		}
+		try (Git git = Git.open(checkoutDir)) {
+			configureJGit43LineEndings(git);
+		}
+		Repository gitRepo = new FileRepositoryBuilder()
+				.setGitDir(new File(checkoutDir, ".git"))
+				.build();
 		return new Git(gitRepo);
+	}
+
+	private void configureJGit43LineEndings(Git git) throws IOException, GitAPIException {
+		Repository gitRepo = git.getRepository();
+		StoredConfig config = gitRepo.getConfig();
+		CoreConfig.EOL eol = config.getEnum(ConfigConstants.CONFIG_CORE_SECTION, null,
+				ConfigConstants.CONFIG_KEY_EOL, CoreConfig.EOL.NATIVE);
+		if (eol != CoreConfig.EOL.NATIVE) {
+			return;
+		}
+		ObjectId head = gitRepo.resolve(Constants.HEAD);
+		// A compatibility migration must not discard a caller's tracked changes.
+		// Leave native configured and retry on a later clean use of the workspace.
+		if (head != null && git.status().call().hasUncommittedChanges()) {
+			return;
+		}
+
+		// JGit 4.3 treated native EOL as a direct checkout on every platform.
+		// Current JGit converts text to CRLF on Windows, so use LF explicitly;
+		// explicit LF and CRLF settings already behave compatibly and stay intact.
+		config.setEnum(ConfigConstants.CONFIG_CORE_SECTION, null,
+				ConfigConstants.CONFIG_KEY_EOL, CoreConfig.EOL.LF);
+		config.save();
+		// The initial clone has already checked out files with current JGit's
+		// native behavior. Rewrite it once using the compatibility setting.
+		if (head != null) {
+			git.reset().setMode(ResetType.HARD).call();
+		}
 	}
 
 	Git getLocalGit(IVCSLockedWorkingCopy wc) throws Exception {
