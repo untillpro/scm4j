@@ -422,6 +422,22 @@ public class GitVCSTest extends VCSAbstractTest {
 	}
 
 	@Test
+	public void testSparseCheckoutDirectoryStartingWithHyphen() throws Exception {
+		String optionLikeDirectory = "--no-cone";
+		String selectedFile = optionLikeDirectory + "/feature.txt";
+		vcsTestDataGen.setFileContent(null, selectedFile, LINE_1, "option-like directory added");
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+
+		File checkoutDir = new File(TEST_BASE_DIR, "sparse-option-like-directory");
+		git.sparseCheckout(null, checkoutDir.getPath(), null, optionLikeDirectory);
+
+		File checkedOutFile = new File(checkoutDir, selectedFile);
+		assertTrue(checkedOutFile.isFile());
+		assertEquals(LINE_1, FileUtils.readFileToString(checkedOutFile, StandardCharsets.UTF_8));
+		assertFalse(new File(checkoutDir, FILE3_IN_FOLDER_NAME).exists());
+	}
+
+	@Test
 	public void testGetTagsOnRevisionUnannotated() throws Exception {
 		VCSCommit c1 = vcs.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		VCSCommit c2 = vcs.setFileContent(null, FILE1_NAME, LINE_2, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE + " " + LINE_2);

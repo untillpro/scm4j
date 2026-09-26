@@ -987,7 +987,7 @@ public class GitVCS implements IVCS {
 
 			File checkoutDir = new File(targetPath);
 			runGitCommand(checkoutDir, "sparse-checkout", "init", "--cone");
-			runGitCommand(checkoutDir, "sparse-checkout", "set", repositoryRelativeDirectory);
+			runGitCommand(checkoutDir, "sparse-checkout", "set", "--", repositoryRelativeDirectory);
 			if (revision == null) {
 				runGitCommand(checkoutDir, "checkout", "-B", realBranchName,
 						REFS_REMOTES_ORIGIN + realBranchName);
