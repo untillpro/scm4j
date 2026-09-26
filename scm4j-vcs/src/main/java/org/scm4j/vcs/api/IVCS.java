@@ -59,5 +59,20 @@ public interface IVCS {
 
 	void checkout(String branchName, String targetPath, String revision);
 
+	/**
+	 * Checks out one repository directory into a caller-owned target folder.
+	 * Implementations must preserve the same branch and revision semantics as
+	 * {@link #checkout(String, String, String)}. The directory value is passed to
+	 * the backend without common API validation; callers are responsible for
+	 * supplying a suitable value and handling backend failures.
+	 *
+	 * @param branchName branch to check out, or {@code null} for the repository's primary branch
+	 * @param targetPath local target folder
+	 * @param revision revision to check out, or {@code null} for the branch head
+	 * @param repositoryRelativeDirectory repository-relative directory selected for materialization
+	 */
+	void sparseCheckout(String branchName, String targetPath, String revision,
+			String repositoryRelativeDirectory);
+
 	List<VCSTag> getTagsOnRevision(String revision);
 }

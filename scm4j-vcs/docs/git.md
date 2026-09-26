@@ -9,6 +9,7 @@ Features:
 - Summarized diff between branches
 - File content getting and setting
 - File create and remove
+- Sparse checkout of one repository-relative directory
 - Working with tags: create, remove, browse
 - Directional commit history for the whole branch or a selected repository-relative file or directory
 
@@ -53,12 +54,15 @@ Use cases
 	```
 - Use methods of the [IVCS interface](../src/main/java/org/scm4j/vcs/api/IVCS.java). See the [common VCS API](../README.md) for details
 - Path-filtered history uses the `IVCS.getCommitsRange` repository-relative path contract. Use `/` separators and keep the path within the selected branch.
+- `IVCS.sparseCheckout` accepts one repository-relative directory. It does not validate or normalize that argument; the caller supplies a suitable value and handles any native Git command failure.
 - Use `vcs.setProxy()` and `vcs.setCredentials()` if necessary
 - `GitVCS` additionally exposes `VCSTag createUnannotatedTag(String branchName, String tagName, String revisionToTag)`, which is not part of `IVCS`. Use a `GitVCS` reference to create an unannotated tag named `tagName` at `revisionToTag`. If `branchName` is `null`, the branch targeted by the remote symbolic `HEAD` is used. If `revisionToTag` is `null`, the head of `branchName` is used.
 
 # Implementation details
 - [JGit](https://projects.eclipse.org/projects/technology.jgit) is used as the framework to work with Git repositories
-- Repository operations use an LWC, except `checkout`, which uses the caller-provided target folder. Configuration methods do not allocate an LWC.
+- All existing Git operations, including full `checkout`, remain JGit-based. Only `sparseCheckout` invokes native Git, after JGit has cloned or opened the repository, fetched refs, and resolved the requested branch or revision.
+- The sparse operation directly runs the native `git sparse-checkout` and `git checkout` commands in the target repository. It does not introduce a general native Git adapter, probe for an executable, check a Git version, or pre-validate the selected directory. Process launch and non-zero-exit failures are returned to the caller through the VCS exception boundary.
+- Repository operations use an LWC, except `checkout` and `sparseCheckout`, which use the caller-provided target folder. Configuration methods do not allocate an LWC.
 - `getLocalGit(IVCSLockedWorkingCopy wc)` method is used to create a Git implementation to execute vcs operations within `wc` Working Copy
   - If the local Git object database does not exist, the configured repository is cloned into the folder; otherwise the existing repository is opened. Fetching and branch switching are handled by the calling operation.
 - `setProxy` installs JVM-wide `ProxySelector` and `Authenticator` defaults. The selector uses the configured proxy for URLs containing the repository URL, ignoring case, and delegates other URLs to the previous selector.

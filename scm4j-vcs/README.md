@@ -177,8 +177,22 @@ Note: `null` passed as a branch name represents the repository's primary branch:
 - `void removeTag(String tagName)`
     - Removes tag with name `tagName`
 - `void checkout(String branchName, String targetPath, String revision)`
-    - Checks out a branch `branchName` on a revision `revision` into a local folder `targetPath`
-    - A null `revision` selects the branch head. The caller is responsible for exclusive access to `targetPath`; this method does not allocate a locked working copy.
+	- Checks out a branch `branchName` on a revision `revision` into a local folder `targetPath`
+	- A null `revision` selects the branch head. The caller is responsible for exclusive access to `targetPath`; this method does not allocate a locked working copy.
+- `void sparseCheckout(String branchName, String targetPath, String revision, String repositoryRelativeDirectory)`
+	- Checks out one repository-relative directory from `branchName` into the caller-provided `targetPath`. A null `revision` selects the branch head.
+	- Both `GitVCS` and `SVNVCS` support this operation. The existing `checkout` operation remains a full checkout and is unchanged.
+	- The method accepts one directory selection. It passes `repositoryRelativeDirectory` to the backend without validating or normalizing it, so the caller must supply a suitable value and handle backend failures.
+	- This is a required `IVCS` method rather than a default method; external `IVCS` implementations must implement it.
+
+	```java
+	IVCS vcs = getConfiguredVCS();
+	vcs.sparseCheckout(
+			null,
+			"build/source",
+			null,
+			"components/selected");
+	```
 - `List<VCSTag> getTagsOnRevision(String revision)`
     - Returns list of all tags which are related to the commit specified by `revision`, or an empty list when the repository has no tags
     
@@ -265,7 +279,7 @@ Lock call: `new FileOutputStream(lockFile, false).getChannel().lock()`.
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
 	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
-	- Operations using an internal local working copy should obtain an LWC in LOCKED state via `IVCSRepositoryWorkspace.getVCSLockedWorkingCopy()`. Remote-only operations do not need an LWC; `checkout` uses the caller-provided target folder.
+	- Operations using an internal local working copy should obtain an LWC in LOCKED state via `IVCSRepositoryWorkspace.getVCSLockedWorkingCopy()`. Remote-only operations do not need an LWC; `checkout` and `sparseCheckout` use the caller-provided target folder.
 	- Use `IVCSLockedWorkingCopy.getFolder()` to get a folder for vcs-related operations
 	- Every acquired LWC must be closed, preferably with try-with-resources. The shared test suite checks calls to `close()`.
 	- See [GitVCS](src/main/java/org/scm4j/vcs/git/GitVCS.java) and [SVNVCS](src/main/java/org/scm4j/vcs/svn/SVNVCS.java) for implementations.

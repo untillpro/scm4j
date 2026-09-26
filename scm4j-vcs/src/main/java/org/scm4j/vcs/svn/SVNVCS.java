@@ -657,6 +657,29 @@ public class SVNVCS implements IVCS {
 			throw new EVCSException(e);
 		}
 	}
+
+	@Override
+	public void sparseCheckout(String branchName, String targetPath, String revision,
+			String repositoryRelativeDirectory) {
+		try {
+			SVNUpdateClient updateClient = clientManager.getUpdateClient();
+			updateClient.setIgnoreExternals(false);
+			SVNRevision svnRevision = revision == null ? SVNRevision.HEAD : SVNRevision.parse(revision);
+			File target = new File(targetPath);
+			SVNURL sourceUrl = getBranchUrl(branchName);
+			if (isWorkingCopyInited(target)) {
+				updateClient.doSwitch(target, sourceUrl, svnRevision, svnRevision,
+						SVNDepth.EMPTY, true, false, false);
+			} else {
+				updateClient.doCheckout(sourceUrl, target, svnRevision, svnRevision,
+						SVNDepth.EMPTY, false);
+			}
+			updateClient.doUpdate(new File[] {new File(target, repositoryRelativeDirectory)},
+					svnRevision, SVNDepth.INFINITY, false, true, true);
+		} catch (SVNException e) {
+			throw new EVCSException(e);
+		}
+	}
 	
 	List<VCSTag> getTags(String onRevision) throws SVNException {
 		List<VCSTag> res = new ArrayList<>();

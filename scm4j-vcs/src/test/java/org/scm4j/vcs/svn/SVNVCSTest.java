@@ -147,6 +147,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		testSVNException(() -> svn.getHeadCommit(""));
 		testSVNException(() -> svn.createTag("", "", "", ""));
 		testSVNException(() -> svn.checkout("", "", ""));
+		testSVNException(() -> svn.sparseCheckout("", "", "", "../folder"));
 	}
 
 	@Test

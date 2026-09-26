@@ -129,6 +129,10 @@ public class GitVCS implements IVCS {
 	}
 
 	Git getLocalGit(String folder) throws Exception {
+		return getLocalGit(folder, false);
+	}
+
+	private Git getLocalGit(String folder, boolean noCheckout) throws Exception {
 		File checkoutDir = new File(folder);
 		boolean repoInited;
 		try (Repository gitRepo = new FileRepositoryBuilder()
@@ -142,11 +146,14 @@ public class GitVCS implements IVCS {
 					.setDirectory(checkoutDir)
 					.setURI(repo.getRepoUrl())
 					.setCredentialsProvider(credentials)
+					.setNoCheckout(noCheckout)
 					.call()
 					.close();
 		}
-		try (Git git = Git.open(checkoutDir)) {
-			configureJGit43LineEndings(git);
+		if (!noCheckout) {
+			try (Git git = Git.open(checkoutDir)) {
+				configureJGit43LineEndings(git);
+			}
 		}
 		Repository gitRepo = new FileRepositoryBuilder()
 				.setGitDir(new File(checkoutDir, ".git"))
@@ -517,14 +524,18 @@ public class GitVCS implements IVCS {
 		// remove local branches and tags which are not exists on remote
 		// See https://github.com/scm4j/scm4j-releaser/issues/59
 		// if executed first then version is considered as modified. So have uncommited change: 19.5-SNAPSHOT -> 18.5-SNAPSHOT
+		fetch(git,
+				new RefSpec("+refs/heads/*:refs/heads/*"),
+				new RefSpec("+refs/tags/*:refs/tags/*"));
+	}
+
+	private void fetch(Git git, RefSpec... refSpecs) throws GitAPIException {
 		runWithTransportRetry("Git fetch", () -> git
-					.fetch()
-					.setRefSpecs(
-							new RefSpec("+refs/heads/*:refs/heads/*"),
-							new RefSpec("+refs/tags/*:refs/tags/*"))
-					.setRemoveDeletedRefs(true)
-					.setCredentialsProvider(credentials)
-					.call());
+				.fetch()
+				.setRefSpecs(refSpecs)
+				.setRemoveDeletedRefs(true)
+				.setCredentialsProvider(credentials)
+				.call());
 	}
 
 	private void runWithTransportRetry(String operation, CheckedRunnable command) throws GitAPIException {
@@ -957,6 +968,71 @@ public class GitVCS implements IVCS {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void sparseCheckout(String branchName, String targetPath, String revision,
+			String repositoryRelativeDirectory) {
+		try (Git git = getLocalGit(targetPath, true);
+			Repository gitRepo = git.getRepository()) {
+			fetchForSparseCheckout(git);
+			String realBranchName = getRealBranchName(branchName);
+			String selectedRevision = revision == null
+					? REFS_REMOTES_ORIGIN + realBranchName
+					: revision;
+			ObjectId selectedCommit = gitRepo.resolve(selectedRevision + "^{commit}");
+			if (selectedCommit == null) {
+				throw new EVCSException("Could not resolve Git revision " + selectedRevision);
+			}
+
+			File checkoutDir = new File(targetPath);
+			runGitCommand(checkoutDir, "sparse-checkout", "init", "--cone");
+			runGitCommand(checkoutDir, "sparse-checkout", "set", repositoryRelativeDirectory);
+			if (revision == null) {
+				runGitCommand(checkoutDir, "checkout", "-B", realBranchName,
+						REFS_REMOTES_ORIGIN + realBranchName);
+			} else {
+				runGitCommand(checkoutDir, "checkout", "--detach", selectedCommit.name());
+			}
+		} catch (EVCSException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new EVCSException(e);
+		}
+	}
+
+	private void fetchForSparseCheckout(Git git) throws GitAPIException {
+		fetch(git,
+				new RefSpec("+refs/heads/*:" + REFS_REMOTES_ORIGIN + "*"),
+				new RefSpec("+refs/tags/*:refs/tags/*"));
+	}
+
+	private void runGitCommand(File workingDirectory, String... arguments) throws IOException {
+		Process process = startGitProcess(workingDirectory, arguments);
+		String output;
+		try (InputStream input = process.getInputStream()) {
+			output = IOUtils.toString(input, StandardCharsets.UTF_8);
+		}
+		int exitCode;
+		try {
+			exitCode = process.waitFor();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Interrupted while waiting for native Git", e);
+		}
+		if (exitCode != 0) {
+			throw new IOException("Native Git exited with code " + exitCode + ": " + output.trim());
+		}
+	}
+
+	Process startGitProcess(File workingDirectory, String... arguments) throws IOException {
+		List<String> command = new ArrayList<>();
+		command.add("git");
+		command.addAll(Arrays.asList(arguments));
+		return new ProcessBuilder(command)
+				.directory(workingDirectory)
+				.redirectErrorStream(true)
+				.start();
 	}
 
 	@Override

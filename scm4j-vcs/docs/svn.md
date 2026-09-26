@@ -11,6 +11,7 @@ Features:
 - Branches list
 - File content getting and setting
 - File create and remove
+- Sparse checkout of one repository-relative directory
 - Working with tags: create, remove, browse
 - Directional commit history for the whole branch or a selected repository-relative file or directory
 
@@ -55,12 +56,15 @@ Use cases
 - Use methods of the [IVCS interface](../src/main/java/org/scm4j/vcs/api/IVCS.java). See the [common VCS API](../README.md) for details
 - Pass `null` as the branch name to operate on `trunk`. Other names resolve under `branches/`, so `release/v1` identifies `branches/release/v1`.
 - Path-filtered history uses the `IVCS.getCommitsRange` repository-relative path contract. Absolute, drive, UNC, and parent-traversal paths are rejected before querying SVN.
+- `IVCS.sparseCheckout` accepts one repository-relative directory. Unlike path-filtered history, this operation does not validate or normalize the directory; the caller supplies a suitable value and handles any SVNKit failure.
 - `getTags()` and `getTagsOnRevision()` return an empty list when the repository has no `tags/` root because the absence of that conventional SVN directory means that no tags exist.
 - Use `vcs.setProxy()` and `vcs.setCredentials()` if necessary
 
 # Implementation details
 - [SVNKit](https://svnkit.com/) is used to manage SVN repositories
-- LWC is obtained automatically when necessary
+- Sparse checkout uses SVNKit to create or switch the selected branch working copy at empty depth, then updates the requested directory recursively at infinite sticky depth. The update creates the directory's parent working-copy nodes when necessary.
+- No native SVN executable is invoked, and the adapter does not pre-validate the sparse directory argument.
+- Operations that need an internal working copy obtain an LWC automatically. `checkout` and `sparseCheckout` instead use the caller-provided target folder.
 
 # Functional testing
 - Run [SVNVCSTest](../src/test/java/org/scm4j/vcs/svn/SVNVCSTest.java) as a JUnit test, or run `./gradlew :scm4j-vcs:test --tests org.scm4j.vcs.svn.SVNVCSTest` from the repository root (`.\gradlew.bat` in Windows PowerShell).

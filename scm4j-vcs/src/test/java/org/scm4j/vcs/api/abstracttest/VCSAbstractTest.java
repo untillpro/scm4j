@@ -38,6 +38,9 @@ public abstract class VCSAbstractTest {
 	protected static final String FILE1_NAME = "file1.txt";
 	protected static final String FILE2_NAME = "file2.txt";
 	protected static final String FILE3_IN_FOLDER_NAME = "folder/file3.txt";
+	protected static final String SPARSE_DIRECTORY = "components/selected";
+	protected static final String SPARSE_FILE = SPARSE_DIRECTORY + "/feature.txt";
+	protected static final String SPARSE_SIBLING_FILE = "components/sibling/feature.txt";
 	protected static final String MOD_FILE_NAME = "mod file.txt";
 	protected static final String FILE1_ADDED_COMMIT_MESSAGE = FILE1_NAME + " file added";
 	protected static final String FILE2_ADDED_COMMIT_MESSAGE = FILE2_NAME + " file added";
@@ -654,6 +657,39 @@ public abstract class VCSAbstractTest {
 			assertTrue(testFile.exists());
 			assertEquals(FileUtils.readFileToString(testFile, StandardCharsets.UTF_8), LINE_1);
 		}
+	}
+
+	@Test
+	public void testSparseCheckoutHead() throws Exception {
+		vcsTestDataGen.setFileContent(null, SPARSE_FILE, LINE_1, "selected component added");
+		vcsTestDataGen.setFileContent(null, SPARSE_SIBLING_FILE, LINE_2, "sibling component added");
+
+		File checkoutDir = new File(TEST_BASE_DIR, "sparse-checkout-head");
+		vcs.sparseCheckout(null, checkoutDir.getPath(), null, SPARSE_DIRECTORY);
+
+		assertSparseCheckout(checkoutDir, LINE_1);
+	}
+
+	@Test
+	public void testSparseCheckoutRevision() throws Exception {
+		vcsTestDataGen.setFileContent(null, SPARSE_FILE, LINE_1, "selected component added");
+		vcsTestDataGen.setFileContent(null, SPARSE_SIBLING_FILE, LINE_2, "sibling component added");
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit selectedRevision = vcsTestDataGen.setFileContent(NEW_BRANCH, SPARSE_FILE, LINE_2,
+				"selected component changed");
+		vcsTestDataGen.setFileContent(NEW_BRANCH, SPARSE_FILE, LINE_3, "later component change");
+
+		File checkoutDir = new File(TEST_BASE_DIR, "sparse-checkout-revision");
+		vcs.sparseCheckout(NEW_BRANCH, checkoutDir.getPath(), selectedRevision.getRevision(), SPARSE_DIRECTORY);
+
+		assertSparseCheckout(checkoutDir, LINE_2);
+	}
+
+	private void assertSparseCheckout(File checkoutDir, String expectedContent) throws Exception {
+		File checkedOutFile = new File(checkoutDir, SPARSE_FILE);
+		assertTrue(checkedOutFile.isFile());
+		assertEquals(expectedContent, FileUtils.readFileToString(checkedOutFile, StandardCharsets.UTF_8));
+		assertFalse(new File(checkoutDir, SPARSE_SIBLING_FILE).exists());
 	}
 
 	@Test
