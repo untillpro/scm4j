@@ -1017,6 +1017,7 @@ public class GitVCS implements IVCS {
 		try {
 			exitCode = process.waitFor();
 		} catch (InterruptedException e) {
+			process.destroyForcibly();
 			Thread.currentThread().interrupt();
 			throw new IOException("Interrupted while waiting for native Git", e);
 		}

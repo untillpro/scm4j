@@ -422,6 +422,32 @@ public class GitVCSTest extends VCSAbstractTest {
 	}
 
 	@Test
+	public void testSparseCheckoutInterruptedProcessIsDestroyed() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		Process interruptedProcess = Mockito.mock(Process.class);
+		Mockito.when(interruptedProcess.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+		Mockito.when(interruptedProcess.waitFor()).thenThrow(new InterruptedException("test interruption"));
+		Mockito.doReturn(interruptedProcess).when(git)
+				.startGitProcess(Mockito.any(File.class), Mockito.eq("sparse-checkout"),
+						Mockito.eq("init"), Mockito.eq("--cone"));
+
+		try {
+			try {
+				git.sparseCheckout(null, new File(TEST_BASE_DIR, "sparse-interrupted-process").getPath(),
+						null, "folder");
+				fail("Expected native Git interruption");
+			} catch (EVCSException e) {
+				assertTrue(e.getCause() instanceof IOException);
+				assertTrue(e.getCause().getCause() instanceof InterruptedException);
+				assertTrue(Thread.currentThread().isInterrupted());
+				Mockito.verify(interruptedProcess).destroyForcibly();
+			}
+		} finally {
+			Thread.interrupted();
+		}
+	}
+
+	@Test
 	public void testSparseCheckoutDirectoryStartingWithHyphen() throws Exception {
 		String optionLikeDirectory = "--no-cone";
 		String selectedFile = optionLikeDirectory + "/feature.txt";
