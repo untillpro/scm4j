@@ -147,6 +147,28 @@ public class SVNVCSTest extends VCSAbstractTest {
 		testSVNException(() -> svn.getHeadCommit(""));
 		testSVNException(() -> svn.createTag("", "", "", ""));
 		testSVNException(() -> svn.checkout("", "", ""));
+		testSVNException(() -> svn.sparseCheckout("", "", "", "../folder"));
+	}
+
+	@Test
+	public void testSparseCheckoutCollapsesExistingWorkingCopy() {
+		vcsTestDataGen.setFileContent(null, SPARSE_FILE, LINE_1, "selected component added");
+		vcsTestDataGen.setFileContent(null, SPARSE_SIBLING_FILE, LINE_2, "sibling component added");
+
+		File checkoutDir = new File(TEST_BASE_DIR, "sparse-existing-full-checkout");
+		svn.checkout(null, checkoutDir.getPath(), null);
+		assertTrue(new File(checkoutDir, SPARSE_FILE).isFile());
+		assertTrue(new File(checkoutDir, SPARSE_SIBLING_FILE).isFile());
+
+		svn.sparseCheckout(null, checkoutDir.getPath(), null, SPARSE_DIRECTORY);
+
+		assertTrue(new File(checkoutDir, SPARSE_FILE).isFile());
+		assertFalse(new File(checkoutDir, SPARSE_SIBLING_FILE).exists());
+
+		svn.sparseCheckout(null, checkoutDir.getPath(), null, "components/sibling");
+
+		assertFalse(new File(checkoutDir, SPARSE_FILE).exists());
+		assertTrue(new File(checkoutDir, SPARSE_SIBLING_FILE).isFile());
 	}
 
 	@Test

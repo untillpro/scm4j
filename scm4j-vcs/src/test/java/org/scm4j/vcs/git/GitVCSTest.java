@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -383,6 +384,83 @@ public class GitVCSTest extends VCSAbstractTest {
 			assertTrue(e.getCause().getClass().isAssignableFrom(eApi.getClass()));
 			assertTrue(e.getCause().getMessage().contains(eApi.getMessage()));
 		}
+	}
+
+	@Test
+	public void testSparseCheckoutProcessLaunchFailure() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		IOException failure = new IOException("test native git launch failure");
+		Mockito.doThrow(failure).when(git).startGitProcess(Mockito.any(File.class),
+				Mockito.eq("sparse-checkout"), Mockito.eq("init"), Mockito.eq("--cone"));
+
+		try {
+			git.sparseCheckout(null, new File(TEST_BASE_DIR, "sparse-launch-failure").getPath(), null, "folder");
+			fail("Expected native Git launch failure");
+		} catch (EVCSException e) {
+			assertEquals(failure, e.getCause());
+		}
+	}
+
+	@Test
+	public void testSparseCheckoutNonZeroExitFailure() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		Process failedProcess = Mockito.mock(Process.class);
+		Mockito.when(failedProcess.getInputStream()).thenReturn(new ByteArrayInputStream(
+				"test native git failure".getBytes(StandardCharsets.UTF_8)));
+		Mockito.when(failedProcess.waitFor()).thenReturn(17);
+		Mockito.doReturn(failedProcess).when(git)
+				.startGitProcess(Mockito.any(File.class), Mockito.eq("sparse-checkout"),
+						Mockito.eq("init"), Mockito.eq("--cone"));
+
+		try {
+			git.sparseCheckout(null, new File(TEST_BASE_DIR, "sparse-exit-failure").getPath(), null, "folder");
+			fail("Expected native Git non-zero exit failure");
+		} catch (EVCSException e) {
+			assertTrue(e.getMessage().contains("17"));
+			assertTrue(e.getMessage().contains("test native git failure"));
+		}
+	}
+
+	@Test
+	public void testSparseCheckoutInterruptedProcessIsDestroyed() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_1, FILE3_ADDED_COMMIT_MESSAGE);
+		Process interruptedProcess = Mockito.mock(Process.class);
+		Mockito.when(interruptedProcess.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+		Mockito.when(interruptedProcess.waitFor()).thenThrow(new InterruptedException("test interruption"));
+		Mockito.doReturn(interruptedProcess).when(git)
+				.startGitProcess(Mockito.any(File.class), Mockito.eq("sparse-checkout"),
+						Mockito.eq("init"), Mockito.eq("--cone"));
+
+		try {
+			try {
+				git.sparseCheckout(null, new File(TEST_BASE_DIR, "sparse-interrupted-process").getPath(),
+						null, "folder");
+				fail("Expected native Git interruption");
+			} catch (EVCSException e) {
+				assertTrue(e.getCause() instanceof IOException);
+				assertTrue(e.getCause().getCause() instanceof InterruptedException);
+				assertTrue(Thread.currentThread().isInterrupted());
+				Mockito.verify(interruptedProcess).destroyForcibly();
+			}
+		} finally {
+			Thread.interrupted();
+		}
+	}
+
+	@Test
+	public void testSparseCheckoutDirectoryStartingWithHyphen() throws Exception {
+		String optionLikeDirectory = "--no-cone";
+		String selectedFile = optionLikeDirectory + "/feature.txt";
+		vcsTestDataGen.setFileContent(null, selectedFile, LINE_1, "option-like directory added");
+		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE);
+
+		File checkoutDir = new File(TEST_BASE_DIR, "sparse-option-like-directory");
+		git.sparseCheckout(null, checkoutDir.getPath(), null, optionLikeDirectory);
+
+		File checkedOutFile = new File(checkoutDir, selectedFile);
+		assertTrue(checkedOutFile.isFile());
+		assertEquals(LINE_1, FileUtils.readFileToString(checkedOutFile, StandardCharsets.UTF_8));
+		assertFalse(new File(checkoutDir, FILE3_IN_FOLDER_NAME).exists());
 	}
 
 	@Test
