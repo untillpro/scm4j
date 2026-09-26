@@ -669,7 +669,7 @@ public class SVNVCS implements IVCS {
 			SVNURL sourceUrl = getBranchUrl(branchName);
 			if (isWorkingCopyInited(target)) {
 				updateClient.doSwitch(target, sourceUrl, svnRevision, svnRevision,
-						SVNDepth.EMPTY, true, false, false);
+						SVNDepth.EMPTY, true, true, false);
 			} else {
 				updateClient.doCheckout(sourceUrl, target, svnRevision, svnRevision,
 						SVNDepth.EMPTY, false);
