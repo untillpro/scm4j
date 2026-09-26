@@ -86,10 +86,16 @@ public class SCMProcBuild implements ISCMProc {
 
 		String statusMessage = String.format(" out %s on revision %s into %s", comp.getName(), buildCommit.getRevision(), buildDir.getPath());
 		progress.reportStatus("checking" + statusMessage + "...");
-		Utils.reportDuration(() -> vcs.checkout(releaseBranchName, buildDir.getPath(), buildCommit.getRevision()), "checked" + statusMessage, null, progress);
+		String subfolder = repo.getSubfolder();
+		Utils.reportDuration(() -> {
+			if (subfolder.isEmpty()) {
+				vcs.checkout(releaseBranchName, buildDir.getPath(), buildCommit.getRevision());
+			} else {
+				vcs.sparseCheckout(releaseBranchName, buildDir.getPath(), buildCommit.getRevision(), subfolder);
+			}
+		}, "checked" + statusMessage, null, progress);
 		Map<String, String> btev = Utils.getBuildTimeEnvVars(repo.getType(), buildCommit.getRevision(), releaseBranchName,
 				repo.getUrl());
-		String subfolder = repo.getSubfolder();
 		File buildWorkingDir = subfolder.isEmpty() ? buildDir : new File(buildDir, subfolder);
 		repo.getBuilder().build(comp, buildWorkingDir, progress, btev);
 	}

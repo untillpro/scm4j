@@ -29,7 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -39,9 +38,11 @@ public class SCMProcBuildTest {
 	private static final String COMPONENT_SUBFOLDER = "components/driver";
 	private static final String COMPONENT_FILE = "feature.txt";
 	private static final String SIBLING_FILE = "components/sibling/feature.txt";
-	private static final String ROOT_FILE = "shared-root.txt";
-	private static final String SIBLING_CONTENT = "sibling change after component change";
-	private static final String ROOT_CONTENT = "root change after component change";
+	private static final String UNRELATED_FILE = "unrelated/shared-root.txt";
+	private static final String SIBLING_CONTENT_AT_COMPONENT_REVISION = "sibling content at component revision";
+	private static final String UNRELATED_CONTENT_AT_COMPONENT_REVISION = "unrelated content at component revision";
+	private static final String SIBLING_HEAD_CONTENT = "sibling change after component change";
+	private static final String UNRELATED_HEAD_CONTENT = "unrelated change after component change";
 
 	@Before
 	public void cleanTestStateBefore() throws Exception {
@@ -80,7 +81,7 @@ public class SCMProcBuildTest {
 	}
 
 	@Test
-	public void testBuildRevisionSelection() throws Exception {
+	public void testBuildCheckoutAndRevisionSelection() throws Exception {
 		VCSType vcsType = VCSType.GIT;
 		try (TestEnvironment env = new TestEnvironment()) {
 			env.generateTestEnvironment();
@@ -114,8 +115,9 @@ public class SCMProcBuildTest {
 	}
 
 	private void assertNonDelayedTagUsesComponentRevision(VCSType vcsType, IVCS vcs) {
-		// The component changes first, then sibling and root files move the repository head forward.
-		// A normal component build must still build and tag the earlier component commit.
+		// Files in unrelated directories exist when the component changes, then later unrelated changes move the
+		// repository head forward. A normal component build must sparsely materialize and tag the earlier
+		// component commit rather than merely hiding files that did not exist at that revision.
 		BuildFixture fixture = createFixture(vcsType, vcs, "NonDelayed", new Version("1.2.3"),
 				COMPONENT_SUBFOLDER);
 
@@ -124,9 +126,7 @@ public class SCMProcBuildTest {
 		assertBuildWorkingFolder(fixture);
 		assertBuildRevision(fixture, fixture.componentCommit);
 		assertTagRevision(fixture, fixture.componentCommit);
-		File checkoutRoot = getCheckoutRoot(fixture);
-		assertFalse(message(fixture), new File(checkoutRoot, SIBLING_FILE).exists());
-		assertFalse(message(fixture), new File(checkoutRoot, ROOT_FILE).exists());
+		assertOnlyComponentMaterialized(fixture);
 		// The version bump is written on the current branch head, so it must keep the later unrelated changes.
 		assertEquals(message(fixture), fixture.version.toNextPatch().toString(),
 				vcs.getFileContent(fixture.branchName,
@@ -144,6 +144,7 @@ public class SCMProcBuildTest {
 
 		assertBuildWorkingFolder(fixture);
 		assertBuildRevision(fixture, fixture.componentCommit);
+		assertOnlyComponentMaterialized(fixture);
 		DelayedTag delayedTag = new DelayedTagsFile().getDelayedTag(fixture.repository.getComponentLocation());
 		assertNotNull(message(fixture), delayedTag);
 		assertEquals(message(fixture), fixture.componentCommit.getRevision(), delayedTag.getRevision());
@@ -165,7 +166,7 @@ public class SCMProcBuildTest {
 		assertTagRevision(fixture, fixture.repositoryHead);
 		File checkoutRoot = getCheckoutRoot(fixture);
 		assertTrue(message(fixture), new File(checkoutRoot, SIBLING_FILE).exists());
-		assertTrue(message(fixture), new File(checkoutRoot, ROOT_FILE).exists());
+		assertTrue(message(fixture), new File(checkoutRoot, UNRELATED_FILE).exists());
 	}
 
 	private BuildFixture createFixture(VCSType vcsType, IVCS vcs, String repositoryName, Version version,
@@ -176,17 +177,31 @@ public class SCMProcBuildTest {
 		Component component = new Component("test:" + repositoryName + ":" + version);
 		String branchName = Utils.getReleaseBranchName(repository, version);
 		vcs.createBranch(null, branchName, "release branch created");
+		if (!repository.getSubfolder().isEmpty()) {
+			removeRootMetadata(vcs, branchName, Constants.VER_FILE_NAME);
+			removeRootMetadata(vcs, branchName, Constants.MDEPS_FILE_NAME);
+		}
 		vcs.setFileContent(branchName, repository.getComponentPath(Constants.VER_FILE_NAME), version.toString(),
 				Constants.SCM_IGNORE + " release version created");
+		vcs.setFileContent(branchName, SIBLING_FILE, SIBLING_CONTENT_AT_COMPONENT_REVISION,
+				"sibling content created");
+		vcs.setFileContent(branchName, UNRELATED_FILE, UNRELATED_CONTENT_AT_COMPONENT_REVISION,
+				"unrelated content created");
 		// This is the latest commit that belongs to a subfolder component and therefore its build revision.
 		VCSCommit componentCommit = vcs.setFileContent(branchName, repository.getComponentPath(COMPONENT_FILE),
 				"component content", "component changed");
 		// These commits deliberately move the repository head without changing the component subfolder.
-		vcs.setFileContent(branchName, SIBLING_FILE, SIBLING_CONTENT, "sibling changed");
-		VCSCommit repositoryHead = vcs.setFileContent(branchName, ROOT_FILE, ROOT_CONTENT, "root changed");
-
+		vcs.setFileContent(branchName, SIBLING_FILE, SIBLING_HEAD_CONTENT, "sibling changed");
+		VCSCommit repositoryHead = vcs.setFileContent(branchName, UNRELATED_FILE, UNRELATED_HEAD_CONTENT,
+				"unrelated content changed");
 		return new BuildFixture(vcsType, vcs, repository, component, version, branchName, builder,
 				componentCommit, repositoryHead);
+	}
+
+	private void removeRootMetadata(IVCS vcs, String branchName, String fileName) {
+		if (vcs.fileExists(branchName, fileName)) {
+			vcs.removeFile(branchName, fileName, Constants.SCM_IGNORE + " root metadata removed");
+		}
 	}
 
 	private void executeBuild(BuildFixture fixture, boolean delayedTag) {
@@ -214,6 +229,33 @@ public class SCMProcBuildTest {
 		return Utils.getBuildDir(fixture.repository, fixture.version);
 	}
 
+	private void assertOnlyComponentMaterialized(BuildFixture fixture) {
+		File checkoutRoot = getCheckoutRoot(fixture);
+		File componentFolder = new File(checkoutRoot, fixture.repository.getSubfolder()).getAbsoluteFile();
+		assertTrue(message(fixture) + " missing component folder " + componentFolder,
+				componentFolder.isDirectory());
+		assertOnlyExpectedWorkingTreeFolder(fixture, checkoutRoot.getAbsoluteFile(), componentFolder, true);
+	}
+
+	private void assertOnlyExpectedWorkingTreeFolder(BuildFixture fixture, File folder, File expectedFolder,
+			boolean checkoutRoot) {
+		File[] entries = folder.listFiles();
+		assertNotNull(message(fixture) + " cannot list " + folder, entries);
+		for (File entry : entries) {
+			if (checkoutRoot && ".git".equals(entry.getName())) {
+				continue;
+			}
+			File absoluteEntry = entry.getAbsoluteFile();
+			if (absoluteEntry.equals(expectedFolder)) {
+				continue;
+			}
+			String expectedPrefix = absoluteEntry.getPath() + File.separator;
+			assertTrue(message(fixture) + " unexpectedly materialized " + absoluteEntry,
+					absoluteEntry.isDirectory() && expectedFolder.getPath().startsWith(expectedPrefix));
+			assertOnlyExpectedWorkingTreeFolder(fixture, absoluteEntry, expectedFolder, false);
+		}
+	}
+
 	private void assertTagRevision(BuildFixture fixture, VCSCommit expectedCommit) {
 		String expectedTagName = Utils.getTagDesc(fixture.repository, fixture.version.toString()).getName();
 		VCSTag matchingTag = null;
@@ -228,10 +270,10 @@ public class SCMProcBuildTest {
 	}
 
 	private void assertUnrelatedHeadContentPreserved(BuildFixture fixture) {
-		assertEquals(message(fixture), SIBLING_CONTENT,
+		assertEquals(message(fixture), SIBLING_HEAD_CONTENT,
 				fixture.vcs.getFileContent(fixture.branchName, SIBLING_FILE, null));
-		assertEquals(message(fixture), ROOT_CONTENT,
-				fixture.vcs.getFileContent(fixture.branchName, ROOT_FILE, null));
+		assertEquals(message(fixture), UNRELATED_HEAD_CONTENT,
+				fixture.vcs.getFileContent(fixture.branchName, UNRELATED_FILE, null));
 	}
 
 	private String message(BuildFixture fixture) {
