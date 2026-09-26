@@ -894,15 +894,7 @@ fn run_build(
             config.subfolder
         ));
     }
-    let mut command = if cfg!(windows) {
-        let mut c = Command::new("cmd");
-        c.args(["/D", "/S", "/C", &config.build_command]);
-        c
-    } else {
-        let mut c = Command::new("sh");
-        c.args(["-c", &config.build_command]);
-        c
-    };
+    let mut command = shell_command(&config.build_command);
     let status = command
         .current_dir(&build_directory)
         .env("GIT_COMMIT", commit)
@@ -987,15 +979,7 @@ fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), 
     } else {
         root.join(&config.subfolder)
     };
-    let mut command = if cfg!(windows) {
-        let mut command = Command::new("cmd");
-        command.args(["/D", "/S", "/C", hook]);
-        command
-    } else {
-        let mut command = Command::new("sh");
-        command.args(["-c", hook]);
-        command
-    };
+    let mut command = shell_command(hook);
     let status = command
         .current_dir(&directory)
         .env("SCM4J_VERSION", version.to_string())
@@ -1005,6 +989,25 @@ fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), 
         Ok(())
     } else {
         Err(format!("afterTag command failed with {status}"))
+    }
+}
+
+pub(crate) fn shell_command(command_line: &str) -> Command {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+
+        let mut command = Command::new("cmd");
+		command.args(["/D", "/S", "/C"]);
+        // cmd.exe does not use the standard Windows argv decoding rules.
+		command.raw_arg(&format!("\"{command_line}\""));
+        command
+    }
+    #[cfg(not(windows))]
+    {
+        let mut command = Command::new("sh");
+        command.args(["-c", command_line]);
+        command
     }
 }
 

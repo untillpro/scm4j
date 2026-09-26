@@ -393,15 +393,7 @@ fn run_build(
     fs::create_dir_all(&builds).map_err(|e| format!("cannot create build directory: {e}"))?;
     let directory = builds.join(version.to_string());
     svn.checkout(branch, Some(revision), &directory)?;
-    let mut command = if cfg!(windows) {
-        let mut command = Command::new("cmd");
-        command.args(["/D", "/S", "/C", &config.build_command]);
-        command
-    } else {
-        let mut command = Command::new("sh");
-        command.args(["-c", &config.build_command]);
-        command
-    };
+    let mut command = crate::shell_command(&config.build_command);
     let status = command
         .current_dir(&directory)
         .env("SVN_REVISION", revision)
