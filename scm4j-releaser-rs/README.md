@@ -110,7 +110,7 @@ Copy the resulting executable into a dedicated directory. Configuration is store
 
 Working data is stored in the current directory from which the command is run:
 
-- `.scm4j-releaser.lock` — exclusive process lock;
+- `.scm4j-releaser/lock` — OS-managed exclusive process lock;
 - `.scm4j-releaser/repositories/<repository-name>-<url-hash>` — deduplicated managed Git clones;
 - `.scm4j-releaser/components/<coords>/builds/<version>` — isolated build checkouts;
 - `.scm4j-releaser/components/<coords>/delayed-tag` — optional delayed-tag state.
@@ -131,5 +131,5 @@ is optional. The major prefix is kept verbatim and is never incremented, so both
 forks `release/1.2.3` and advances develop to `1.2.4.0-SNAPSHOT`. Git commits require `user.name` and
 `user.email` to be configured.
 
-If the process was forcibly terminated, first make sure it is no longer running and then use
-`scm4j-releaser unlock` to remove the stale lock.
+The operating system releases the process lock automatically when the releaser exits, including
+after forced termination. The empty lock file itself remains in the working directory.

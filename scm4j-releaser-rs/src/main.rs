@@ -10,13 +10,12 @@ use git::Git;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::{self, OpenOptions};
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use version::Version;
 
 const WORK_DIR: &str = ".scm4j-releaser";
-const LOCK_FILE: &str = ".scm4j-releaser.lock";
+const LOCK_FILE: &str = "lock";
 
 fn main() {
     if env::var_os("SCM4J_ASKPASS").is_some() {
@@ -79,24 +78,12 @@ fn execute() -> Result<(), String> {
         .unwrap_or_else(|| installation_dir.clone());
     let working_dir =
         env::current_dir().map_err(|e| format!("cannot locate current working directory: {e}"))?;
-    let lock_path = working_dir.join(LOCK_FILE);
-    if command == "unlock" {
-        if lock_path.exists() {
-            fs::remove_file(&lock_path)
-                .map_err(|e| format!("cannot remove {}: {e}", lock_path.display()))?;
-            println!("Removed {}", lock_path.display());
-        } else {
-            println!("No lock exists");
-        }
-        return Ok(());
-    }
-    let _lock = Lock::acquire(&lock_path)?;
-
     if command == "init" {
         return init(&config_dir);
     }
     let work = working_dir.join(WORK_DIR);
     fs::create_dir_all(&work).map_err(|e| format!("cannot create {}: {e}", work.display()))?;
+    let _lock = Lock::acquire(&work.join(LOCK_FILE))?;
     if components.is_empty() {
         return Err("component coordinates are required; use group:artifact".to_owned());
     }
@@ -497,11 +484,10 @@ fn execute_config(
 
 fn print_help() {
     println!("scm4j-releaser - multi-component Git/SVN release tool\n\n\
-Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...] [--show-done]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n  scm4j-releaser unlock\n\n\
+Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...] [--show-done]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n\n\
 Options:\n  --verbose       Describe release actions as they are performed\n  --trace         Print every external command before it is executed\n\n\
 Configuration is read from <home_dir>/.scm4j; the executable directory is also searched for compatibility.\n\
-Working data is stored in the current directory.\n\
-Only run `unlock` after making sure no other releaser process is active.");
+Working data is stored in the current directory.");
 }
 
 fn init(home: &Path) -> Result<(), String> {
@@ -1113,33 +1099,30 @@ fn display_component(config: &Config) -> String {
     }
 }
 
+#[derive(Debug)]
 struct Lock {
-    path: PathBuf,
+    _file: fs::File,
 }
 
 impl Lock {
     fn acquire(path: &Path) -> Result<Self, String> {
-        let mut file = OpenOptions::new()
+        let file = OpenOptions::new()
+            .read(true)
             .write(true)
-            .create_new(true)
+            .create(true)
             .open(path)
-            .map_err(|e| {
-                format!(
-                    "another releaser may be running ({}: {e}); use `unlock` only for a stale lock",
-                    path.display()
-                )
-            })?;
-        writeln!(file, "pid={}", std::process::id())
-            .map_err(|e| format!("cannot write lock: {e}"))?;
-        Ok(Self {
-            path: path.to_owned(),
-        })
-    }
-}
-
-impl Drop for Lock {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.path);
+            .map_err(|e| format!("cannot open lock file {}: {e}", path.display()))?;
+        match file.try_lock() {
+            Ok(()) => Ok(Self { _file: file }),
+            Err(fs::TryLockError::WouldBlock) => Err(format!(
+                "another releaser is running in this working directory ({})",
+                path.display()
+            )),
+            Err(fs::TryLockError::Error(error)) => Err(format!(
+                "cannot lock working directory using {}: {error}",
+                path.display()
+            )),
+        }
     }
 }
 use catalog::Catalog;
@@ -1191,5 +1174,19 @@ mod tests {
             ),
             "  eu.untill:TPAPIJavaProxy:21.0  #implementation"
         );
+    }
+
+    #[test]
+    fn working_directory_lock_is_released_with_the_file_handle() {
+        let path = env::temp_dir().join(format!("scm4j-releaser-lock-test-{}", std::process::id()));
+        let first = Lock::acquire(&path).unwrap();
+
+        let error = Lock::acquire(&path).unwrap_err();
+        assert!(error.contains("another releaser is running"), "{error}");
+
+        drop(first);
+        let second = Lock::acquire(&path).unwrap();
+        drop(second);
+        fs::remove_file(path).unwrap();
     }
 }
