@@ -1,4 +1,4 @@
-# scm4j-releaser (Rust, simplified)
+# scm4j-releaser-rs
 
 This is a compact replacement for the Java `scm4j-releaser` workflow. It supports multiple Git or Subversion
 components, `mdeps`, and the main project's `cc.yml`/`credentials.yml` configuration model. It is
@@ -103,6 +103,12 @@ SVN repositories use the conventional `trunk`, `branches`, and `tags` layout. A 
 ```text
 cargo build --release
 ```
+
+Windows releases are published from tags named `scm4j-releaser-rs-<version>`. The latest x86-64 build is
+available at
+`https://github.com/untillpro/scm4j/releases/latest/download/scm4j-releaser-windows-x86_64.zip`.
+The Cargo package is named `scm4j-releaser-rs`, while the executable remains `scm4j-releaser.exe` for
+command-line compatibility.
 
 Copy the resulting executable into a dedicated directory. Configuration is stored in `<home_dir>/.scm4j`:
 

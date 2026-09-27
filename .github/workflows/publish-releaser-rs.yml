@@ -1,0 +1,96 @@
+name: Publish scm4j releaser (Rust)
+
+on:
+  push:
+    tags:
+      - 'scm4j-releaser-rs-[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing scm4j-releaser-rs release tag to publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-2022
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Validate release version
+        id: version
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prefix = 'scm4j-releaser-rs-'
+          if (-not $env:TAG_NAME.StartsWith($prefix)) {
+            throw "Expected a tag starting with $prefix, got: $env:TAG_NAME"
+          }
+
+          $version = $env:TAG_NAME.Substring($prefix.Length)
+          $metadata = cargo metadata --manifest-path scm4j-releaser-rs/Cargo.toml --no-deps --format-version 1 | ConvertFrom-Json
+          $package = $metadata.packages | Where-Object { $_.name -eq 'scm4j-releaser-rs' }
+          if ($null -eq $package) {
+            throw 'Cargo package scm4j-releaser-rs was not found'
+          }
+          if ($version -ne $package.version) {
+            throw "Tag version $version does not match Cargo package version $($package.version)"
+          }
+
+          "tag=$($env:TAG_NAME)" >> $env:GITHUB_OUTPUT
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Run tests
+        run: cargo test --manifest-path scm4j-releaser-rs/Cargo.toml --locked
+
+      - name: Build release executable
+        run: cargo build --manifest-path scm4j-releaser-rs/Cargo.toml --release --locked
+
+      - name: Package release
+        id: package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assetName = 'scm4j-releaser-windows-x86_64.zip'
+          $dist = Join-Path $PWD 'dist'
+          $stage = Join-Path $dist 'scm4j-releaser-windows-x86_64'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item 'scm4j-releaser-rs/target/release/scm4j-releaser.exe' $stage
+          Copy-Item 'scm4j-releaser-rs/README.md' $stage
+          Copy-Item 'scm4j-releaser-rs/LICENSE' $stage
+
+          $archive = Join-Path $dist $assetName
+          Compress-Archive -Path "$stage/*" -DestinationPath $archive
+          $hash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          "$hash  $assetName" | Set-Content -Encoding ascii "$archive.sha256"
+
+          "archive=$archive" >> $env:GITHUB_OUTPUT
+          "checksum=$archive.sha256" >> $env:GITHUB_OUTPUT
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.version.outputs.value }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+          CHECKSUM: ${{ steps.package.outputs.checksum }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release create $env:RELEASE_TAG `
+            $env:ARCHIVE `
+            $env:CHECKSUM `
+            --verify-tag `
+            --title "scm4j-releaser-rs $env:RELEASE_VERSION" `
+            --generate-notes
