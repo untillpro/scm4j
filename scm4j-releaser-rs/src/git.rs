@@ -130,8 +130,11 @@ where
     S: AsRef<OsStr>,
 {
     let mut command = Command::new("git");
-    command.args(args).current_dir(directory);
     if username.is_some() || password.is_some() {
+        // Configured credentials must go through our non-interactive askpass.
+        // An empty command-scoped helper resets helpers inherited from the
+        // system and user Git configuration (notably Git Credential Manager).
+        command.args(["-c", "credential.helper="]);
         if let Ok(executable) = std::env::current_exe() {
             command
                 .env("GIT_ASKPASS", executable)
@@ -141,7 +144,40 @@ where
                 .env("SCM4J_ASKPASS_PASSWORD", password.unwrap_or_default());
         }
     }
+    command.args(args).current_dir(directory);
     command
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn configured_credentials_disable_inherited_credential_helpers() {
+        let command = git_command(
+            Path::new("repository"),
+            ["fetch", "origin"],
+            Some("builder"),
+            Some("secret"),
+        );
+        let args: Vec<_> = command
+            .get_args()
+            .map(|value| value.to_string_lossy().into_owned())
+            .collect();
+
+        assert_eq!(args, ["-c", "credential.helper=", "fetch", "origin"]);
+    }
+
+    #[test]
+    fn unconfigured_credentials_keep_git_credential_helpers() {
+        let command = git_command(Path::new("repository"), ["fetch", "origin"], None, None);
+        let args: Vec<_> = command
+            .get_args()
+            .map(|value| value.to_string_lossy().into_owned())
+            .collect();
+
+        assert_eq!(args, ["fetch", "origin"]);
+    }
 }
 
 pub fn run_in<I, S>(directory: &Path, program: &str, args: I) -> Result<String, String>
