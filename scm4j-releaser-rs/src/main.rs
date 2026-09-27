@@ -374,6 +374,15 @@ fn replace_coordinate_version(coordinates: &str, version: &str) -> Result<String
     Ok(format!("{name}:{version}{classifier}{extension}"))
 }
 
+fn replace_mdep_coordinate(line: &str, coordinate: &str) -> String {
+    let coordinate_end = line.find('#').unwrap_or(line.len());
+    let coordinate_field = &line[..coordinate_end];
+    let value = coordinate_field.trim();
+    let value_start = coordinate_field.len() - coordinate_field.trim_start().len();
+    let value_end = value_start + value.len();
+    format!("{}{coordinate}{}", &line[..value_start], &line[value_end..])
+}
+
 fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Result<(), String> {
     if config.scm_type != ScmType::Git {
         return Ok(());
@@ -392,10 +401,9 @@ fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Res
     let mut changes = Vec::new();
     let mut output = Vec::new();
     for line in original.lines() {
-        let (value, comment) = match line.split_once('#') {
-            Some((value, comment)) => (value.trim(), Some(comment)),
-            None => (line.trim(), None),
-        };
+        let coordinate_end = line.find('#').unwrap_or(line.len());
+        let coordinate_field = &line[..coordinate_end];
+        let value = coordinate_field.trim();
         if value.is_empty() {
             output.push(line.to_owned());
             continue;
@@ -417,10 +425,9 @@ fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Res
             ScmType::Svn => svn::released_version(&dependency, shared_work)?,
         };
         let coords = replace_coordinate_version(value, &locked.to_string())?;
-        let replacement = match comment {
-            Some(comment) => format!("{coords} #{comment}"),
-            None => coords,
-        };
+        // Replace only the coordinate itself. Whitespace and comments are not
+        // part of dependency locking and must not create a release commit.
+        let replacement = replace_mdep_coordinate(line, &coords);
         if replacement != line {
             changes.push(format!("Locking mdep `{value}` to version `{locked}`"));
         }
@@ -1145,6 +1152,24 @@ mod tests {
         assert_eq!(
             replace_coordinate_version("org.example:archive:2.3:all@zip", "2.4").unwrap(),
             "org.example:archive:2.4:all@zip"
+        );
+    }
+
+    #[test]
+    fn replacing_mdep_coordinate_preserves_comment_spacing() {
+        assert_eq!(
+            replace_mdep_coordinate(
+                "eu.untill:TPAPIJavaProxy:21.0#implementation",
+                "eu.untill:TPAPIJavaProxy:21.0"
+            ),
+            "eu.untill:TPAPIJavaProxy:21.0#implementation"
+        );
+        assert_eq!(
+            replace_mdep_coordinate(
+                "  eu.untill:TPAPIJavaProxy:20.0  #implementation",
+                "eu.untill:TPAPIJavaProxy:21.0"
+            ),
+            "  eu.untill:TPAPIJavaProxy:21.0  #implementation"
         );
     }
 }

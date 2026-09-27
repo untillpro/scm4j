@@ -450,7 +450,7 @@ fn dependency_graph_is_released_first_and_mdeps_are_locked() {
     let root = harness.add_git(
         "org.example:root",
         "1.0.0-SNAPSHOT",
-        Some("org.example:dependency # keep this comment\n"),
+        Some("org.example:dependency#keep this comment\n"),
         None,
         Some("git --version"),
     );
@@ -458,7 +458,7 @@ fn dependency_graph_is_released_first_and_mdeps_are_locked() {
     harness.succeeds(&["fork", "org.example:root"]);
     assert_eq!(
         root.show("refs/heads/release/1.0", "mdeps"),
-        "org.example:dependency:2.3.0 # keep this comment"
+        "org.example:dependency:2.3.0#keep this comment"
     );
 
     harness.succeeds(&["build", "org.example:root"]);
@@ -466,8 +466,12 @@ fn dependency_graph_is_released_first_and_mdeps_are_locked() {
     assert!(root.has_ref("refs/tags/1.0.0"));
     assert_eq!(
         root.show("refs/heads/release/1.0", "mdeps"),
-        "org.example:dependency:2.3.0 # keep this comment"
+        "org.example:dependency:2.3.0#keep this comment"
     );
+
+    let output = harness.succeeds(&["build", "org.example:root"]);
+    assert!(output.contains("already built"), "{output}");
+    assert!(!output.contains("Locked mdeps"), "{output}");
 }
 
 #[test]
