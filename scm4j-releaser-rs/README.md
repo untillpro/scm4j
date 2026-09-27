@@ -124,8 +124,9 @@ scm4j-releaser fork org.example:product
 scm4j-releaser build org.example:product
 ```
 
-Each component must contain a `version` file in `[major-prefix]minor.patch[-SNAPSHOT]` form; `mdeps` is
-optional. The major prefix is kept verbatim and is never incremented, so both `3.0-SNAPSHOT` and
+Each component must contain a `version` file in `[major-prefix]minor.patch[-SNAPSHOT]` form; surrounding
+whitespace is accepted when reading, while releaser writes the value without spaces or line breaks. `mdeps`
+is optional. The major prefix is kept verbatim and is never incremented, so both `3.0-SNAPSHOT` and
 `1.2.3.0-SNAPSHOT` are valid. A develop snapshot must have patch `0`. For example, `1.2.3.0-SNAPSHOT`
 forks `release/1.2.3` and advances develop to `1.2.4.0-SNAPSHOT`. Git commits require `user.name` and
 `user.email` to be configured.

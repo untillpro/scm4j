@@ -554,7 +554,7 @@ impl Svn {
             "Updating version file `{}` to `{version}`",
             path.display()
         ));
-        fs::write(&path, format!("{version}\n"))
+        fs::write(&path, version.to_string())
             .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
         run_in(
             workspace,

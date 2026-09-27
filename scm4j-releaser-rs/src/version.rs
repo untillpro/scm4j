@@ -184,6 +184,14 @@ mod tests {
     }
 
     #[test]
+    fn surrounding_whitespace_is_ignored() {
+        for value in [" 1.2.0", "1.2.0 ", "1.2.0\n", "1.2.0\r\n", "\t1.2.0\t"] {
+            assert_eq!(value.parse::<Version>().unwrap().to_string(), "1.2.0");
+        }
+        assert!("1.2 .0".parse::<Version>().is_err());
+    }
+
+    #[test]
     fn numeric_ordering_does_not_sort_ten_before_two() {
         let two: Version = "2.0".parse().unwrap();
         let ten: Version = "10.0".parse().unwrap();

@@ -804,7 +804,7 @@ fn write_and_commit_version(git: &Git, config: &Config, version: &Version) -> Re
     external::action(format_args!(
         "Updating version file `{relative_path}` to `{version}`"
     ));
-    fs::write(&path, format!("{version}\n"))
+    fs::write(&path, version.to_string())
         .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
     git.run(["add", "--", &relative_path])?;
     git.run(["commit", "-m", &format!("#scm-ver {version}")])?;

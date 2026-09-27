@@ -343,7 +343,6 @@ fn fork_and_build_release() {
         repository.show("refs/heads/release/1.0", "version"),
         "1.0.0"
     );
-
     harness.succeeds(&["build", "org.example:service"]);
     assert_eq!(
         repository.show("refs/heads/release/1.0", "version"),
@@ -352,6 +351,20 @@ fn fork_and_build_release() {
     assert!(repository.has_ref("refs/tags/1.0.0"));
     let output = harness.succeeds(&["build", "org.example:service"]);
     assert!(output.contains("already built"));
+}
+
+#[test]
+fn version_file_accepts_line_breaks_when_read() {
+    let mut harness = Harness::new("version-whitespace");
+    harness.add_git(
+        "org.example:service",
+        "1.0.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+
+    harness.succeeds(&["status", "org.example:service"]);
 }
 
 #[test]
