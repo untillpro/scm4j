@@ -401,8 +401,7 @@ fn run_build(
     let directory = builds.join(version.to_string());
     svn.checkout(branch, Some(revision), &directory)?;
     crate::external::action(format_args!(
-        "Building version `{version}` from SVN path `{branch}` at revision `{revision}` in {}",
-        directory.display()
+        "Building version `{version}` from SVN path `{branch}` at revision `{revision}`"
     ));
     let mut command = crate::shell_command(&config.build_command);
     let status = crate::external::status(

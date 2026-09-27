@@ -106,14 +106,16 @@ fn execute() -> Result<(), String> {
         config_dirs.push(installation_dir);
     }
     let catalog = Catalog::load_search(&config_dirs)?;
-    let (configs, dependencies) = resolve_component_graph(&catalog, &components, &work)?;
+    let mut fetched_repositories = HashSet::new();
+    let (configs, dependencies) =
+        resolve_component_graph(&catalog, &components, &work, &mut fetched_repositories)?;
     if command == "status" {
         let mut actions = HashMap::new();
         for config in &configs {
             let component_work = work.join("components").join(safe_name(&config.component));
             fs::create_dir_all(&component_work)
                 .map_err(|e| format!("cannot create {}: {e}", component_work.display()))?;
-            let action = inspect_status(config, &work, &component_work)?;
+            let action = inspect_status(config, &work, &component_work, &mut fetched_repositories)?;
             actions.insert(config.component.clone(), action);
         }
         print_dependency_tree(&catalog, &components, &dependencies, &actions, show_done)?;
@@ -133,7 +135,7 @@ fn execute() -> Result<(), String> {
             continue;
         }
         if command == "build" {
-            lock_git_mdeps(&catalog, &config, &work)?;
+            lock_git_mdeps(&catalog, &config, &work, &mut fetched_repositories)?;
         }
         let delay_this_component = delayed && root_components.contains(&config.component);
         execute_config(
@@ -142,9 +144,10 @@ fn execute() -> Result<(), String> {
             &work,
             &component_work,
             delay_this_component,
+            &mut fetched_repositories,
         )?;
         if command == "fork" {
-            lock_git_mdeps(&catalog, &config, &work)?;
+            lock_git_mdeps(&catalog, &config, &work, &mut fetched_repositories)?;
         }
     }
     Ok(())
@@ -154,6 +157,7 @@ fn resolve_component_graph(
     catalog: &Catalog,
     roots: &[&String],
     shared_work: &Path,
+    fetched_repositories: &mut HashSet<PathBuf>,
 ) -> Result<(Vec<Config>, HashMap<String, Vec<String>>), String> {
     let mut visiting = HashSet::new();
     let mut completed = HashSet::new();
@@ -168,6 +172,7 @@ fn resolve_component_graph(
             &mut completed,
             &mut result,
             &mut dependencies,
+            fetched_repositories,
         )?;
     }
     Ok((result, dependencies))
@@ -181,6 +186,7 @@ fn visit_component(
     completed: &mut HashSet<String>,
     result: &mut Vec<Config>,
     dependencies: &mut HashMap<String, Vec<String>>,
+    fetched_repositories: &mut HashSet<PathBuf>,
 ) -> Result<(), String> {
     let config = catalog.resolve(coordinates)?;
     if completed.contains(&config.component) {
@@ -189,7 +195,7 @@ fn visit_component(
     if !visiting.insert(config.component.clone()) {
         return Err(format!("cyclic mdeps dependency at `{}`", config.component));
     }
-    let mdeps = read_develop_mdeps(&config, shared_work)?;
+    let mdeps = read_develop_mdeps(&config, shared_work, fetched_repositories)?;
     let dependency_coordinates = parse_mdeps(&mdeps);
     let mut dependency_names = Vec::new();
     for dependency in dependency_coordinates {
@@ -206,6 +212,7 @@ fn visit_component(
             completed,
             result,
             dependencies,
+            fetched_repositories,
         )?;
     }
     dependencies.insert(config.component.clone(), dependency_names);
@@ -219,10 +226,11 @@ fn inspect_status(
     config: &Config,
     shared_work: &Path,
     component_work: &Path,
+    fetched_repositories: &mut HashSet<PathBuf>,
 ) -> Result<&'static str, String> {
     match config.scm_type {
         ScmType::Git => {
-            let git = prepare_repository(config, shared_work)?;
+            let git = prepare_repository(config, shared_work, fetched_repositories)?;
             let develop = discover_develop_branch(&git, config)?;
             status(&git, config, &develop, false)
         }
@@ -322,10 +330,14 @@ fn planned_action(
     }
 }
 
-fn read_develop_mdeps(config: &Config, shared_work: &Path) -> Result<String, String> {
+fn read_develop_mdeps(
+    config: &Config,
+    shared_work: &Path,
+    fetched_repositories: &mut HashSet<PathBuf>,
+) -> Result<String, String> {
     match config.scm_type {
         ScmType::Git => {
-            let git = prepare_repository(config, shared_work)?;
+            let git = prepare_repository(config, shared_work, fetched_repositories)?;
             let revision = match &config.release_line {
                 Some(line) => format!("origin/{}", release_branch_name_for_line(config, line)),
                 None => format!("origin/{}", discover_develop_branch(&git, config)?),
@@ -383,11 +395,16 @@ fn replace_mdep_coordinate(line: &str, coordinate: &str) -> String {
     format!("{}{coordinate}{}", &line[..value_start], &line[value_end..])
 }
 
-fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Result<(), String> {
+fn lock_git_mdeps(
+    catalog: &Catalog,
+    config: &Config,
+    shared_work: &Path,
+    fetched_repositories: &mut HashSet<PathBuf>,
+) -> Result<(), String> {
     if config.scm_type != ScmType::Git {
         return Ok(());
     }
-    let git = prepare_repository(config, shared_work)?;
+    let git = prepare_repository(config, shared_work, fetched_repositories)?;
     let Ok((_, branch)) = latest_release(&git, config) else {
         return Ok(());
     };
@@ -411,7 +428,8 @@ fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Res
         let dependency = catalog.resolve(value)?;
         let locked = match dependency.scm_type {
             ScmType::Git => {
-                let dependency_git = prepare_repository(&dependency, shared_work)?;
+                let dependency_git =
+                    prepare_repository(&dependency, shared_work, fetched_repositories)?;
                 let (_, dependency_branch) = latest_release(&dependency_git, &dependency)?;
                 let dependency_revision = format!("origin/{dependency_branch}");
                 let current = read_version(&dependency_git, &dependency_revision, &dependency)?;
@@ -459,10 +477,11 @@ fn execute_config(
     shared_work: &Path,
     component_work: &Path,
     delayed: bool,
+    fetched_repositories: &mut HashSet<PathBuf>,
 ) -> Result<(), String> {
     match config.scm_type {
         ScmType::Git => {
-            let git = prepare_repository(config, shared_work)?;
+            let git = prepare_repository(config, shared_work, fetched_repositories)?;
             let develop = discover_develop_branch(&git, config)?;
             match command {
                 "status" => status(&git, config, &develop, true).map(|_| ()),
@@ -508,7 +527,11 @@ fn init(home: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn prepare_repository(config: &Config, work: &Path) -> Result<Git, String> {
+fn prepare_repository(
+    config: &Config,
+    work: &Path,
+    fetched_repositories: &mut HashSet<PathBuf>,
+) -> Result<Git, String> {
     let repositories = work.join("repositories");
     let directory = repositories.join(repository_key(&config.repository));
     fs::create_dir_all(
@@ -517,24 +540,19 @@ fn prepare_repository(config: &Config, work: &Path) -> Result<Git, String> {
             .expect("repository directory has a parent"),
     )
     .map_err(|e| format!("cannot create repository workspace: {e}"))?;
-    let git = if directory.join(".git").is_dir() {
+    let exists = directory.join(".git").is_dir();
+    let git = if exists {
         let git = Git::new(directory, config.username.clone(), config.password.clone());
         let origin = git.run(["remote", "get-url", "origin"])?;
         if origin != config.repository {
             return Err(format!("managed clone belongs to `{origin}`, configured repository is `{}`; remove {} to re-clone",
                 config.repository, git.directory().display()));
         }
-        external::action(format_args!(
-            "Using Git repository `{}` in {}",
-            config.repository,
-            git.directory().display()
-        ));
         git
     } else {
         external::action(format_args!(
-            "Cloning Git repository `{}` into {}",
-            config.repository,
-            directory.display()
+            "Cloning Git repository `{}`",
+            config.repository
         ));
         Git::clone(
             &config.repository,
@@ -543,11 +561,14 @@ fn prepare_repository(config: &Config, work: &Path) -> Result<Git, String> {
             config.password.clone(),
         )?
     };
-    external::action(format_args!(
-        "Fetching branches and tags from `{}`",
-        config.repository
-    ));
-    git.fetch()?;
+    if exists && !fetched_repositories.contains(git.directory()) {
+        external::action(format_args!(
+            "Fetching branches and tags from `{}`",
+            config.repository
+        ));
+        git.fetch()?;
+    }
+    fetched_repositories.insert(git.directory().to_owned());
     Ok(git)
 }
 
@@ -938,8 +959,7 @@ fn run_build(
         ));
     }
     external::action(format_args!(
-        "Building version `{version}` from Git branch `{branch}` at commit `{commit}` in {}",
-        build_directory.display()
+        "Building version `{version}` from Git branch `{branch}` at commit `{commit}`"
     ));
     let mut command = shell_command(&config.build_command);
     let status = external::status(

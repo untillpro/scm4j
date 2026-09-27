@@ -309,6 +309,11 @@ fn verbose_describes_release_actions_without_command_trace() {
     assert_success(&["fork", "org.example:service", "--verbose"], &output);
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("* Cloning Git repository"), "{stderr}");
+    let cloning = stderr
+        .lines()
+        .find(|line| line.starts_with("* Cloning Git repository"))
+        .expect("verbose output must describe cloning");
+    assert!(!cloning.contains(" into "), "{cloning}");
     assert!(
         stderr.contains("* Forking Git branch `main` into `release/1.0` at version `1.0.0`"),
         "{stderr}"
@@ -321,6 +326,25 @@ fn verbose_describes_release_actions_without_command_trace() {
         !stderr.contains("+ ["),
         "unexpected command trace:\n{stderr}"
     );
+
+    let output = harness.run(&["status", "org.example:service", "--verbose"]);
+    assert_success(&["status", "org.example:service", "--verbose"], &output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(
+        stderr.matches("* Fetching branches and tags from").count(),
+        1,
+        "{stderr}"
+    );
+    assert!(!stderr.contains("* Using Git repository"), "{stderr}");
+
+    let output = harness.run(&["build", "org.example:service", "--verbose"]);
+    assert_success(&["build", "org.example:service", "--verbose"], &output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let building = stderr
+        .lines()
+        .find(|line| line.starts_with("* Building version"))
+        .expect("verbose output must describe building");
+    assert!(!building.contains(" in "), "{building}");
 }
 
 #[test]
