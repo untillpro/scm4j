@@ -62,13 +62,12 @@ impl Git {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        git_command(
+        crate::external::output(&mut git_command(
             &self.directory,
             args,
             self.username.as_deref(),
             self.password.as_deref(),
-        )
-        .output()
+        ))
         .map(|o| o.status.success())
         .unwrap_or(false)
     }
@@ -106,8 +105,7 @@ where
         status,
         stdout,
         stderr,
-    } = git_command(directory, args, username, password)
-        .output()
+    } = crate::external::output(&mut git_command(directory, args, username, password))
         .map_err(|e| format!("failed to start git: {e}"))?;
     if status.success() {
         Ok(String::from_utf8_lossy(&stdout).trim().to_owned())
@@ -155,10 +153,7 @@ where
         status,
         stdout,
         stderr,
-    } = Command::new(program)
-        .args(args)
-        .current_dir(directory)
-        .output()
+    } = crate::external::output(Command::new(program).args(args).current_dir(directory))
         .map_err(|e| format!("failed to start {program}: {e}"))?;
     if status.success() {
         Ok(String::from_utf8_lossy(&stdout).trim().to_owned())

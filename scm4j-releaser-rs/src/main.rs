@@ -1,5 +1,6 @@
 mod catalog;
 mod config;
+mod external;
 mod git;
 mod svn;
 mod version;
@@ -43,17 +44,21 @@ fn execute() -> Result<(), String> {
     }
     let delayed = args.iter().skip(1).any(|arg| arg == "--delayed-tag");
     let show_done = args.iter().skip(1).any(|arg| arg == "--show-done");
+    let verbose = args.iter().skip(1).any(|arg| arg == "--verbose");
+    let trace = args.iter().skip(1).any(|arg| arg == "--trace");
     if delayed && command != "build" {
         return Err("--delayed-tag is valid for build only".to_owned());
     }
     if show_done && command != "status" {
         return Err("--show-done is valid for status only".to_owned());
     }
-    if let Some(option) = args
-        .iter()
-        .skip(1)
-        .find(|arg| arg.starts_with('-') && *arg != "--delayed-tag" && *arg != "--show-done")
-    {
+    if let Some(option) = args.iter().skip(1).find(|arg| {
+        arg.starts_with('-')
+            && *arg != "--delayed-tag"
+            && *arg != "--show-done"
+            && *arg != "--verbose"
+            && *arg != "--trace"
+    }) {
         return Err(format!("unknown option `{option}`"));
     }
     let components: Vec<_> = args
@@ -61,6 +66,8 @@ fn execute() -> Result<(), String> {
         .skip(1)
         .filter(|arg| !arg.starts_with('-'))
         .collect();
+
+    external::set_modes(verbose, trace);
 
     let executable = env::current_exe().map_err(|e| format!("cannot locate executable: {e}"))?;
     let installation_dir = executable
@@ -382,6 +389,7 @@ fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Res
     }
     let original = git.show_file(&revision, &path)?;
     let mut changed = false;
+    let mut changes = Vec::new();
     let mut output = Vec::new();
     for line in original.lines() {
         let (value, comment) = match line.split_once('#') {
@@ -413,12 +421,19 @@ fn lock_git_mdeps(catalog: &Catalog, config: &Config, shared_work: &Path) -> Res
             Some(comment) => format!("{coords} #{comment}"),
             None => coords,
         };
+        if replacement != line {
+            changes.push(format!("Locking mdep `{value}` to version `{locked}`"));
+        }
         changed |= replacement != line;
         output.push(replacement);
     }
     if !changed {
         return Ok(());
     }
+    for change in changes {
+        external::action(format_args!("{change}"));
+    }
+    external::action(format_args!("Updating mdeps `{path}` on branch `{branch}`"));
     git.checkout_remote(&branch)?;
     let root = PathBuf::from(git.run(["rev-parse", "--show-toplevel"])?);
     let file = root.join(&path);
@@ -457,6 +472,7 @@ fn execute_config(
 fn print_help() {
     println!("scm4j-releaser - multi-component Git/SVN release tool\n\n\
 Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...] [--show-done]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n  scm4j-releaser unlock\n\n\
+Options:\n  --verbose       Describe release actions as they are performed\n  --trace         Print every external command before it is executed\n\n\
 Configuration is read from <home_dir>/.scm4j; the executable directory is also searched for compatibility.\n\
 Working data is stored in the current directory.\n\
 Only run `unlock` after making sure no other releaser process is active.");
@@ -501,8 +517,18 @@ fn prepare_repository(config: &Config, work: &Path) -> Result<Git, String> {
             return Err(format!("managed clone belongs to `{origin}`, configured repository is `{}`; remove {} to re-clone",
                 config.repository, git.directory().display()));
         }
+        external::action(format_args!(
+            "Using Git repository `{}` in {}",
+            config.repository,
+            git.directory().display()
+        ));
         git
     } else {
+        external::action(format_args!(
+            "Cloning Git repository `{}` into {}",
+            config.repository,
+            directory.display()
+        ));
         Git::clone(
             &config.repository,
             &directory,
@@ -510,6 +536,10 @@ fn prepare_repository(config: &Config, work: &Path) -> Result<Git, String> {
             config.password.clone(),
         )?
     };
+    external::action(format_args!(
+        "Fetching branches and tags from `{}`",
+        config.repository
+    ));
     git.fetch()?;
     Ok(git)
 }
@@ -745,6 +775,9 @@ fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
         return Ok(());
     }
 
+    external::action(format_args!(
+        "Forking Git branch `{develop}` into `{branch}` at version `{release}`"
+    ));
     git.checkout_remote(develop)?;
     // The remote branch was proven absent above. -B also recovers cleanly from a
     // local branch left by an earlier failed atomic push.
@@ -768,6 +801,9 @@ fn write_and_commit_version(git: &Git, config: &Config, version: &Version) -> Re
     let root = PathBuf::from(git.run(["rev-parse", "--show-toplevel"])?);
     let relative_path = component_path(config, &config.version_file);
     let path = root.join(&relative_path);
+    external::action(format_args!(
+        "Updating version file `{relative_path}` to `{version}`"
+    ));
     fs::write(&path, format!("{version}\n"))
         .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
     git.run(["add", "--", &relative_path])?;
@@ -894,14 +930,19 @@ fn run_build(
             config.subfolder
         ));
     }
+    external::action(format_args!(
+        "Building version `{version}` from Git branch `{branch}` at commit `{commit}` in {}",
+        build_directory.display()
+    ));
     let mut command = shell_command(&config.build_command);
-    let status = command
-        .current_dir(&build_directory)
-        .env("GIT_COMMIT", commit)
-        .env("GIT_BRANCH", branch)
-        .env("GIT_URL", &config.repository)
-        .status()
-        .map_err(|e| format!("cannot start build command: {e}"))?;
+    let status = external::status(
+        command
+            .current_dir(&build_directory)
+            .env("GIT_COMMIT", commit)
+            .env("GIT_BRANCH", branch)
+            .env("GIT_URL", &config.repository),
+    )
+    .map_err(|e| format!("cannot start build command: {e}"))?;
     if !status.success() {
         return Err(format!("build command failed with {status}"));
     }
@@ -949,6 +990,9 @@ fn tag_and_bump(
     commit: &str,
 ) -> Result<(), String> {
     let tag_name = git_tag_name(config, version);
+    external::action(format_args!(
+        "Creating Git tag `{tag_name}` for commit `{commit}`"
+    ));
     git.run([
         "tag",
         "-a",
@@ -959,6 +1003,9 @@ fn tag_and_bump(
     ])?;
     let next = version.next_patch();
     write_and_commit_version(git, config, &next)?;
+    external::action(format_args!(
+        "Publishing Git tag `{tag_name}` and branch `{branch}`"
+    ));
     git.run([
         "push",
         "--atomic",
@@ -979,12 +1026,17 @@ fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), 
     } else {
         root.join(&config.subfolder)
     };
+    external::action(format_args!(
+        "Running afterTag for version `{version}` in {}",
+        directory.display()
+    ));
     let mut command = shell_command(hook);
-    let status = command
-        .current_dir(&directory)
-        .env("SCM4J_VERSION", version.to_string())
-        .status()
-        .map_err(|e| format!("cannot start afterTag command: {e}"))?;
+    let status = external::status(
+        command
+            .current_dir(&directory)
+            .env("SCM4J_VERSION", version.to_string()),
+    )
+    .map_err(|e| format!("cannot start afterTag command: {e}"))?;
     if status.success() {
         Ok(())
     } else {
@@ -998,9 +1050,9 @@ pub(crate) fn shell_command(command_line: &str) -> Command {
         use std::os::windows::process::CommandExt;
 
         let mut command = Command::new("cmd");
-		command.args(["/D", "/S", "/C"]);
+        command.args(["/D", "/S", "/C"]);
         // cmd.exe does not use the standard Windows argv decoding rules.
-		command.raw_arg(&format!("\"{command_line}\""));
+        command.raw_arg(&format!("\"{command_line}\""));
         command
     }
     #[cfg(not(windows))]

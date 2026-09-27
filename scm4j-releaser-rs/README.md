@@ -31,6 +31,10 @@ scm4j-releaser fork org.example:product
 scm4j-releaser build org.example:product
 ```
 
+Add `--verbose` to describe release actions such as cloning, building, forking, changing versions, tagging,
+and locking `mdeps`. Add `--trace` to print every external Git, SVN, build, and `afterTag` command to stderr
+before it is executed. Password arguments are redacted from trace output. The two options can be combined.
+
 To inspect or build a service release from a specific release line, append a locked version to the
 coordinates. For example, `status org.example:product:152` inspects `release/152` instead of develop;
 `build org.example:product:152` builds the next patch from that branch. A full locked version such as

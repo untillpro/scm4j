@@ -266,6 +266,64 @@ impl Harness {
 }
 
 #[test]
+fn trace_prints_external_commands_to_stderr() {
+    let mut harness = Harness::new("trace-commands");
+    harness.add_git(
+        "org.example:service",
+        "1.0.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+
+    let quiet = harness.run(&["status", "org.example:service"]);
+    assert_success(&["status", "org.example:service"], &quiet);
+    assert!(!String::from_utf8_lossy(&quiet.stderr).contains("+ ["));
+
+    let traced = harness.run(&["status", "org.example:service", "--trace"]);
+    assert_success(&["status", "org.example:service", "--trace"], &traced);
+    let stderr = String::from_utf8_lossy(&traced.stderr);
+    assert!(stderr.contains("+ ["), "missing command trace:\n{stderr}");
+    assert!(
+        stderr.contains("git fetch origin --prune --tags"),
+        "{stderr}"
+    );
+    assert!(
+        !stderr.contains("* "),
+        "unexpected verbose output:\n{stderr}"
+    );
+}
+
+#[test]
+fn verbose_describes_release_actions_without_command_trace() {
+    let mut harness = Harness::new("verbose-actions");
+    harness.add_git(
+        "org.example:service",
+        "1.0.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+
+    let output = harness.run(&["fork", "org.example:service", "--verbose"]);
+    assert_success(&["fork", "org.example:service", "--verbose"], &output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("* Cloning Git repository"), "{stderr}");
+    assert!(
+        stderr.contains("* Forking Git branch `main` into `release/1.0` at version `1.0.0`"),
+        "{stderr}"
+    );
+    assert!(
+        stderr.contains("* Updating version file `version` to `1.0.0`"),
+        "{stderr}"
+    );
+    assert!(
+        !stderr.contains("+ ["),
+        "unexpected command trace:\n{stderr}"
+    );
+}
+
+#[test]
 fn fork_and_build_release() {
     let mut harness = Harness::new("fork-build");
     let repository = harness.add_git(

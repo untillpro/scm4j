@@ -197,6 +197,9 @@ fn fork(svn: &Svn, config: &Config, develop: &str) -> Result<(), String> {
         println!("No fork needed for {}", display_component(config));
         return Ok(());
     }
+    crate::external::action(format_args!(
+        "Forking SVN path `{develop}` into `{branch}` at version `{release}`"
+    ));
     svn.copy(develop, &branch, None, "release branch created")?;
     svn.checkout(&branch, None, &svn.workspace)?;
     svn.write_and_commit_version(&svn.workspace, &config.version_file, &release)?;
@@ -278,12 +281,11 @@ fn tag_and_bump(
     version: &Version,
     revision: &str,
 ) -> Result<(), String> {
-    svn.copy(
-        branch,
-        &tag_path(config, version),
-        Some(revision),
-        &format!("{version} release"),
-    )?;
+    let tag = tag_path(config, version);
+    crate::external::action(format_args!(
+        "Creating SVN tag `{tag}` from `{branch}` at revision `{revision}`"
+    ));
+    svn.copy(branch, &tag, Some(revision), &format!("{version} release"))?;
     svn.checkout(branch, None, &svn.workspace)?;
     svn.write_and_commit_version(&svn.workspace, &config.version_file, &version.next_patch())
 }
@@ -293,6 +295,10 @@ fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), 
         return Ok(());
     };
     let directory = work.join("builds").join(version.to_string());
+    crate::external::action(format_args!(
+        "Running afterTag for version `{version}` in {}",
+        directory.display()
+    ));
     let mut command = if cfg!(windows) {
         let mut command = Command::new("cmd");
         command.args(["/D", "/S", "/C", hook]);
@@ -302,11 +308,12 @@ fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), 
         command.args(["-c", hook]);
         command
     };
-    let status = command
-        .current_dir(&directory)
-        .env("SCM4J_VERSION", version.to_string())
-        .status()
-        .map_err(|e| format!("cannot start afterTag command: {e}"))?;
+    let status = crate::external::status(
+        command
+            .current_dir(&directory)
+            .env("SCM4J_VERSION", version.to_string()),
+    )
+    .map_err(|e| format!("cannot start afterTag command: {e}"))?;
     if status.success() {
         Ok(())
     } else {
@@ -393,14 +400,19 @@ fn run_build(
     fs::create_dir_all(&builds).map_err(|e| format!("cannot create build directory: {e}"))?;
     let directory = builds.join(version.to_string());
     svn.checkout(branch, Some(revision), &directory)?;
+    crate::external::action(format_args!(
+        "Building version `{version}` from SVN path `{branch}` at revision `{revision}` in {}",
+        directory.display()
+    ));
     let mut command = crate::shell_command(&config.build_command);
-    let status = command
-        .current_dir(&directory)
-        .env("SVN_REVISION", revision)
-        .env("SVN_BRANCH", branch)
-        .env("SVN_URL", &config.repository)
-        .status()
-        .map_err(|e| format!("cannot start build command: {e}"))?;
+    let status = crate::external::status(
+        command
+            .current_dir(&directory)
+            .env("SVN_REVISION", revision)
+            .env("SVN_BRANCH", branch)
+            .env("SVN_URL", &config.repository),
+    )
+    .map_err(|e| format!("cannot start build command: {e}"))?;
     if !status.success() {
         return Err(format!("build command failed with {status}"));
     }
@@ -538,6 +550,10 @@ impl Svn {
         version: &Version,
     ) -> Result<(), String> {
         let path = workspace.join(version_file);
+        crate::external::action(format_args!(
+            "Updating version file `{}` to `{version}`",
+            path.display()
+        ));
         fs::write(&path, format!("{version}\n"))
             .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
         run_in(
