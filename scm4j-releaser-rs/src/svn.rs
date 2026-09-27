@@ -449,6 +449,22 @@ impl Svn {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
+        self.run_at(self.workspace.parent().unwrap_or(Path::new(".")), args)
+    }
+
+    fn run_at<I, S>(&self, directory: &Path, args: I) -> Result<String, String>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<OsStr>,
+    {
+        run_in(directory, "svn", self.arguments(args))
+    }
+
+    fn arguments<I, S>(&self, args: I) -> Vec<OsString>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<OsStr>,
+    {
         let mut args: Vec<OsString> = args
             .into_iter()
             .map(|arg| arg.as_ref().to_owned())
@@ -464,11 +480,7 @@ impl Svn {
                 "--no-auth-cache".into(),
             ]);
         }
-        run_in(
-            self.workspace.parent().unwrap_or(Path::new(".")),
-            "svn",
-            args,
-        )
+        args
     }
 
     fn exists(&self, relative: &str) -> bool {
@@ -555,9 +567,8 @@ impl Svn {
         ));
         fs::write(&path, version.to_string())
             .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
-        run_in(
+        self.run_at(
             workspace,
-            "svn",
             ["commit", version_file, "-m", &format!("#scm-ver {version}")],
         )?;
         Ok(())
@@ -567,6 +578,37 @@ impl Svn {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn svn_commit_arguments_include_configured_authentication() {
+        let svn = Svn::new(
+            "https://example.test/repository",
+            PathBuf::from("workspace"),
+            Some("builder".to_owned()),
+            Some("secret".to_owned()),
+        );
+        let args: Vec<_> = svn
+            .arguments(["commit", "version", "-m", "#scm-ver 1.2.0"])
+            .into_iter()
+            .map(|value| value.to_string_lossy().into_owned())
+            .collect();
+
+        assert_eq!(
+            args,
+            [
+                "commit",
+                "version",
+                "-m",
+                "#scm-ver 1.2.0",
+                "--non-interactive",
+                "--username",
+                "builder",
+                "--password",
+                "secret",
+                "--no-auth-cache",
+            ]
+        );
+    }
 
     #[test]
     fn svn_prefix_is_concatenated_literally() {
