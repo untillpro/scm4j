@@ -521,7 +521,7 @@ fn status_prints_dependency_tree_with_planned_actions() {
         .split_once("Dependency tree (dependencies execute first):\n")
         .map(|(_, tree)| tree)
         .expect("status output must contain a dependency tree");
-    assert!(tree.starts_with("org.example:root [FORK]\n└── org.example:dependency [FORK]\n"));
+    assert!(tree.starts_with("org.example:root [FORK]\n`-- org.example:dependency [FORK]\n"));
 }
 
 #[test]
@@ -557,7 +557,7 @@ fn status_marks_done_parent_for_rebuild_when_dependency_will_build() {
         .map(|(_, tree)| tree)
         .expect("status output must contain a dependency tree");
     assert!(
-        tree.starts_with("org.example:root [BUILD_MDEPS]\n└── org.example:dependency [BUILD]\n")
+        tree.starts_with("org.example:root [BUILD_MDEPS]\n`-- org.example:dependency [BUILD]\n")
     );
 }
 
@@ -586,7 +586,7 @@ fn status_hides_done_nodes_unless_requested() {
     assert!(!hidden.contains("[DONE]"));
 
     let shown = harness.succeeds(&["status", "org.example:root", "--show-done"]);
-    assert!(shown.contains("org.example:root [DONE]\n└── org.example:dependency [DONE]\n"));
+    assert!(shown.contains("org.example:root [DONE]\n`-- org.example:dependency [DONE]\n"));
 }
 
 #[test]

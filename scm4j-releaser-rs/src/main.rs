@@ -265,9 +265,9 @@ fn print_dependency_node(
     let connector = if root {
         ""
     } else if last {
-        "└── "
+        "`-- "
     } else {
-        "├── "
+        "|-- "
     };
     let action = planned_action(component, dependencies, actions);
     println!("{prefix}{connector}{component} [{action}]");
@@ -283,7 +283,7 @@ fn print_dependency_node(
     } else if last {
         format!("{prefix}    ")
     } else {
-        format!("{prefix}│   ")
+        format!("{prefix}|   ")
     };
     for (index, child) in children.iter().enumerate() {
         print_dependency_node(
