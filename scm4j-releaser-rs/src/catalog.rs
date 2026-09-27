@@ -342,6 +342,7 @@ fn coordinate_parts(coordinates: &str) -> Result<(String, Option<String>), Strin
     let component = format!("{}:{}", parts[0].trim(), parts[1].trim());
     let release_line = parts
         .get(2)
+        .filter(|value| !value.trim().is_empty())
         .map(|value| release_line(value.trim()))
         .transpose()?;
     Ok((component, release_line))
@@ -377,6 +378,14 @@ mod tests {
 
     #[test]
     fn locked_coordinate_selects_release_line() {
+        assert_eq!(
+            coordinate_parts("org.example:service:").unwrap(),
+            ("org.example:service".to_owned(), None)
+        );
+        assert_eq!(
+            coordinate_parts("org.example:service::all").unwrap(),
+            ("org.example:service".to_owned(), None)
+        );
         assert_eq!(
             coordinate_parts("eu.untill:Untill:152").unwrap(),
             ("eu.untill:Untill".to_owned(), Some("152".to_owned()))

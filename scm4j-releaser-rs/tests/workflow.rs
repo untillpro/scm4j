@@ -368,6 +368,20 @@ fn version_file_accepts_line_breaks_when_read() {
 }
 
 #[test]
+fn status_accepts_coordinates_with_an_empty_version() {
+    let mut harness = Harness::new("status-empty-version");
+    harness.add_git(
+        "org.example:service",
+        "1.0.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+
+    harness.succeeds(&["status", "org.example:service:"]);
+}
+
+#[test]
 fn component_can_release_the_next_minor_version() {
     let mut harness = Harness::new("next-minor");
     let repository = harness.add_git(
