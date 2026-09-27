@@ -108,6 +108,12 @@ The published artifact is an executable fat JAR with `org.scm4j.releaser.cli.CLI
 java -jar scm4j-releaser-36.0.0.jar <arguments>
 ```
 
+## Rust releaser
+
+[scm4j-releaser-rs](scm4j-releaser-rs/README.md) is a compact Rust implementation supporting
+multi-component Git/SVN releases and recursively resolved `mdeps`.
+Push a tag named `scm4j-releaser-rs-<version>` to build and publish a Windows release.
+
 ## The SCM process
 
 According to [SCMQuest](http://scmquest.com/software-configuration-management-scm/), the SCM process includes:

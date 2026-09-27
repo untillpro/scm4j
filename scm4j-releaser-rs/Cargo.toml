@@ -1,0 +1,20 @@
+[package]
+name = "scm4j-releaser-rs"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "A compact Git/SVN release tool compatible with scm4j configuration"
+
+[[bin]]
+name = "scm4j-releaser"
+path = "src/main.rs"
+
+[dependencies]
+regex = "1.11"
+serde_yaml = "0.9"
+ureq = "3.1"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1

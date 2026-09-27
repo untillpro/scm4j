@@ -51,3 +51,5 @@ scm4j-installer/installer.properties
 scm4j-releaser/releases/
 
 problems-report.html
+# Rust build output
+scm4j-releaser-rs/target/

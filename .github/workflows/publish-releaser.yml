@@ -3,7 +3,7 @@ name: Publish scm4j releaser
 on:
   push:
     tags:
-      - 'scm4j-releaser-*'
+      - 'scm4j-releaser-[0-9]*'
   workflow_dispatch:
     inputs:
       tag:
