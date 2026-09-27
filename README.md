@@ -1,9 +1,5 @@
 # scm4j
 
-For a small, single-component Git/SVN release workflow, see the
-[Rust scm4j-releaser](scm4j-releaser-rs/README.md). It is single-threaded and keeps its private clone,
-build directories, configuration, and process lock beside the executable.
-
 scm4j (Software Configuration Management for Java) is a Java toolkit for source-control, release, build, and deployment automation. This repository is a Gradle monorepo containing the releaser CLI and its supporting modules.
 
 Configuration management is the practice of handling changes systematically so that a system maintains its integrity over time.
@@ -111,6 +107,12 @@ The published artifact is an executable fat JAR with `org.scm4j.releaser.cli.CLI
 ```shell
 java -jar scm4j-releaser-36.0.0.jar <arguments>
 ```
+
+## Rust releaser
+
+[scm4j-releaser-rs](scm4j-releaser-rs/README.md) is a compact Rust implementation supporting
+multi-component Git/SVN releases and recursively resolved `mdeps`.
+Push a tag named `scm4j-releaser-rs-<version>` to build and publish a Windows release.
 
 ## The SCM process
 
