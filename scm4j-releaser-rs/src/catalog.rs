@@ -95,10 +95,7 @@ impl Catalog {
             .property(&self.components, &component, "releaseBranchPrefix")?
             .unwrap_or_else(|| "release/".to_owned());
         let reference_namespace = if scm_type == ScmType::Git && !subfolder.is_empty() {
-            format!(
-                "{}/",
-                component.split(':').next_back().unwrap_or(&component)
-            )
+            format!("{subfolder}/")
         } else {
             String::new()
         };
@@ -430,7 +427,7 @@ mod tests {
         let _ = fs::remove_dir_all(home);
         assert_eq!(config.subfolder, "components/service");
         assert_eq!(config.build_command, "make $1");
-        assert_eq!(config.reference_namespace, "service/");
+        assert_eq!(config.reference_namespace, "components/service/");
         assert_eq!(config.username.as_deref(), Some("robot"));
         assert_eq!(config.password.as_deref(), Some("secret"));
     }

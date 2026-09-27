@@ -92,7 +92,8 @@ SVN credentials use non-interactive CLI arguments and are not cached by the rele
 For Git, `version_file` is resolved relative to `subfolder`, component status only considers commits touching
 that subfolder, and the build command runs there. Repositories are keyed by URL and cloned once even when
 several components use different subfolders of the same monorepo. Release checkouts use `git worktree` and
-share its object database. Namespaced branches and tags prevent components in one repository from colliding.
+share its object database. Branches and tags are namespaced by `subfolder` to prevent components in one
+repository from colliding.
 
 SVN repositories use the conventional `trunk`, `branches`, and `tags` layout. A `releaseBranchPrefix` of
 `release/` therefore produces `branches/release/1.5`; a prefix of `B` produces `branches/B1.5`.

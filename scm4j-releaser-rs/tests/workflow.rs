@@ -751,22 +751,26 @@ fn delayed_tag_rejects_an_advanced_release_branch() {
 }
 
 #[test]
-fn monorepo_components_use_scoped_branches_and_tags() {
+fn monorepo_components_with_the_same_artifact_use_subfolder_scoped_refs() {
     let mut harness = Harness::new("monorepo");
     let bare = harness.add_monorepo(&[
-        ("org.example:alpha", "components/alpha", "1.0.0-SNAPSHOT"),
-        ("org.example:beta", "components/beta", "2.0.0-SNAPSHOT"),
+        ("com.acme:api", "components/acme-api", "1.0.0-SNAPSHOT"),
+        (
+            "org.example:api",
+            "components/example-api",
+            "2.0.0-SNAPSHOT",
+        ),
     ]);
 
-    harness.succeeds(&["fork", "org.example:alpha", "org.example:beta"]);
-    harness.succeeds(&["build", "org.example:alpha", "org.example:beta"]);
+    harness.succeeds(&["fork", "com.acme:api", "org.example:api"]);
+    harness.succeeds(&["build", "com.acme:api", "org.example:api"]);
 
     assert_eq!(
         git_bare(
             &bare,
             [
                 "show",
-                "refs/heads/alpha/release/1.0:components/alpha/version"
+                "refs/heads/components/acme-api/release/1.0:components/acme-api/version"
             ]
         ),
         "1.0.1"
@@ -776,13 +780,16 @@ fn monorepo_components_use_scoped_branches_and_tags() {
             &bare,
             [
                 "show",
-                "refs/heads/beta/release/2.0:components/beta/version"
+                "refs/heads/components/example-api/release/2.0:components/example-api/version"
             ]
         ),
         "2.0.1"
     );
-    assert!(has_bare_ref(&bare, "refs/tags/alpha/1.0.0"));
-    assert!(has_bare_ref(&bare, "refs/tags/beta/2.0.0"));
+    assert!(has_bare_ref(&bare, "refs/tags/components/acme-api/1.0.0"));
+    assert!(has_bare_ref(
+        &bare,
+        "refs/tags/components/example-api/2.0.0"
+    ));
 }
 
 #[test]
