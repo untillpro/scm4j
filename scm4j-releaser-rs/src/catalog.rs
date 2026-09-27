@@ -422,7 +422,7 @@ mod tests {
             "'https://example\\.test/.*':\n  name: robot\n  password: secret\n",
         )
         .unwrap();
-        let catalog = Catalog::load_search(&[home.clone()]).unwrap();
+        let catalog = Catalog::load_search(std::slice::from_ref(&home)).unwrap();
         let config = catalog.resolve("org.example:service").unwrap();
         let _ = fs::remove_dir_all(home);
         assert_eq!(config.subfolder, "components/service");

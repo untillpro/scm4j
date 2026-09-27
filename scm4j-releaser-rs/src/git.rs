@@ -148,6 +148,29 @@ where
     command
 }
 
+pub fn run_in<I, S>(directory: &Path, program: &str, args: I) -> Result<String, String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    let Output {
+        status,
+        stdout,
+        stderr,
+    } = crate::external::output(Command::new(program).args(args).current_dir(directory))
+        .map_err(|e| format!("failed to start {program}: {e}"))?;
+    if status.success() {
+        Ok(String::from_utf8_lossy(&stdout).trim().to_owned())
+    } else {
+        let detail = String::from_utf8_lossy(&stderr).trim().to_owned();
+        Err(if detail.is_empty() {
+            format!("{program} failed with {status}")
+        } else {
+            detail
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -177,28 +200,5 @@ mod tests {
             .collect();
 
         assert_eq!(args, ["fetch", "origin"]);
-    }
-}
-
-pub fn run_in<I, S>(directory: &Path, program: &str, args: I) -> Result<String, String>
-where
-    I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>,
-{
-    let Output {
-        status,
-        stdout,
-        stderr,
-    } = crate::external::output(Command::new(program).args(args).current_dir(directory))
-        .map_err(|e| format!("failed to start {program}: {e}"))?;
-    if status.success() {
-        Ok(String::from_utf8_lossy(&stdout).trim().to_owned())
-    } else {
-        let detail = String::from_utf8_lossy(&stderr).trim().to_owned();
-        Err(if detail.is_empty() {
-            format!("{program} failed with {status}")
-        } else {
-            detail
-        })
     }
 }

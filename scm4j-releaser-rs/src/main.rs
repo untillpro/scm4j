@@ -1065,7 +1065,7 @@ pub(crate) fn shell_command(command_line: &str) -> Command {
         let mut command = Command::new("cmd");
         command.args(["/D", "/S", "/C"]);
         // cmd.exe does not use the standard Windows argv decoding rules.
-        command.raw_arg(&format!("\"{command_line}\""));
+        command.raw_arg(format!("\"{command_line}\""));
         command
     }
     #[cfg(not(windows))]
@@ -1110,6 +1110,7 @@ impl Lock {
             .read(true)
             .write(true)
             .create(true)
+            .truncate(false)
             .open(path)
             .map_err(|e| format!("cannot open lock file {}: {e}", path.display()))?;
         match file.try_lock() {
