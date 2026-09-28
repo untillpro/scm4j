@@ -726,8 +726,45 @@ fn delayed_tag_applies_only_to_command_line_roots() {
 }
 
 #[test]
-fn delayed_tag_rejects_an_advanced_release_branch() {
+fn delayed_tag_tags_the_saved_revision_after_the_release_branch_advances() {
     let mut harness = Harness::new("delayed-tag-advanced");
+    let repository = harness.add_git(
+        "org.example:service",
+        "1.0.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:service"]);
+    harness.succeeds(&["build", "org.example:service", "--delayed-tag"]);
+    let delayed_commit = git_bare(&repository.bare, ["rev-parse", "refs/heads/release/1.0"]);
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &repository.bare,
+        "release/1.0",
+        "late-change.txt",
+        "release moved",
+    );
+
+    harness.succeeds(&["tag", "org.example:service"]);
+
+    assert_eq!(
+        git_bare(&repository.bare, ["rev-list", "-n", "1", "refs/tags/1.0.0"]),
+        delayed_commit
+    );
+    assert_eq!(
+        repository.show("refs/heads/release/1.0", "version"),
+        "1.0.1"
+    );
+    assert_eq!(
+        repository.show("refs/heads/release/1.0", "late-change.txt"),
+        "release moved"
+    );
+}
+
+#[test]
+fn delayed_tag_does_not_downgrade_an_already_bumped_release_version() {
+    let mut harness = Harness::new("delayed-tag-version-advanced");
     let repository = harness.add_git(
         "org.example:service",
         "1.0.0-SNAPSHOT",
@@ -741,12 +778,39 @@ fn delayed_tag_rejects_an_advanced_release_branch() {
         &harness.temp.0,
         &repository.bare,
         "release/1.0",
-        "late-change.txt",
-        "release moved",
+        "version",
+        "1.0.2",
+    );
+
+    harness.succeeds(&["tag", "org.example:service"]);
+
+    assert!(repository.has_ref("refs/tags/1.0.0"));
+    assert_eq!(
+        repository.show("refs/heads/release/1.0", "version"),
+        "1.0.2"
+    );
+}
+
+#[test]
+fn delayed_tag_rejects_a_release_branch_that_was_rewritten() {
+    let mut harness = Harness::new("delayed-tag-rewritten");
+    let repository = harness.add_git(
+        "org.example:service",
+        "1.0.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:service"]);
+    harness.succeeds(&["build", "org.example:service", "--delayed-tag"]);
+    git_bare(
+        &repository.bare,
+        ["update-ref", "refs/heads/release/1.0", "refs/heads/main"],
     );
 
     let error = harness.fails(&["tag", "org.example:service"]);
-    assert!(error.contains("advanced from delayed commit"));
+
+    assert!(error.contains("no longer contains delayed commit"));
     assert!(!repository.has_ref("refs/tags/1.0.0"));
 }
 

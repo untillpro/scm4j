@@ -982,13 +982,13 @@ fn tag(git: &Git, config: &Config, work: &Path) -> Result<(), String> {
     let version: Version = get("version")?.parse()?;
     let commit = get("commit")?;
     let remote_head = git.run(["rev-parse", &format!("origin/{branch}")])?;
-    if remote_head != commit {
+    if !git.succeeds(["merge-base", "--is-ancestor", &commit, &remote_head]) {
         return Err(format!(
-            "{branch} advanced from delayed commit {commit} to {remote_head}"
+            "{branch} no longer contains delayed commit {commit}; current head is {remote_head}"
         ));
     }
     git.checkout_remote(&branch)?;
-    tag_and_bump(git, config, &branch, &version, &commit)?;
+    tag_and_bump_if_needed(git, config, &branch, &version, &commit)?;
     run_after_tag(config, work, &version)?;
     fs::remove_file(path).map_err(|e| format!("cannot remove delayed tag state: {e}"))?;
     println!("Applied delayed tag {version}");
@@ -1001,6 +1001,27 @@ fn tag_and_bump(
     branch: &str,
     version: &Version,
     commit: &str,
+) -> Result<(), String> {
+    tag_and_bump_inner(git, config, branch, version, commit, false)
+}
+
+fn tag_and_bump_if_needed(
+    git: &Git,
+    config: &Config,
+    branch: &str,
+    version: &Version,
+    commit: &str,
+) -> Result<(), String> {
+    tag_and_bump_inner(git, config, branch, version, commit, true)
+}
+
+fn tag_and_bump_inner(
+    git: &Git,
+    config: &Config,
+    branch: &str,
+    version: &Version,
+    commit: &str,
+    preserve_newer_version: bool,
 ) -> Result<(), String> {
     let tag_name = git_tag_name(config, version);
     external::action(format_args!(
@@ -1015,7 +1036,10 @@ fn tag_and_bump(
         commit,
     ])?;
     let next = version.next_patch();
-    write_and_commit_version(git, config, &next)?;
+    let branch_version = read_version(git, "HEAD", config)?;
+    if !preserve_newer_version || branch_version < next {
+        write_and_commit_version(git, config, &next)?;
+    }
     external::action(format_args!(
         "Publishing Git tag `{tag_name}` and branch `{branch}`"
     ));
