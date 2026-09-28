@@ -266,6 +266,20 @@ impl Harness {
 }
 
 #[test]
+fn version_flags_print_the_package_version_without_configuration() {
+    let harness = Harness::new("version");
+
+    for flag in ["--version", "-V"] {
+        let output = harness.run(&[flag]);
+        assert_success(&[flag], &output);
+        assert_eq!(
+            String::from_utf8_lossy(&output.stdout),
+            format!("scm4j-releaser {}\n", env!("CARGO_PKG_VERSION"))
+        );
+    }
+}
+
+#[test]
 fn trace_prints_external_commands_to_stderr() {
     let mut harness = Harness::new("trace-commands");
     harness.add_git(

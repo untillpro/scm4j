@@ -41,6 +41,10 @@ fn execute() -> Result<(), String> {
         print_help();
         return Ok(());
     }
+    if matches!(command, "--version" | "-V") {
+        println!("scm4j-releaser {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
     let delayed = args.iter().skip(1).any(|arg| arg == "--delayed-tag");
     let show_done = args.iter().skip(1).any(|arg| arg == "--show-done");
     let verbose = args.iter().skip(1).any(|arg| arg == "--verbose");
@@ -483,11 +487,11 @@ fn execute_config(
 }
 
 fn print_help() {
-    println!("scm4j-releaser - multi-component Git/SVN release tool\n\n\
-Usage:\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...] [--show-done]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n\n\
+    println!("scm4j-releaser {} - multi-component Git/SVN release tool\n\n\
+Usage:\n  scm4j-releaser --version\n  scm4j-releaser init\n  scm4j-releaser status group:artifact [...] [--show-done]\n  scm4j-releaser fork group:artifact [...]\n  scm4j-releaser build group:artifact [...] [--delayed-tag]\n  scm4j-releaser tag group:artifact [...]\n\n\
 Options:\n  --verbose       Describe release actions as they are performed\n  --trace         Print every external command before it is executed\n\n\
 Configuration is read from <home_dir>/.scm4j; the executable directory is also searched for compatibility.\n\
-Working data is stored in the current directory.");
+Working data is stored in the current directory.", env!("CARGO_PKG_VERSION"));
 }
 
 fn init(home: &Path) -> Result<(), String> {
