@@ -576,6 +576,121 @@ fn status_marks_done_parent_for_rebuild_when_dependency_will_build() {
 }
 
 #[test]
+fn status_prefers_a_locked_version_shared_elsewhere_in_the_tree() {
+    let mut harness = Harness::new("status-shared-locked-version");
+    harness.add_git(
+        "org.example:shared",
+        "1.5.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    let first = harness.add_git(
+        "org.example:first",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:shared:\n"),
+        None,
+        Some("git --version"),
+    );
+    let second = harness.add_git(
+        "org.example:second",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:shared:\n"),
+        None,
+        Some("git --version"),
+    );
+
+    harness.succeeds(&["fork", "org.example:shared"]);
+    harness.succeeds(&["build", "org.example:shared"]);
+    harness.succeeds(&["fork", "org.example:shared"]);
+    harness.succeeds(&["fork", "org.example:first"]);
+    harness.succeeds(&["fork", "org.example:second"]);
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &first.bare,
+        "release/1.0",
+        "mdeps",
+        "org.example:shared:",
+    );
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &second.bare,
+        "release/1.0",
+        "mdeps",
+        "org.example:shared:1.5.0",
+    );
+
+    let output = harness.succeeds(&[
+        "status",
+        "org.example:first:1.0.0",
+        "org.example:second:1.0.0",
+        "--show-done",
+    ]);
+
+    assert_eq!(
+        output.matches("org.example:shared [DONE]").count(),
+        2,
+        "{output}"
+    );
+    assert!(!output.contains("org.example:shared [BUILD]"), "{output}");
+    assert!(!output.contains("org.example:shared [FORK]"), "{output}");
+
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &first.bare,
+        "release/1.0",
+        "mdeps",
+        "org.example:shared:1.6.0",
+    );
+    let error = harness.fails(&[
+        "status",
+        "org.example:first:1.0.0",
+        "org.example:second:1.0.0",
+    ]);
+    assert!(
+        error
+            .contains("conflicting locked release lines for `org.example:shared`: `1.6` and `1.5`"),
+        "{error}"
+    );
+}
+
+#[test]
+fn status_rejects_an_unlocked_dependency_in_a_locked_release_tree() {
+    let mut harness = Harness::new("status-unlocked-release-dependency");
+    harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    let root = harness.add_git(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:dependency:\n"),
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:root"]);
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &root.bare,
+        "release/1.0",
+        "mdeps",
+        "org.example:dependency:",
+    );
+
+    let error = harness.fails(&["status", "org.example:root:1.0.0"]);
+
+    assert!(
+        error.contains(
+            "dependency `org.example:dependency` is not locked in release tree of `org.example:root`"
+        ),
+        "{error}"
+    );
+}
+
+#[test]
 fn status_hides_done_nodes_unless_requested() {
     let mut harness = Harness::new("status-show-done");
     harness.add_git(
@@ -921,7 +1036,12 @@ fn git_component_locks_an_svn_dependency() {
 }
 
 fn commit_to_remote_branch(root: &Path, bare: &Path, branch: &str, file: &str, content: &str) {
-    let clone = root.join(format!("patch-{}", branch.replace('/', "-")));
+    let repository = bare.file_stem().unwrap().to_string_lossy();
+    let sequence = NEXT_TEMP.fetch_add(1, Ordering::Relaxed);
+    let clone = root.join(format!(
+        "patch-{repository}-{}-{sequence}",
+        branch.replace('/', "-")
+    ));
     git(root, ["clone", path(bare).as_str(), path(&clone).as_str()]);
     git(&clone, ["config", "user.name", "scm4j test"]);
     git(&clone, ["config", "user.email", "scm4j@example.test"]);

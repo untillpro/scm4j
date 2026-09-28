@@ -161,14 +161,17 @@ fn resolve_component_graph(
     shared_work: &Path,
     fetched_repositories: &mut HashSet<PathBuf>,
 ) -> Result<(Vec<Config>, HashMap<String, Vec<String>>), String> {
+    let selected = select_component_configs(catalog, roots, shared_work, fetched_repositories)?;
     let mut visiting = HashSet::new();
     let mut completed = HashSet::new();
     let mut result = Vec::new();
     let mut dependencies = HashMap::new();
     for root in roots {
+        let component = catalog.resolve(root)?.component;
         visit_component(
             catalog,
-            root,
+            &component,
+            &selected,
             shared_work,
             &mut visiting,
             &mut completed,
@@ -177,12 +180,81 @@ fn resolve_component_graph(
             fetched_repositories,
         )?;
     }
+    for root in roots {
+        let config = catalog.resolve(root)?;
+        if config.release_line.is_some() {
+            validate_locked_dependency_tree(&config.component, &selected, &dependencies)?;
+        }
+    }
     Ok((result, dependencies))
+}
+
+fn validate_locked_dependency_tree(
+    root: &str,
+    selected: &HashMap<String, Config>,
+    dependencies: &HashMap<String, Vec<String>>,
+) -> Result<(), String> {
+    let mut visited = HashSet::new();
+    let mut pending: Vec<_> = dependencies
+        .get(root)
+        .into_iter()
+        .flatten()
+        .cloned()
+        .collect();
+    while let Some(component) = pending.pop() {
+        if !visited.insert(component.clone()) {
+            continue;
+        }
+        let config = selected
+            .get(&component)
+            .ok_or_else(|| format!("component `{component}` was not resolved"))?;
+        if config.release_line.is_none() {
+            return Err(format!(
+                "dependency `{component}` is not locked in release tree of `{root}`"
+            ));
+        }
+        pending.extend(dependencies.get(&component).into_iter().flatten().cloned());
+    }
+    Ok(())
+}
+
+fn select_component_configs(
+    catalog: &Catalog,
+    roots: &[&String],
+    shared_work: &Path,
+    fetched_repositories: &mut HashSet<PathBuf>,
+) -> Result<HashMap<String, Config>, String> {
+    let mut selected: HashMap<String, Config> = HashMap::new();
+    let mut pending: Vec<String> = roots.iter().rev().map(|root| (*root).clone()).collect();
+    while let Some(coordinates) = pending.pop() {
+        let config = catalog.resolve(&coordinates)?;
+        let scan = match selected.get(&config.component) {
+            None => true,
+            Some(existing) => match (&existing.release_line, &config.release_line) {
+                (Some(existing), Some(candidate)) if existing != candidate => {
+                    return Err(format!(
+                        "conflicting locked release lines for `{}`: `{existing}` and `{candidate}`",
+                        config.component
+                    ));
+                }
+                (None, Some(_)) => true,
+                _ => false,
+            },
+        };
+        if !scan {
+            continue;
+        }
+        selected.insert(config.component.clone(), config.clone());
+        let mdeps = read_develop_mdeps(&config, shared_work, fetched_repositories)?;
+        pending.extend(parse_mdeps(&mdeps).into_iter().rev());
+    }
+    Ok(selected)
 }
 
 fn visit_component(
     catalog: &Catalog,
-    coordinates: &str,
+    component: &str,
+    selected: &HashMap<String, Config>,
     shared_work: &Path,
     visiting: &mut HashSet<String>,
     completed: &mut HashSet<String>,
@@ -190,13 +262,16 @@ fn visit_component(
     dependencies: &mut HashMap<String, Vec<String>>,
     fetched_repositories: &mut HashSet<PathBuf>,
 ) -> Result<(), String> {
-    let config = catalog.resolve(coordinates)?;
-    if completed.contains(&config.component) {
+    if completed.contains(component) {
         return Ok(());
     }
-    if !visiting.insert(config.component.clone()) {
-        return Err(format!("cyclic mdeps dependency at `{}`", config.component));
+    if !visiting.insert(component.to_owned()) {
+        return Err(format!("cyclic mdeps dependency at `{component}`"));
     }
+    let config = selected
+        .get(component)
+        .cloned()
+        .ok_or_else(|| format!("component `{component}` was not resolved"))?;
     let mdeps = read_develop_mdeps(&config, shared_work, fetched_repositories)?;
     let dependency_coordinates = parse_mdeps(&mdeps);
     let mut dependency_names = Vec::new();
@@ -205,10 +280,10 @@ fn visit_component(
         if dependency_names.contains(&dependency_component) {
             continue;
         }
-        dependency_names.push(dependency_component);
         visit_component(
             catalog,
-            &dependency,
+            &dependency_component,
+            selected,
             shared_work,
             visiting,
             completed,
@@ -216,10 +291,11 @@ fn visit_component(
             dependencies,
             fetched_repositories,
         )?;
+        dependency_names.push(dependency_component);
     }
-    dependencies.insert(config.component.clone(), dependency_names);
-    visiting.remove(&config.component);
-    completed.insert(config.component.clone());
+    dependencies.insert(component.to_owned(), dependency_names);
+    visiting.remove(component);
+    completed.insert(component.to_owned());
     result.push(config);
     Ok(())
 }
