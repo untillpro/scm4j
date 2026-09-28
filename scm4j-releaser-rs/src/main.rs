@@ -98,8 +98,19 @@ fn execute() -> Result<(), String> {
     }
     let catalog = Catalog::load_search(&config_dirs)?;
     let mut fetched_repositories = HashSet::new();
-    let (configs, dependencies) =
-        resolve_component_graph(&catalog, &components, &work, &mut fetched_repositories)?;
+    let (configs, dependencies) = if command == "tag" {
+        let mut seen = HashSet::new();
+        let mut configs = Vec::new();
+        for coordinates in &components {
+            let config = catalog.resolve(coordinates)?;
+            if seen.insert(config.component.clone()) {
+                configs.push(config);
+            }
+        }
+        (configs, HashMap::new())
+    } else {
+        resolve_component_graph(&catalog, &components, &work, &mut fetched_repositories)?
+    };
     if command == "status" {
         let mut actions = HashMap::new();
         for config in &configs {

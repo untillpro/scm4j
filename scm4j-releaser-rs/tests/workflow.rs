@@ -734,7 +734,16 @@ fn delayed_tag_applies_only_to_command_line_roots() {
         .exists());
     assert!(components.join("org.example_root/delayed-tag").is_file());
 
-    harness.succeeds(&["tag", "org.example:root"]);
+    let output = harness.run(&["tag", "org.example:root", "--trace"]);
+    assert_success(&["tag", "org.example:root", "--trace"], &output);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stdout.contains("org.example:dependency"), "{stdout}");
+    assert_eq!(
+        stderr.matches("git fetch origin --prune --tags").count(),
+        1,
+        "{stderr}"
+    );
     assert!(root.has_ref("refs/tags/1.0.0"));
     assert_eq!(root.show("refs/heads/release/1.0", "version"), "1.0.1");
 }
