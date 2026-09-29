@@ -35,7 +35,7 @@ public class VCSRepositoryWorkspace implements IVCSRepositoryWorkspace {
 
 	@Override
 	public IVCSLockedWorkingCopy getVCSLockedWorkingCopy() throws IOException {
-		return new VCSLockedWorkingCopy(this, !componentSubfolder.isEmpty());
+		return new VCSLockedWorkingCopy(this, false);
 	}
 
 	private String getRepoFolderName() {
