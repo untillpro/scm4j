@@ -13,21 +13,22 @@ Release status currently discards each monorepo component working copy, so succe
 
 ## What
 
-Improve status and release-workflow VCS performance without changing calculated statuses, CLI output, release decisions, or the public VCS API contract:
+Improve status and release-workflow VCS performance without changing calculated statuses, CLI output, or release decisions:
 
 - Regular working copies remain available after their lease is released and are reused by later operations for the same repository component.
 - Monorepo components in different subfolders remain isolated, and a working copy is never leased to concurrent operations.
 - Follow-on release-workflow VCS operations can reuse a working copy prepared during status calculation.
-- Explicitly temporary or corrupted working copies continue to be removed when released.
+- Corrupted working copies continue to be removed when released.
+- The unused temporary-working-copy API and its special lifecycle are removed; callers that need isolation use a separate repository workspace.
 - Repository data remains refreshed before an operation so reuse does not expose stale branch or tag state.
 
 ## How
 
 Decisions:
 
-- Make ordinary repository-workspace leases reusable for both repository-root and component-subfolder locations; reserve disposable leases for explicit temporary use and corrupted working copies.
+- Make every repository-workspace lease reusable for both repository-root and component-subfolder locations; reserve disposal for corrupted working copies.
 - Retain the repository URL plus normalized component subfolder as the working-copy pool's isolation key, so sibling monorepo components never draw from the same mutable pool.
-- Keep lease lifecycle policy in the backend-independent working-copy layer so Git and SVN receive identical reuse behavior without changing the public workspace or VCS contracts.
+- Keep lease lifecycle policy in the backend-independent working-copy layer so Git and SVN receive identical reuse behavior.
 - Preserve the existing file-lock pool behavior: reuse an unlocked copy and allocate a distinct retained copy when every existing copy is leased.
 - Preserve each VCS adapter's existing refresh, branch-switching, cleanup, and corruption handling when a retained copy is acquired again.
 - Verify the policy at the working-copy lifecycle boundary and through concurrent monorepo status and release workflows that protect component independence.
@@ -61,7 +62,10 @@ References:
   - verify repository-root and component-subfolder workspaces follow the same reusable lease lifecycle while their pool directories remain distinct
 
 - [x] verify: [workingcopy/VCSLockedWorkingCopyTest.java](../../../../../scm4j-vcs/src/test/java/org/scm4j/vcs/api/workingcopy/VCSLockedWorkingCopyTest.java)
-  - run the existing coverage that simultaneous leases use different working-copy folders and that explicit temporary or corrupted copies are removed
+  - verify simultaneous leases use different working-copy folders and corrupted copies are removed
+
+- [x] update: [git/GitVCSTest.java](../../../../../scm4j-vcs/src/test/java/org/scm4j/vcs/git/GitVCSTest.java)
+  - replace the temporary working-copy test fixture with an independent repository workspace
 
 - [x] update: [releaser/WorkflowMonorepoForkAndBuildTest.java](../../../../../scm4j-releaser/src/test/java/org/scm4j/releaser/WorkflowMonorepoForkAndBuildTest.java)
   - repeat the shared-repository status scenario with fresh status caches so the second calculation exercises retained component working copies
@@ -71,4 +75,10 @@ References:
 
 - [x] update: [workingcopy/VCSRepositoryWorkspace.java](../../../../../scm4j-vcs/src/main/java/org/scm4j/vcs/api/workingcopy/VCSRepositoryWorkspace.java)
   - obtain a reusable ordinary lease for component-subfolder workspaces instead of forcing every lease to be temporary
-  - retain subfolder-derived pool partitioning and the explicit temporary-working-copy path
+  - retain subfolder-derived pool partitioning and remove the unused temporary-working-copy path
+
+- [x] update: [workingcopy/IVCSRepositoryWorkspace.java](../../../../../scm4j-vcs/src/main/java/org/scm4j/vcs/api/workingcopy/IVCSRepositoryWorkspace.java)
+  - remove the unused temporary-working-copy operation from the public workspace contract
+
+- [x] update: [workingcopy/VCSLockedWorkingCopy.java](../../../../../scm4j-vcs/src/main/java/org/scm4j/vcs/api/workingcopy/VCSLockedWorkingCopy.java)
+  - remove temporary-mode construction and always attempt to reuse an unlocked working copy

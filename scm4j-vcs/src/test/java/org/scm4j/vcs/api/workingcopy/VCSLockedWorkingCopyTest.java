@@ -66,7 +66,7 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 		try (FileOutputStream stream = new FileOutputStream(lockFile);
 			 FileLock ignored = stream.getChannel().lock()) {
 			try {
-				new VCSLockedWorkingCopy(r, false, workingCopyId);
+				new VCSLockedWorkingCopy(r, workingCopyId);
 				fail();
 			} catch (OverlappingFileLockException e) {
 				// Expected: the new working-copy directory must not be visible unless its lock is owned.
@@ -78,22 +78,22 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
 	@Test
 	public void testReusingUnlockedWorkspaces() throws Exception {
-		VCSLockedWorkingCopy w1 = new VCSLockedWorkingCopy(r, false);
+		VCSLockedWorkingCopy w1 = new VCSLockedWorkingCopy(r);
 		w1.close();
-		VCSLockedWorkingCopy w2 = new VCSLockedWorkingCopy(r, false);
+		VCSLockedWorkingCopy w2 = new VCSLockedWorkingCopy(r);
 		assertEquals(w1.getFolder().getName(), w2.getFolder().getName());
 		w2.close();
 
 		// if lock file does not exists then a new WC should be created
 		w1.getLockFile().delete();
-		w2 = new VCSLockedWorkingCopy(r, false);
+		w2 = new VCSLockedWorkingCopy(r);
 		assertNotEquals(w1.getFolder().getName(), w2.getFolder().getName());
 		w2.close();
 	}
 
 	@Test
 	public void testCorruptingWorkspace() throws Exception {
-		VCSLockedWorkingCopy workspace = new VCSLockedWorkingCopy(r, false);
+		VCSLockedWorkingCopy workspace = new VCSLockedWorkingCopy(r);
 		workspace.setCorrupted(true);
 		workspace.close();
 		assertFalse(workspace.getFolder().exists());
@@ -102,20 +102,8 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
 	@Test
 	public void testToString() throws Exception {
-		try (VCSLockedWorkingCopy lwc = new VCSLockedWorkingCopy(r, false)) {
+		try (VCSLockedWorkingCopy lwc = new VCSLockedWorkingCopy(r)) {
 			assertTrue(lwc.toString().contains(r.getRepoFolder().getPath()));
-		}
-	}
-	
-	@Test
-	public void testTempLWCObtain() throws Exception {
-		File lwcFolder;
-		try (IVCSLockedWorkingCopy lwc = r.getVCSLockedWorkingCopy()) {
-			lwcFolder = lwc.getFolder();
-		}
-		try (IVCSLockedWorkingCopy tempLWC = r.getVCSLockedWorkingCopyTemp()) {
-			assertFalse(lwcFolder.getName().equals(tempLWC.getFolder().getName()));
-			assertTrue(tempLWC.getCorrupted());
 		}
 	}
 }
