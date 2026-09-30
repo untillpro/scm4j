@@ -247,6 +247,45 @@ public class SVNVCS implements IVCS {
 		}
 	}
 
+	@Override
+	public Map<String, String> getFilesContent(String branchName, List<String> filePaths, String revision) {
+		Map<String, String> fileContents = new LinkedHashMap<>();
+		String branchPath = getBranchName(branchName);
+		try {
+			long selectedRevision = (revision == null || revision.isEmpty() || "-1".equals(revision))
+					? repository.getLatestRevision()
+					: Long.parseLong(revision);
+
+			for (String filePath : filePaths) {
+				if (fileContents.containsKey(filePath)) {
+					continue;
+				}
+
+				String repositoryPath = new File(branchPath, filePath).getPath().replace("\\", "/");
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				try {
+				repository.getFile(repositoryPath, selectedRevision, new SVNProperties(), baos);
+					fileContents.put(filePath, baos.toString(StandardCharsets.UTF_8.name()));
+				} catch (SVNException e) {
+					if (e.getErrorMessage().getErrorCode().getCode() == SVN_FILE_NOT_FOUND_ERROR_CODE) {
+						if (repository.checkPath(branchPath, -1L) == SVNNodeKind.NONE) {
+							throw new EVCSBranchNotFound(getRepoUrl(), branchPath);
+						}
+						throw new EVCSFileNotFound(getRepoUrl(), branchPath, filePath, revision);
+					}
+					throw new EVCSException(e);
+				}
+			}
+			return fileContents;
+		} catch (EVCSException e) {
+			throw e;
+		} catch (SVNException e) {
+			throw new EVCSException(e);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	private String getBranchName(String branchName) {
 		return branchName == null ? MASTER_PATH : BRANCHES_PATH + branchName;
 	}

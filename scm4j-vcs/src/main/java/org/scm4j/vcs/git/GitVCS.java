@@ -438,6 +438,57 @@ public class GitVCS implements IVCS {
 	}
 
 	@Override
+	public Map<String, String> getFilesContent(String branchName, List<String> filePaths, String revision) {
+		Map<String, String> fileContents = new LinkedHashMap<>();
+		try (IVCSLockedWorkingCopy wc = repo.getVCSLockedWorkingCopy();
+			 Git git = getLocalGit(wc);
+			 Repository gitRepo = git.getRepository();
+			 RevWalk revWalk = new RevWalk(gitRepo)) {
+
+			pullAndFetch(git);
+
+			String realBranchName = revision == null ? getRealBranchName(branchName) : branchName;
+			ObjectId revisionCommitId = gitRepo.resolve(revision == null
+					? REFS_HEADS + realBranchName
+					: revision);
+			if (revision == null && revisionCommitId == null) {
+				throw new EVCSBranchNotFound(getRepoUrl(), realBranchName);
+			}
+
+			RevTree tree = revWalk.parseCommit(revisionCommitId).getTree();
+			for (String filePath : filePaths) {
+				if (fileContents.containsKey(filePath)) {
+					continue;
+				}
+
+				try (TreeWalk treeWalk = new TreeWalk(gitRepo)) {
+					treeWalk.addTree(tree);
+					treeWalk.setRecursive(true);
+					treeWalk.setFilter(PathFilter.create(filePath));
+					if (!treeWalk.next()) {
+						if (realBranchName == null) {
+							realBranchName = getRealBranchName(branchName);
+						}
+						throw new EVCSFileNotFound(getRepoUrl(), realBranchName, filePath, revision);
+					}
+
+					ObjectLoader loader = gitRepo.open(treeWalk.getObjectId(0));
+					try (InputStream in = loader.openStream()) {
+						fileContents.put(filePath, IOUtils.toString(in, StandardCharsets.UTF_8));
+					}
+				}
+			}
+			return fileContents;
+		} catch (EVCSFileNotFound | EVCSBranchNotFound e) {
+			throw e;
+		} catch (GitAPIException e) {
+			throw new EVCSException(e);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
 	public VCSCommit setFileContent(String branchName, List<VCSChangeListNode> vcsChangeList) {
 		if (vcsChangeList.isEmpty()) {
 			return null;

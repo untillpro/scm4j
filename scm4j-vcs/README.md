@@ -105,6 +105,27 @@ Note: `null` passed as a branch name represents the repository's primary branch:
 	- Returns file content as a string using UTF-8 encoding.
 	- `fileRelativePath` is a path to file within `branchName` branch 
 	- File state at `revision` revision is used. If `revision` is null then Head state is used
+- `Map<String, String> getFilesContent(String branchName, List<String> filePaths, String revision)`
+	- Returns a map associating each requested repository-relative path with its UTF-8 content, all read from the same selected repository revision.
+	- A null `revision` selects the branch's head. Git fetches and resolves the selected commit once for the whole request.
+	- Missing-branch and missing-file errors follow the existing `getFileContent` behavior, using `EVCSBranchNotFound` and `EVCSFileNotFound` as applicable.
+	- This is a required `IVCS` operation with no default implementation. Custom `IVCS` implementations must implement it; the existing single-file `getFileContent` operation remains available.
+
+Example using the backend-neutral interface:
+
+```java
+import java.util.Arrays;
+import java.util.Map;
+import org.scm4j.vcs.api.IVCS;
+
+IVCS vcs = getConfiguredVCS();
+String branchName = "release/1.0";
+String revision = null; // Read the branch head.
+Map<String, String> contents = vcs.getFilesContent(
+		branchName,
+		Arrays.asList("pom.xml", "drivers/mysql/pom.xml"),
+		revision);
+```
 - `VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
