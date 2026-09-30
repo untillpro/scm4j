@@ -268,7 +268,7 @@ public class SVNVCS implements IVCS {
 					fileContents.put(filePath, baos.toString(StandardCharsets.UTF_8.name()));
 				} catch (SVNException e) {
 					if (e.getErrorMessage().getErrorCode().getCode() == SVN_FILE_NOT_FOUND_ERROR_CODE) {
-						if (repository.checkPath(branchPath, -1L) == SVNNodeKind.NONE) {
+						if (repository.checkPath(branchPath, selectedRevision) == SVNNodeKind.NONE) {
 							throw new EVCSBranchNotFound(getRepoUrl(), branchPath);
 						}
 						throw new EVCSFileNotFound(getRepoUrl(), branchPath, filePath, revision);
