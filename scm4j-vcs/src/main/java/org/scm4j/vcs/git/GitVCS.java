@@ -478,6 +478,12 @@ public class GitVCS implements IVCS {
 					}
 				}
 			}
+			if (revision != null) {
+				git
+						.reset()
+						.setMode(ResetType.HARD)
+						.call();
+			}
 			return fileContents;
 		} catch (EVCSFileNotFound | EVCSBranchNotFound e) {
 			throw e;
