@@ -26,6 +26,7 @@ import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -353,6 +354,25 @@ public class SVNVCSTest extends VCSAbstractTest {
 
 		try {
 			vcs.getFilesContent(branchName, Arrays.asList(FILE1_NAME), Long.toString(selectedRevision));
+			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
+		} catch (EVCSBranchNotFound ignored) {
+		}
+
+		verify(mockedRepo).checkPath(branchPath, selectedRevision);
+		verify(mockedRepo, never()).checkPath(branchPath, -1L);
+	}
+
+	@Test
+	public void testGetFilesContentChecksEmptyBranchAtSelectedRevision() throws Exception {
+		long selectedRevision = 7L;
+		String branchName = "created-later";
+		String branchPath = SVNVCS.BRANCHES_PATH + branchName;
+		SVNRepository mockedRepo = spy(svn.getSVNRepository());
+		svn.setSVNRepository(mockedRepo);
+		doReturn(SVNNodeKind.NONE).when(mockedRepo).checkPath(branchPath, selectedRevision);
+
+		try {
+			vcs.getFilesContent(branchName, Collections.emptyList(), Long.toString(selectedRevision));
 			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSBranchNotFound ignored) {
 		}

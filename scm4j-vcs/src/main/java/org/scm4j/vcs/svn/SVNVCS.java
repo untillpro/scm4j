@@ -256,6 +256,10 @@ public class SVNVCS implements IVCS {
 					? repository.getLatestRevision()
 					: Long.parseLong(revision);
 
+			if (filePaths.isEmpty() && repository.checkPath(branchPath, selectedRevision) == SVNNodeKind.NONE) {
+				throw new EVCSBranchNotFound(getRepoUrl(), branchPath);
+			}
+
 			for (String filePath : filePaths) {
 				if (fileContents.containsKey(filePath)) {
 					continue;
