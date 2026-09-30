@@ -27,13 +27,13 @@ public interface IVCS {
 	String getFileContent(String branchName, String fileRelativePath, String revision) throws EVCSFileNotFound;
 
 	/**
-	 * Reads multiple repository-relative files from the same selected branch revision.
+	 * Reads multiple files relative to the selected branch root from the same revision.
 	 * A null branch selects the repository's primary branch, and a null revision selects
 	 * the branch head. File contents are decoded as UTF-8, matching {@link #getFileContent}.
 	 * This is a required operation; custom {@code IVCS} implementations must implement it.
 	 *
 	 * @param branchName branch to read, or {@code null} for the repository's primary branch
-	 * @param filePaths repository-relative paths to read
+	 * @param filePaths paths relative to the selected branch root
 	 * @param revision revision to read, or {@code null} for the branch head
 	 * @return a map associating each requested path with its content
 	 * @throws EVCSFileNotFound if a requested file is not found
