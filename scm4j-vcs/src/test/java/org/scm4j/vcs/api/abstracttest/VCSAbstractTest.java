@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -206,6 +207,41 @@ public abstract class VCSAbstractTest {
 
 		try {
 			vcs.getFileContent("wrong-branch", FILE3_IN_FOLDER_NAME, null) ;
+			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
+		} catch (EVCSBranchNotFound e) {
+		}
+	}
+
+	@Test
+	public void testFilesGetContent() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_2, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		VCSCommit selectedRevision = vcsTestDataGen.setFileContent(NEW_BRANCH, Arrays.asList(
+				new VCSChangeListNode(FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE),
+				new VCSChangeListNode(FILE3_IN_FOLDER_NAME, LINE_2, FILE3_ADDED_COMMIT_MESSAGE)));
+		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_3, FILE1_CONTENT_CHANGED_COMMIT_MESSAGE);
+		resetMocks();
+		List<String> filePaths = Arrays.asList(FILE1_NAME, FILE3_IN_FOLDER_NAME);
+
+		Map<String, String> headContents = vcs.getFilesContent(NEW_BRANCH, filePaths, null);
+		assertEquals(LINE_3, headContents.get(FILE1_NAME));
+		assertEquals(LINE_2, headContents.get(FILE3_IN_FOLDER_NAME));
+		verifyMocks();
+
+		Map<String, String> revisionContents = vcs.getFilesContent(NEW_BRANCH, filePaths,
+				selectedRevision.getRevision());
+		assertEquals(LINE_1, revisionContents.get(FILE1_NAME));
+		assertEquals(LINE_2, revisionContents.get(FILE3_IN_FOLDER_NAME));
+		verifyMocks();
+
+		try {
+			vcs.getFilesContent(null, Arrays.asList(FILE1_NAME, "sdfsdf1.txt"), null);
+			fail(EVCSFileNotFound.class.getSimpleName() + " is not thrown");
+		} catch (EVCSFileNotFound e) {
+		}
+
+		try {
+			vcs.getFilesContent("wrong-branch", filePaths, null);
 			fail(EVCSBranchNotFound.class.getSimpleName() + " is not thrown");
 		} catch (EVCSBranchNotFound e) {
 		}

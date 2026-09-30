@@ -265,6 +265,20 @@ public class GitVCSTest extends VCSAbstractTest {
 	}
 
 	@Test
+	public void testGetFilesContentResetsWorkingCopyForRevision() throws Exception {
+		VCSCommit revision = vcsTestDataGen.setFileContent(
+				null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		resetMocks();
+		Git mockedGit = Mockito.spy(git.getLocalGit(mockedLWC));
+		Mockito.doReturn(mockedGit).when(git).getLocalGit(mockedLWC);
+
+		assertEquals(LINE_1, vcs.getFilesContent(null, Arrays.asList(FILE1_NAME), revision.getRevision())
+				.get(FILE1_NAME));
+
+		Mockito.verify(mockedGit).reset();
+	}
+
+	@Test
 	public void testCustomRemoteDefaultIsSupported() throws Exception {
 		File remoteDir = new File(TEST_BASE_DIR, "custom-default-repo");
 		try (Git ignored = GitVCSUtils.createRepository(remoteDir, "stable")) {

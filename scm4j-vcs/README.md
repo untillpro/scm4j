@@ -71,7 +71,7 @@ Both adapters implement `IVCS` and use the same working-copy infrastructure.
 - `VCSMergeResult`, Merge Result
 	- Result of vcs merge operation. Could be successful or failed. Provides list of conflicting files if failed.
 - `VCSDiffEntry`, Diff Entry
-	- Result of VCS branches diff operation. Contains Diff type (added, modified, deleted) and unified diff string for a certain file which differs between branches 
+	- Result of VCS branches diff operation. Contains Diff type (added, modified, deleted) and unified diff string for a certain file which differs between branches
 - Head, Head Commit, Branch Head
 	- The latest commit or state of a branch
 - Primary Branch
@@ -103,8 +103,29 @@ Note: `null` passed as a branch name represents the repository's primary branch:
 	- Returns string url of current vcs repository
 - `String getFileContent(String branchName, String fileRelativePath, String revision)`
 	- Returns file content as a string using UTF-8 encoding.
-	- `fileRelativePath` is a path to file within `branchName` branch 
+	- `fileRelativePath` is a path to file within `branchName` branch
 	- File state at `revision` revision is used. If `revision` is null then Head state is used
+- `Map<String, String> getFilesContent(String branchName, List<String> filePaths, String revision)`
+ 	- Returns a map associating each path relative to the selected branch root with its UTF-8 content, all read from the same selected revision
+	- A null `revision` selects the branch's head. Git fetches and resolves the selected commit once for the whole request.
+	- Missing-branch and missing-file errors follow the existing `getFileContent` behavior, using `EVCSBranchNotFound` and `EVCSFileNotFound` as applicable.
+	- This is a required `IVCS` operation with no default implementation. Custom `IVCS` implementations must implement it; the existing single-file `getFileContent` operation remains available.
+
+Example using the backend-neutral interface:
+
+```java
+import java.util.Arrays;
+import java.util.Map;
+import org.scm4j.vcs.api.IVCS;
+
+IVCS vcs = getConfiguredVCS();
+String branchName = "release/1.0";
+String revision = null; // Read the branch head.
+Map<String, String> contents = vcs.getFilesContent(
+		branchName,
+		Arrays.asList("pom.xml", "drivers/mysql/pom.xml"),
+		revision);
+```
 - `VCSCommit setFileContent(String branchName, String filePath, String content, String commitMessage)`
 	- Rewrites a file with path `filePath` within branch `branchName` with content `content` and applies `commitMessage` message to commit
 	- Creates the file and its parent folders if doesn't exists
@@ -167,7 +188,7 @@ Note: `null` passed as a branch name represents the repository's primary branch:
 - `List<VCSCommit> getCommitsRange(String branchName, String startRevision, WalkDirection direction, int limit)`
     - Convenience overload for whole-branch history. It delegates to the path-filtered operation with an empty path.
 - `VCSCommit getHeadCommit(String branchName)`
-    - Returns `VCSCommit` instance pointing to the head (last) commit of the branch `branchName` or `null` if the requested branch does not exists  
+    - Returns `VCSCommit` instance pointing to the head (last) commit of the branch `branchName` or `null` if the requested branch does not exists
 - `Boolean fileExists(String branchName, String filePath)`
     - Returns true if the file with path `filePath` exists in repository in branch `branchName`, false otherwise
 - `VCSTag createTag(String branchName, String tagName, String tagMessage, String revisionToTag) throws EVCSTagExists`
@@ -195,7 +216,7 @@ Note: `null` passed as a branch name represents the repository's primary branch:
 	```
 - `List<VCSTag> getTagsOnRevision(String revision)`
     - Returns list of all tags which are related to the commit specified by `revision`, or an empty list when the repository has no tags
-    
+
 # Using Locked Working Copy
 Let's assume we developing a multiuser server which has ability to merge branches of user's repositories. So few users could request to merge theirs branches of different repositories simultaneously. For example, Git merge operation consists of few underlying operations (check in\out, merge itself, push) which must be executed on a local file system in a certain folder. So we have following requirements:
 - The simple way to allocate place for vcs operations execution
@@ -212,7 +233,7 @@ LWC usage scenario:
 	IVCSWorkspace workspace = new VCSWorkspace(WORKSPACE_DIR);
 	...
 ```
-- Obtain Repository Workspace from Workspace Home providing a certain Repository's url. The obtained Repository Workspace will represent a folder within Workspace Home dir which will contain all Working Copies relating to the provided VCS Repository  
+- Obtain Repository Workspace from Workspace Home providing a certain Repository's url. The obtained Repository Workspace will represent a folder within Workspace Home dir which will contain all Working Copies relating to the provided VCS Repository
 ```java
 	String repoUrl = "https://github.com/untillpro/scm4j";
 	IVCSRepositoryWorkspace repoWorkspace = workspace.getVCSRepositoryWorkspace(repoUrl);
@@ -227,7 +248,7 @@ LWC usage scenario:
 - Do not use `IVCSLockedWorkingCopy` instance after calling `IVCSLockedWorkingCopy.close()` method because after closing `IVCSLockedWorkingCopy` instance does not guarantees that according folder is not in use
 - Consider `IVCSLockedWorkingCopy.getState()` values:
 	- LOCKED
-		- current `IVCSLockedWorkingCopy` represents a locked folder, i.e. a folder which is not used by other `IVCSLockedWorkingCopy` instances. 
+		- current `IVCSLockedWorkingCopy` represents a locked folder, i.e. a folder which is not used by other `IVCSLockedWorkingCopy` instances.
 	- OBSOLETE
 		- `IVCSLockedWorkingCopy.close()` method has been called. Corresponding folder is unlocked and could be used by other `IVCSLockedWorkingCopy` instances. `IVCSLockedWorkingCopy` instance with this state should not be used anymore.
 - If a Working copy can not be reused due of VCS system data damage (e.g. .git, .svn folders) or due of vcs Working Copy can not be cleaned, reverted, switched, checked out etc, execute `IVCSLockedWorkingCopy.setCorrupted(true)`. LWC folder will be deleted on close.
@@ -255,7 +276,7 @@ public class WorkingCopyExample {
 # Folder structure
 - Workspace Home folder (e.g. `C:\temp\scm4j-vcs-workspaces\`)
 	- Repository Workspace 1 (e.g. `<Workspace Home>\github.com_untillpro_scm4j\`)
-		- Working Copy 1 
+		- Working Copy 1
 			- Branch1 is checked out, merging executes
 		- Working Copy 2
 			- branch creating executes
@@ -278,7 +299,7 @@ Lock call: `new FileOutputStream(lockFile, false).getChannel().lock()`.
 # Developing IVCS implementation
 - Implement IVCS interface
 	- IVCS implementation should be separate object which normally holds all VCS-related data within
-	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation. 
+	- Normally IVCSRepositoryWorkspace instance is passed to constructor and stored within IVCS implementation.
 	- Operations using an internal local working copy should obtain an LWC in LOCKED state via `IVCSRepositoryWorkspace.getVCSLockedWorkingCopy()`. Remote-only operations do not need an LWC; `checkout` and `sparseCheckout` use the caller-provided target folder.
 	- Use `IVCSLockedWorkingCopy.getFolder()` to get a folder for vcs-related operations
 	- Every acquired LWC must be closed, preferably with try-with-resources. The shared test suite checks calls to `close()`.
