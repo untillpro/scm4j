@@ -11,6 +11,7 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.RetryPolicyBuilder;
 
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -45,11 +46,23 @@ public final class Utils {
 				.withMaxRetries(MAX_RETRIES)
 				.onRetryScheduled(event -> retryStatusReporter.accept(operation, event.getLastException()));
 		retryDelayConfigurer.accept(retryPolicy);
+		AtomicReference<Exception> commandFailure = new AtomicReference<>();
 
 		try {
-			Failsafe.with(retryPolicy.build()).run(command::run);
+			Failsafe.with(retryPolicy.build()).run(() -> {
+				try {
+					command.run();
+				} catch (Exception failure) {
+					commandFailure.set(failure);
+					throw failure;
+				}
+			});
 		} catch (FailsafeException failure) {
-			throwOriginal(failure.getCause());
+			Exception lastCommandFailure = commandFailure.get();
+			if (failure.getCause() == lastCommandFailure) {
+				throwOriginal(lastCommandFailure);
+			}
+			throw failure;
 		}
 	}
 

@@ -73,7 +73,7 @@ References:
   - provide the generic stateless `runWithRetry` checked-operation runner described in `## How`, parameterized by operation label, failure predicate, and retry-status callback
   - define a library-owned generic checked functional interface for adapter commands so the public utility signature does not expose the implementation-only Failsafe dependency
   - build the existing Failsafe policy with 500-to-2000-millisecond backoff, 25 percent jitter, and 10 retries, and notify the callback only when a retry is scheduled
-  - unwrap exhausted executions so callers receive their original checked backend exception; include package-level backoff configuration for deterministic unit tests
+  - unwrap only command-originated checked failures so callers receive their original backend exception, preserve framework failures in their unchecked wrapper, and include package-level backoff configuration for deterministic unit tests
 
 ### VCS adapters
 

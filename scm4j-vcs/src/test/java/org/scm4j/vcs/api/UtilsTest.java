@@ -5,6 +5,7 @@
 
 package org.scm4j.vcs.api;
 
+import dev.failsafe.FailsafeException;
 import dev.failsafe.RetryPolicyBuilder;
 import org.junit.Test;
 
@@ -16,6 +17,7 @@ import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class UtilsTest {
@@ -87,6 +89,25 @@ public class UtilsTest {
 		assertEquals(10, reportedFailures.size());
 		for (Throwable reportedFailure : reportedFailures) {
 			assertSame(failure, reportedFailure);
+		}
+	}
+
+	@Test
+	public void preservesFrameworkFailureWhenRetryBackoffIsInterrupted() {
+		IOException commandFailure = new IOException("transient");
+
+		try {
+			Utils.runWithRetry("test operation", () -> {
+				throw commandFailure;
+			}, candidate -> candidate == commandFailure,
+					(operation, reportedFailure) -> Thread.currentThread().interrupt());
+			fail("FailsafeException is not thrown");
+		} catch (FailsafeException actual) {
+			assertTrue(actual.getCause() instanceof InterruptedException);
+		} catch (IOException actual) {
+			fail("Command failure was propagated instead of the framework interruption");
+		} finally {
+			Thread.interrupted();
 		}
 	}
 }
