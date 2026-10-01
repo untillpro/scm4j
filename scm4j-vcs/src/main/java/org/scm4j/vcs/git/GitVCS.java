@@ -1,9 +1,5 @@
 package org.scm4j.vcs.git;
 
-import dev.failsafe.Failsafe;
-import dev.failsafe.FailsafeException;
-import dev.failsafe.RetryPolicy;
-import dev.failsafe.function.CheckedRunnable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.api.*;
@@ -44,7 +40,6 @@ import java.io.*;
 import java.net.*;
 import java.net.Proxy.Type;
 import java.nio.charset.StandardCharsets;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -573,10 +568,10 @@ public class GitVCS implements IVCS {
 	private void pullAndFetch(Git git) throws GitAPIException, WrongRepositoryStateException,
 			InvalidConfigurationException, DetachedHeadException, InvalidRemoteException, CanceledException,
 			RefNotFoundException, RefNotAdvertisedException, NoHeadException, TransportException {
-		runWithTransportRetry("Git pull", () -> git
+		Utils.runWithRetry("Git pull", () -> git
 					.pull()
 					.setCredentialsProvider(credentials)
-					.call());
+					.call(), GitVCS::isTransientTransportFailure, retryStatusReporter);
 
 		// remove local branches and tags which are not exists on remote
 		// See https://github.com/scm4j/scm4j-releaser/issues/59
@@ -587,32 +582,15 @@ public class GitVCS implements IVCS {
 	}
 
 	private void fetch(Git git, RefSpec... refSpecs) throws GitAPIException {
-		runWithTransportRetry("Git fetch", () -> git
+		Utils.runWithRetry("Git fetch", () -> git
 				.fetch()
 				.setRefSpecs(refSpecs)
 				.setRemoveDeletedRefs(true)
 				.setCredentialsProvider(credentials)
-				.call());
+				.call(), GitVCS::isTransientTransportFailure, retryStatusReporter);
 	}
 
-	private void runWithTransportRetry(String operation, CheckedRunnable command) throws GitAPIException {
-		try {
-			Failsafe.with(RetryPolicy.builder()
-					.handleIf(GitVCS::isTransientTransportFailure)
-					.withBackoff(500, 2000, ChronoUnit.MILLIS)
-					.withJitter(.25)
-					.withMaxRetries(10)
-					.onRetryScheduled(event -> retryStatusReporter.accept(operation, event.getLastException()))
-					.build()).run(command);
-		} catch (FailsafeException e) {
-			if (e.getCause() instanceof GitAPIException) {
-				throw (GitAPIException) e.getCause();
-			}
-			throw e;
-		}
-	}
-
-	private static boolean isTransientTransportFailure(Throwable failure) {
+	static boolean isTransientTransportFailure(Throwable failure) {
 		for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
 			if (cause instanceof SocketException || cause instanceof EOFException) {
 				return true;

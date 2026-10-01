@@ -20,15 +20,24 @@ import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileWriter;
+import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class SVNVCS implements IVCS {
 	private static final int SVN_PATH_IS_NOT_WORKING_COPY_ERROR_CODE = 155007;
 	private static final int SVN_ITEM_EXISTS_ERROR_CODE = 160020;
 	private static final int SVN_FILE_NOT_FOUND_ERROR_CODE = 160013;
+	private static final Set<SVNErrorCode> TRANSIENT_SVN_ERROR_CODES = new HashSet<>(Arrays.asList(
+			SVNErrorCode.RA_DAV_SOCK_INIT,
+			SVNErrorCode.RA_DAV_CREATING_REQUEST,
+			SVNErrorCode.RA_DAV_CONN_TIMEOUT,
+			SVNErrorCode.RA_SVN_CONNECTION_CLOSED,
+			SVNErrorCode.RA_SVN_IO_ERROR));
 
 	public static final String MASTER_PATH= "trunk/";
 	public static final String BRANCHES_PATH = "branches/";
@@ -43,6 +52,7 @@ public class SVNVCS implements IVCS {
 	private SVNAuthentication userPassAuth;
 	private IVCSRepositoryWorkspace repo;
 	private String repoUrl;
+	private BiConsumer<String, Throwable> retryStatusReporter = (operation, failure) -> {};
 
 	public void setClientManager(SVNClientManager clientManager) {
 		this.clientManager = clientManager;
@@ -190,10 +200,38 @@ public class SVNVCS implements IVCS {
 		updateClient.setIgnoreExternals(false);
 		SVNRevision svnRevision = revision == null ? SVNRevision.HEAD : SVNRevision.parse(revision);
 		if (isWorkingCopyInited(destPath)) {
-			updateClient.doSwitch(destPath, sourceUrl, svnRevision, svnRevision, SVNDepth.INFINITY, false, false);
+			runWithTransportRetry("SVN switch", () -> updateClient.doSwitch(
+					destPath, sourceUrl, svnRevision, svnRevision, SVNDepth.INFINITY, false, false));
 		} else {
-			updateClient.doCheckout(sourceUrl, destPath, svnRevision, svnRevision, SVNDepth.UNKNOWN, false);
+			runWithTransportRetry("SVN checkout", () -> updateClient.doCheckout(
+					sourceUrl, destPath, svnRevision, svnRevision, SVNDepth.UNKNOWN, false));
 		}
+	}
+
+	private void runWithTransportRetry(String operation, Utils.CheckedRunnable<SVNException> command)
+			throws SVNException {
+		Utils.runWithRetry(operation, command, SVNVCS::isTransientTransportFailure, retryStatusReporter);
+	}
+
+	static boolean isTransientTransportFailure(Throwable failure) {
+		for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+			if (cause instanceof SocketException || cause instanceof EOFException) {
+				return true;
+			}
+			if (cause instanceof SVNException && hasTransientErrorCode(((SVNException) cause).getErrorMessage())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasTransientErrorCode(SVNErrorMessage errorMessage) {
+		for (SVNErrorMessage current = errorMessage; current != null; current = current.getChildErrorMessage()) {
+			if (TRANSIENT_SVN_ERROR_CODES.contains(current.getErrorCode())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public boolean isWorkingCopyInited(File destPath) {
@@ -220,6 +258,11 @@ public class SVNVCS implements IVCS {
 	@Override
 	public void setProxy(String host, int port, String proxyUser, String proxyPassword) {
 		authManager.setProxy(host, port, proxyUser, proxyPassword.toCharArray());
+	}
+
+	@Override
+	public void setRetryStatusReporter(BiConsumer<String, Throwable> reporter) {
+		retryStatusReporter = reporter;
 	}
 
 
@@ -711,14 +754,15 @@ public class SVNVCS implements IVCS {
 			File target = new File(targetPath);
 			SVNURL sourceUrl = getBranchUrl(branchName);
 			if (isWorkingCopyInited(target)) {
-				updateClient.doSwitch(target, sourceUrl, svnRevision, svnRevision,
-						SVNDepth.EMPTY, true, true, false);
+				runWithTransportRetry("SVN switch", () -> updateClient.doSwitch(
+						target, sourceUrl, svnRevision, svnRevision, SVNDepth.EMPTY, true, true, false));
 			} else {
-				updateClient.doCheckout(sourceUrl, target, svnRevision, svnRevision,
-						SVNDepth.EMPTY, false);
+				runWithTransportRetry("SVN checkout", () -> updateClient.doCheckout(
+						sourceUrl, target, svnRevision, svnRevision, SVNDepth.EMPTY, false));
 			}
-			updateClient.doUpdate(new File[] {new File(target, repositoryRelativeDirectory)},
-					svnRevision, SVNDepth.INFINITY, false, true, true);
+			runWithTransportRetry("SVN update", () -> updateClient.doUpdate(
+					new File[] {new File(target, repositoryRelativeDirectory)},
+					svnRevision, SVNDepth.INFINITY, false, true, true));
 		} catch (SVNException e) {
 			throw new EVCSException(e);
 		}

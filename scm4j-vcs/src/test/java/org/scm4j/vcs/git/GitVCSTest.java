@@ -4,10 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -19,11 +21,13 @@ import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -42,6 +46,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
 import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.Utils;
 import org.scm4j.vcs.api.VCSChangeType;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
@@ -541,5 +546,56 @@ public class GitVCSTest extends VCSAbstractTest {
 		// expect no exceptions
 		vcs.createTag(null, "tag", "tag desc", null);
 		assertEquals("tag", vcs.getTags().get(0).getTagName());
+	}
+
+	@Test
+	public void testTransientTransportFailureClassification() {
+		assertTrue(GitVCS.isTransientTransportFailure(new SocketException("connection reset")));
+		assertTrue(GitVCS.isTransientTransportFailure(
+				new RuntimeException("wrapped", new EOFException("unexpected end of stream"))));
+		assertFalse(GitVCS.isTransientTransportFailure(new IOException("unrelated I/O failure")));
+		assertFalse(GitVCS.isTransientTransportFailure(new IllegalStateException("permanent")));
+	}
+
+	@Test
+	public void testTransportRetryReportsOperationAndFailure() throws SocketException {
+		AtomicInteger attempts = new AtomicInteger();
+		SocketException failure = new SocketException("connection reset");
+		String[] reportedOperation = new String[1];
+		Throwable[] reportedFailure = new Throwable[1];
+
+		Utils.runWithRetry("Git fetch", () -> {
+			if (attempts.incrementAndGet() == 1) {
+				throw failure;
+			}
+		}, GitVCS::isTransientTransportFailure, (operation, actualFailure) -> {
+			reportedOperation[0] = operation;
+			reportedFailure[0] = actualFailure;
+		});
+
+		assertEquals(2, attempts.get());
+		assertEquals("Git fetch", reportedOperation[0]);
+		assertSame(failure, reportedFailure[0]);
+	}
+
+	@Test
+	public void testTransportRetryPropagatesUnrelatedFailureWithoutReporting() {
+		AtomicInteger attempts = new AtomicInteger();
+		AtomicInteger reports = new AtomicInteger();
+		IllegalStateException failure = new IllegalStateException("permanent");
+
+		try {
+			Utils.runWithRetry("Git fetch", () -> {
+				attempts.incrementAndGet();
+				throw failure;
+			}, GitVCS::isTransientTransportFailure,
+					(operation, actualFailure) -> reports.incrementAndGet());
+			fail("IllegalStateException is not thrown");
+		} catch (IllegalStateException actual) {
+			assertSame(failure, actual);
+		}
+
+		assertEquals(1, attempts.get());
+		assertEquals(0, reports.get());
 	}
 }
