@@ -18,16 +18,19 @@ import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.*;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.SocketException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
@@ -46,6 +49,8 @@ public class SVNVCSTest extends VCSAbstractTest {
 	private final IOException testCommonException = new IOException("test exception");
 	private SVNVCS svn;
 	private SVNRepository svnRepo;private SVNWCClient mockedSVNRevertClient;
+	private String reportedRetryOperation;
+	private Throwable reportedRetryFailure;
 
 	@Override
 	public void setUp() throws Exception {
@@ -514,5 +519,142 @@ public class SVNVCSTest extends VCSAbstractTest {
 		} catch (EVCSException e) {
 			checkEVCSException(e);
 		}
+	}
+
+	@Test
+	public void testTransientTransportFailureClassification() {
+		assertTrue(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.RA_DAV_SOCK_INIT)));
+		assertTrue(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.RA_DAV_CREATING_REQUEST)));
+		assertTrue(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.RA_DAV_CONN_TIMEOUT)));
+		assertTrue(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.RA_SVN_CONNECTION_CLOSED)));
+		assertTrue(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.RA_SVN_IO_ERROR)));
+		assertTrue(SVNVCS.isTransientTransportFailure(new RuntimeException(new SocketException("reset"))));
+		assertTrue(SVNVCS.isTransientTransportFailure(new RuntimeException(new EOFException("eof"))));
+
+		assertFalse(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.RA_NOT_AUTHORIZED)));
+		assertFalse(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.FS_NOT_FOUND)));
+		assertFalse(SVNVCS.isTransientTransportFailure(svnFailure(SVNErrorCode.WC_LOCKED)));
+		assertFalse(SVNVCS.isTransientTransportFailure(new IllegalStateException("permanent")));
+	}
+
+	@Test
+	public void testCheckoutRetriesTransientFailureAndReportsIt() throws Exception {
+		SVNUpdateClient updateClient = mockUpdateClient();
+		doReturn(false).when(svn).isWorkingCopyInited(any(File.class));
+		SVNException failure = svnFailure(SVNErrorCode.RA_DAV_CONN_TIMEOUT);
+		doThrow(failure).doReturn(1L).when(updateClient).doCheckout(
+				any(SVNURL.class), any(File.class), any(SVNRevision.class), any(SVNRevision.class),
+				any(SVNDepth.class), anyBoolean());
+		vcs.setRetryStatusReporter(this::captureRetry);
+
+		vcs.checkout(null, new File(WORKSPACE_DIR, "retry-checkout").getAbsolutePath(), null);
+
+		verify(updateClient, times(2)).doCheckout(
+				any(SVNURL.class), any(File.class), any(SVNRevision.class), any(SVNRevision.class),
+				any(SVNDepth.class), anyBoolean());
+		assertRetryReport("SVN checkout", failure);
+	}
+
+	@Test
+	public void testSwitchRetriesTransientFailureAndReportsIt() throws Exception {
+		SVNUpdateClient updateClient = mockUpdateClient();
+		doReturn(true).when(svn).isWorkingCopyInited(any(File.class));
+		SVNException failure = svnFailure(SVNErrorCode.RA_SVN_CONNECTION_CLOSED);
+		doThrow(failure).doReturn(1L).when(updateClient).doSwitch(
+				any(File.class), any(SVNURL.class), any(SVNRevision.class), any(SVNRevision.class),
+				any(SVNDepth.class), anyBoolean(), anyBoolean());
+		vcs.setRetryStatusReporter(this::captureRetry);
+
+		vcs.checkout(null, new File(WORKSPACE_DIR, "retry-switch").getAbsolutePath(), null);
+
+		verify(updateClient, times(2)).doSwitch(
+				any(File.class), any(SVNURL.class), any(SVNRevision.class), any(SVNRevision.class),
+				any(SVNDepth.class), anyBoolean(), anyBoolean());
+		assertRetryReport("SVN switch", failure);
+	}
+
+	@Test
+	public void testSparseUpdateRetriesTransientFailureAndReportsIt() throws Exception {
+		SVNUpdateClient updateClient = mockUpdateClient();
+		doReturn(true).when(svn).isWorkingCopyInited(any(File.class));
+		SVNException failure = svnFailure(SVNErrorCode.RA_SVN_IO_ERROR);
+		doThrow(failure).doReturn(new long[] {1L}).when(updateClient).doUpdate(
+				any(File[].class), any(SVNRevision.class), any(SVNDepth.class),
+				anyBoolean(), anyBoolean(), anyBoolean());
+		vcs.setRetryStatusReporter(this::captureRetry);
+
+		vcs.sparseCheckout(null, new File(WORKSPACE_DIR, "retry-sparse-update").getAbsolutePath(), null, "dir");
+
+		verify(updateClient, times(2)).doUpdate(
+				any(File[].class), any(SVNRevision.class), any(SVNDepth.class),
+				anyBoolean(), anyBoolean(), anyBoolean());
+		assertRetryReport("SVN update", failure);
+	}
+
+	@Test
+	public void testRemoteMutationsAreNotRetried() throws Exception {
+		SVNClientManager manager = spy(svn.getClientManager());
+		svn.setClientManager(manager);
+		SVNCopyClient copyClient = mock(SVNCopyClient.class);
+		SVNCommitClient commitClient = mock(SVNCommitClient.class);
+		doReturn(copyClient).when(manager).getCopyClient();
+		doReturn(commitClient).when(manager).getCommitClient();
+		SVNException failure = svnFailure(SVNErrorCode.RA_DAV_CONN_TIMEOUT);
+		AtomicInteger reports = new AtomicInteger();
+		vcs.setRetryStatusReporter((operation, actualFailure) -> reports.incrementAndGet());
+
+		doThrow(failure).when(copyClient).doCopy(any(SVNCopySource[].class), any(SVNURL.class),
+				anyBoolean(), anyBoolean(), anyBoolean(), anyString(), any(SVNProperties.class));
+		try {
+			vcs.createBranch(null, "not-retried", "create");
+			fail("EVCSException is not thrown");
+		} catch (EVCSException actual) {
+			assertSame(failure, actual.getCause());
+		}
+		verify(copyClient, times(1)).doCopy(any(SVNCopySource[].class), any(SVNURL.class),
+				anyBoolean(), anyBoolean(), anyBoolean(), anyString(), any(SVNProperties.class));
+
+		doThrow(failure).when(commitClient).doDelete(any(SVNURL[].class), anyString());
+		try {
+			vcs.deleteBranch("not-retried", "delete");
+			fail("EVCSException is not thrown");
+		} catch (EVCSException actual) {
+			assertSame(failure, actual.getCause());
+		}
+		verify(commitClient, times(1)).doDelete(any(SVNURL[].class), anyString());
+
+		doThrow(failure).when(commitClient).doCommit(any(File[].class), anyBoolean(), anyString(),
+				any(SVNProperties.class), any(String[].class), anyBoolean(), anyBoolean(), any(SVNDepth.class));
+		try {
+			vcs.setFileContent(null, "not-retried.txt", "content", "commit");
+			fail("EVCSException is not thrown");
+		} catch (EVCSException actual) {
+			assertSame(failure, actual.getCause());
+		}
+		verify(commitClient, times(1)).doCommit(any(File[].class), anyBoolean(), anyString(),
+				any(SVNProperties.class), any(String[].class), anyBoolean(), anyBoolean(), any(SVNDepth.class));
+		assertEquals(0, reports.get());
+	}
+
+	private SVNUpdateClient mockUpdateClient() {
+		SVNClientManager manager = spy(svn.getClientManager());
+		svn.setClientManager(manager);
+		SVNUpdateClient updateClient = mock(SVNUpdateClient.class);
+		doReturn(updateClient).when(manager).getUpdateClient();
+		return updateClient;
+	}
+
+	private void captureRetry(String operation, Throwable failure) {
+		reportedRetryOperation = operation;
+		reportedRetryFailure = failure;
+	}
+
+	private void assertRetryReport(String operation, Throwable failure) {
+		assertEquals(operation, reportedRetryOperation);
+		assertSame(failure, reportedRetryFailure);
+	}
+
+	private SVNException svnFailure(SVNErrorCode errorCode) {
+		return new SVNException(SVNErrorMessage.create(errorCode, "test transport failure"));
 	}
 }
