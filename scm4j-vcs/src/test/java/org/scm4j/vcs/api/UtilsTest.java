@@ -5,41 +5,21 @@
 
 package org.scm4j.vcs.api;
 
+import dev.failsafe.RetryPolicyBuilder;
 import org.junit.Test;
-import org.junit.After;
-import org.junit.Before;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 public class UtilsTest {
-	private ScheduledExecutorService immediateScheduler;
-
-	@Before
-	public void setUp() {
-		immediateScheduler = new ScheduledThreadPoolExecutor(1) {
-			@Override
-			public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
-				return super.schedule(callable, 0, TimeUnit.MILLISECONDS);
-			}
-		};
-	}
-
-	@After
-	public void tearDown() {
-		immediateScheduler.shutdownNow();
-	}
+	private static final Consumer<RetryPolicyBuilder<Object>> NO_RETRY_DELAY = retryPolicy -> {};
 
 	@Test
 	public void retriesRetryableFailureAndReportsScheduledRetries() throws IOException {
@@ -55,7 +35,7 @@ public class UtilsTest {
 		}, candidate -> candidate == failure, (operation, reportedFailure) -> {
 			reportedOperations.add(operation);
 			reportedFailures.add(reportedFailure);
-		}, immediateScheduler);
+		}, NO_RETRY_DELAY);
 
 		assertEquals(3, attempts.get());
 		assertEquals(2, reportedOperations.size());
@@ -76,7 +56,7 @@ public class UtilsTest {
 				attempts.incrementAndGet();
 				throw failure;
 			}, candidate -> false, (operation, reportedFailure) -> reports.incrementAndGet(),
-					immediateScheduler);
+					NO_RETRY_DELAY);
 			fail("IOException is not thrown");
 		} catch (IOException actual) {
 			assertSame(failure, actual);
@@ -97,7 +77,7 @@ public class UtilsTest {
 				attempts.incrementAndGet();
 				throw failure;
 			}, candidate -> true, (operation, reportedFailure) -> reportedFailures.add(reportedFailure),
-					immediateScheduler);
+					NO_RETRY_DELAY);
 			fail("IOException is not thrown");
 		} catch (IOException actual) {
 			assertSame(failure, actual);

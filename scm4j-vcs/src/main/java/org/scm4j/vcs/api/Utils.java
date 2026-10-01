@@ -7,13 +7,12 @@ package org.scm4j.vcs.api;
 
 import dev.failsafe.Failsafe;
 import dev.failsafe.FailsafeException;
-import dev.failsafe.FailsafeExecutor;
 import dev.failsafe.RetryPolicy;
 import dev.failsafe.RetryPolicyBuilder;
 
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public final class Utils {
@@ -33,29 +32,31 @@ public final class Utils {
 	public static <E extends Exception> void runWithRetry(String operation,
 			CheckedRunnable<E> command, Predicate<Throwable> retryableFailure,
 			BiConsumer<String, Throwable> retryStatusReporter) throws E {
-		runWithRetry(operation, command, retryableFailure, retryStatusReporter, null);
+		runWithRetry(operation, command, retryableFailure, retryStatusReporter,
+				Utils::configureDefaultRetryDelay);
 	}
 
 	static <E extends Exception> void runWithRetry(String operation,
 			CheckedRunnable<E> command, Predicate<Throwable> retryableFailure,
 			BiConsumer<String, Throwable> retryStatusReporter,
-			ScheduledExecutorService scheduler) throws E {
+			Consumer<RetryPolicyBuilder<Object>> retryDelayConfigurer) throws E {
 		RetryPolicyBuilder<Object> retryPolicy = RetryPolicy.<Object>builder()
 				.handleIf(retryableFailure::test)
-				.withBackoff(MIN_BACKOFF_MILLIS, MAX_BACKOFF_MILLIS, ChronoUnit.MILLIS)
-				.withJitter(JITTER_FACTOR)
 				.withMaxRetries(MAX_RETRIES)
 				.onRetryScheduled(event -> retryStatusReporter.accept(operation, event.getLastException()));
+		retryDelayConfigurer.accept(retryPolicy);
 
 		try {
-			FailsafeExecutor<Object> executor = Failsafe.with(retryPolicy.build());
-			if (scheduler != null) {
-				executor.with(scheduler);
-			}
-			executor.run(command::run);
+			Failsafe.with(retryPolicy.build()).run(command::run);
 		} catch (FailsafeException failure) {
 			throwOriginal(failure.getCause());
 		}
+	}
+
+	private static void configureDefaultRetryDelay(RetryPolicyBuilder<Object> retryPolicy) {
+		retryPolicy
+				.withBackoff(MIN_BACKOFF_MILLIS, MAX_BACKOFF_MILLIS, ChronoUnit.MILLIS)
+				.withJitter(JITTER_FACTOR);
 	}
 
 	@SuppressWarnings("unchecked")

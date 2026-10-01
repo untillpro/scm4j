@@ -58,7 +58,7 @@ References:
 
 - [x] create: [api/UtilsTest.java](../../../../../scm4j-vcs/src/test/java/org/scm4j/vcs/api/UtilsTest.java)
   - cover the shared utility's retryable and non-retryable paths, retry-status callback arguments, maximum-attempt behavior, and propagation of the original checked failure
-  - exercise the fixed production policy through a package-level scheduler-injection seam and an immediate test scheduler so verification does not wait for real backoff intervals
+  - exercise the fixed production policy through a package-level backoff-configurer seam that omits delays in tests so verification does not wait for real backoff intervals
 - [x] update: [git/GitVCSTest.java](../../../../../scm4j-vcs/src/test/java/org/scm4j/vcs/git/GitVCSTest.java)
   - add regression coverage that socket and end-of-stream failures, including nested causes, remain retryable after orchestration moves out of the Git adapter
   - verify unrelated Git failures remain single-attempt failures and retry notifications retain their operation label and triggering exception
@@ -73,7 +73,7 @@ References:
   - provide the generic stateless `runWithRetry` checked-operation runner described in `## How`, parameterized by operation label, failure predicate, and retry-status callback
   - define a library-owned generic checked functional interface for adapter commands so the public utility signature does not expose the implementation-only Failsafe dependency
   - build the existing Failsafe policy with 500-to-2000-millisecond backoff, 25 percent jitter, and 10 retries, and notify the callback only when a retry is scheduled
-  - unwrap exhausted executions so callers receive their original checked backend exception; include package-level scheduler injection for deterministic unit tests
+  - unwrap exhausted executions so callers receive their original checked backend exception; include package-level backoff configuration for deterministic unit tests
 
 ### VCS adapters
 
