@@ -62,22 +62,25 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 						+ "\r\n",
 				Constants.SCM_IGNORE + " both monorepo components added to status graph");
 
-		ExtendedStatus rootStatus = new ExtendedStatusBuilder(repoFactory)
-				.getAndCacheMinorStatus(compUnTill, new CachedStatuses());
-		Map<String, ExtendedStatus> componentStatuses = rootStatus.getSubComponents().values().stream()
-				.collect(Collectors.toMap(status -> status.getComp().getName(), status -> status));
+		for (int calculation = 0; calculation < 2; calculation++) {
+			ExtendedStatus rootStatus = new ExtendedStatusBuilder(repoFactory)
+					.getAndCacheMinorStatus(compUnTill, new CachedStatuses());
+			Map<String, ExtendedStatus> componentStatuses = rootStatus.getSubComponents().values().stream()
+					.collect(Collectors.toMap(status -> status.getComp().getName(), status -> status));
 
-		// Each result must come from its component's own subfolder despite both status tasks using
-		// the same physical repository. This guards against shared-working-copy interference.
-		assertEquals(2, componentStatuses.size());
-		ExtendedStatus postgresStatus = componentStatuses.get(compPostgres.getName());
-		ExtendedStatus sqliteStatus = componentStatuses.get(compSqlite.getName());
-		assertEquals(BuildStatus.FORK, postgresStatus.getStatus());
-		assertEquals(BuildStatus.FORK, sqliteStatus.getStatus());
-		assertEquals(monorepoRepositories.getPostgresVersion().toReleaseZeroPatch(),
-				postgresStatus.getNextVersion());
-		assertEquals(monorepoRepositories.getSqliteVersion().toReleaseZeroPatch(),
-				sqliteStatus.getNextVersion());
+			// Each result must come from its component's own subfolder despite both status tasks using
+			// the same physical repository. Repeating with a fresh status cache also exercises retained
+			// VCS working copies without allowing state to leak between sibling components.
+			assertEquals(2, componentStatuses.size());
+			ExtendedStatus postgresStatus = componentStatuses.get(compPostgres.getName());
+			ExtendedStatus sqliteStatus = componentStatuses.get(compSqlite.getName());
+			assertEquals(BuildStatus.FORK, postgresStatus.getStatus());
+			assertEquals(BuildStatus.FORK, sqliteStatus.getStatus());
+			assertEquals(monorepoRepositories.getPostgresVersion().toReleaseZeroPatch(),
+					postgresStatus.getNextVersion());
+			assertEquals(monorepoRepositories.getSqliteVersion().toReleaseZeroPatch(),
+					sqliteStatus.getNextVersion());
+		}
 	}
 
 	@Test

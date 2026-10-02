@@ -5,7 +5,6 @@ import org.junit.Test;
 import java.io.File;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -20,10 +19,10 @@ public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 		assertTrue(r.getRepoFolder().exists());
 		assertTrue(r.getRepoFolder().getParentFile().getPath().equals(WORKSPACE_DIR));
 		assertEquals(r.getWorkspace(), w);
-		
+
 		IVCSRepositoryWorkspace r1 = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
 		assertEquals(r1.getRepoFolder().getPath(), r.getRepoFolder().getPath());
-		
+
 		try (IVCSLockedWorkingCopy lwc = r.getVCSLockedWorkingCopy()) {
 			assertEquals(lwc.getVCSRepository(), r);
 		}
@@ -52,32 +51,35 @@ public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 	}
 
 	@Test
-	public void testRootWorkingCopiesAreReusableAndComponentWorkingCopiesAreDisposable() throws Exception {
+	public void testRootAndComponentWorkingCopiesAreReusable() throws Exception {
 		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
 		IVCSRepositoryWorkspace rootRepository = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
-		File reusableFolder;
-		try (IVCSLockedWorkingCopy workingCopy = rootRepository.getVCSLockedWorkingCopy()) {
-			reusableFolder = workingCopy.getFolder();
-		}
-		assertTrue(reusableFolder.exists());
-		try (IVCSLockedWorkingCopy workingCopy = rootRepository.getVCSLockedWorkingCopy()) {
-			assertEquals(reusableFolder, workingCopy.getFolder());
-		}
-
 		IVCSRepositoryWorkspace componentRepository = w.getVCSRepositoryWorkspace(
 				TEST_REPO_URL, COMPONENT_SUBFOLDER);
-		File disposableFolder;
-		File disposableLockFile;
-		try (IVCSLockedWorkingCopy workingCopy = componentRepository.getVCSLockedWorkingCopy()) {
-			disposableFolder = workingCopy.getFolder();
-			disposableLockFile = workingCopy.getLockFile();
-			assertTrue(disposableFolder.exists());
-			assertTrue(disposableLockFile.exists());
-		}
-		assertFalse(disposableFolder.exists());
-		assertFalse(disposableLockFile.exists());
+		assertNotEquals(rootRepository.getRepoFolder(), componentRepository.getRepoFolder());
+
+		assertWorkingCopiesAreReusableAfterClose(rootRepository);
+		assertWorkingCopiesAreReusableAfterClose(componentRepository);
 	}
-	
+
+	private void assertWorkingCopiesAreReusableAfterClose(IVCSRepositoryWorkspace repository) throws Exception {
+		File reusableFolder;
+		File reusableLockFile;
+		try (IVCSLockedWorkingCopy workingCopy = repository.getVCSLockedWorkingCopy()) {
+			reusableFolder = workingCopy.getFolder();
+			reusableLockFile = workingCopy.getLockFile();
+		}
+
+		// the repository is closed but lock files are kept -> the repo is reusable
+		assertTrue(reusableFolder.exists());
+		assertTrue(reusableLockFile.exists());
+		try (IVCSLockedWorkingCopy workingCopy = repository.getVCSLockedWorkingCopy()) {
+			// another repository is created but the same lock files are taken -> the repo is reused here
+			assertEquals(reusableFolder, workingCopy.getFolder());
+			assertEquals(reusableLockFile, workingCopy.getLockFile());
+		}
+	}
+
 	@Test
 	public void testHTTPAndHTTPSFolderPrefixesStripping() {
 		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
@@ -87,19 +89,19 @@ public class VCSRepositoryWorkspaceTest extends VCSWCTestBase {
 		String fileProto1 = "file:/";
 		String fileProto2 = "file://";
 		String fileProto3 = "file:///";
-		
+
 		IVCSRepositoryWorkspace r = w.getVCSRepositoryWorkspace(httpProto + repoUrl);
 		assertEquals(repoUrl, r.getRepoFolder().getName());
-		
+
 		r = w.getVCSRepositoryWorkspace(httpsProto + repoUrl);
 		assertEquals(repoUrl, r.getRepoFolder().getName());
-		
+
 		r = w.getVCSRepositoryWorkspace(fileProto1 + repoUrl);
 		assertEquals(repoUrl, r.getRepoFolder().getName());
-		
+
 		r = w.getVCSRepositoryWorkspace(fileProto2 + repoUrl);
 		assertEquals(repoUrl, r.getRepoFolder().getName());
-		
+
 		r = w.getVCSRepositoryWorkspace(fileProto3 + repoUrl);
 		assertEquals(repoUrl, r.getRepoFolder().getName());
 	}

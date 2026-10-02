@@ -41,16 +41,15 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy {
 		this.corrupt = isCorrupt;
 	}
 
-	protected VCSLockedWorkingCopy (IVCSRepositoryWorkspace vcsRepo, boolean isTemp) throws IOException {
-		this(vcsRepo, isTemp, null);
+	protected VCSLockedWorkingCopy(IVCSRepositoryWorkspace vcsRepo) throws IOException {
+		this(vcsRepo, null);
 	}
 
 	// used in tests only
-	VCSLockedWorkingCopy(IVCSRepositoryWorkspace vcsRepo, boolean isTemp, String wcUUID) throws IOException {
+	VCSLockedWorkingCopy(IVCSRepositoryWorkspace vcsRepo, String wcUUID) throws IOException {
 		this.vcsRepo = vcsRepo;
-		this.corrupt = isTemp;
 		this.uuid = wcUUID == null ? UUID.randomUUID().toString() : wcUUID;
-		init(isTemp);
+		init();
 	}
 
 	@Override
@@ -58,20 +57,18 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy {
 		return corrupt;
 	}
 
-	private void init(boolean force) throws IOException {
+	private void init() throws IOException {
 		File[] files = vcsRepo.getRepoFolder().listFiles();
-		if (!force) {
-			for (File file : files != null ? files : new File[0]) {
-				if (file.isDirectory()) {
-					lockFile = new File( vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + file.getName());
-					if (!lockFile.exists()) {
-						continue;
-					}
-					if (tryLockFile(lockFile)) {
-						folder = file;
-						state = VCSLockedWorkingCopyState.LOCKED;
-						return;
-					}
+		for (File file : files != null ? files : new File[0]) {
+			if (file.isDirectory()) {
+				lockFile = new File(vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + file.getName());
+				if (!lockFile.exists()) {
+					continue;
+				}
+				if (tryLockFile(lockFile)) {
+					folder = file;
+					state = VCSLockedWorkingCopyState.LOCKED;
+					return;
 				}
 			}
 		}
