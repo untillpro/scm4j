@@ -3,8 +3,11 @@ package org.scm4j.vcs.svn;
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.mockito.verification.VerificationMode;
 import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.VCSChangeType;
+import org.scm4j.vcs.api.VCSCommit;
+import org.scm4j.vcs.api.VCSTag;
 import org.scm4j.vcs.api.WalkDirection;
 import org.scm4j.vcs.api.abstracttest.VCSAbstractTest;
 import org.scm4j.vcs.api.exceptions.EVCSBranchNotFound;
@@ -29,7 +32,10 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -482,6 +488,157 @@ public class SVNVCSTest extends VCSAbstractTest {
 				.doDelete(new SVNURL[] { SVNURL.parseURIEncoded(svn.getRepoUrl() + "/" + SVNVCS.TAGS_PATH)}, "tags/ deleted");
 		assertTrue(vcs.getTags().isEmpty());
 		assertTrue(vcs.getTagsOnRevision("0").isEmpty());
+	}
+
+	/*
+	 * physical SVN root
+	 * `-- project/                         nestedWriter and nestedReader point here
+	 *     +-- trunk/payload/{ordinary.txt,namespaced.txt}
+	 *     `-- tags/
+	 *         +-- ordinary/                copy of trunk@ordinaryCommit
+	 *         `-- release/                 namespace: added without copy history
+	 *             `-- 1.0/                 copy of trunk@namespacedCommit
+	 *
+	 * Regression:
+	 *   SVN path /project/tags/ordinary != old expected /tags/ordinary  <-- fault
+	 *     -> copied tag mistaken for namespace
+	 *     -> recursively log every payload directory
+	 *     -> many remote requests ending in an apparent socket-read hang
+	 *
+	 * Assertions:
+	 *   getTags()                         -> ordinary, release/1.0
+	 *   getTagsOnRevision(ordinary)       -> ordinary
+	 *   getTagsOnRevision(namespaced)     -> release/1.0
+	 *   enumerate tags/release only; never enumerate either copied tag leaf
+	 */
+	@Test
+	public void testTagsBelowRepositoryRoot() throws Exception {
+		SVNURL projectUrl = SVNURL.parseURIEncoded(repoUrl).appendPath("project", false);
+		svn.getClientManager().getCommitClient().doMkDir(
+				new SVNURL[] {projectUrl}, "nested project created");
+		IVCSRepositoryWorkspace nestedWorkspace = localVCSWorkspace
+				.getVCSRepositoryWorkspace(projectUrl.toString());
+		SVNVCS nestedWriter = new SVNVCS(nestedWorkspace, null, null);
+		SVNVCS nestedReader = new SVNVCS(nestedWorkspace, null, null);
+		try {
+			SVNVCSUtils.createFolderStructure(nestedWriter, FOLDER_STRUCT_CREATED_COMMIT_MESSAGE);
+			VCSCommit ordinaryCommit = nestedWriter.setFileContent(
+					null, "payload/ordinary.txt", LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+			VCSCommit namespacedCommit = nestedWriter.setFileContent(
+					null, "payload/namespaced.txt", LINE_2, FILE2_ADDED_COMMIT_MESSAGE);
+			VCSTag ordinaryTag = nestedWriter.createTag(
+					null, "ordinary", TAG_MESSAGE_1, ordinaryCommit.getRevision());
+			VCSTag namespacedTag = nestedWriter.createTag(
+					null, "release/1.0", TAG_MESSAGE_2, namespacedCommit.getRevision());
+
+			SVNRepository nestedRepository = spy(nestedReader.getSVNRepository());
+			nestedReader.setSVNRepository(nestedRepository);
+
+			List<VCSTag> tags = nestedReader.getTags();
+			assertEquals(2, tags.size());
+			assertTrue(tags.containsAll(Arrays.asList(ordinaryTag, namespacedTag)));
+			assertOnlyTag(nestedReader.getTagsOnRevision(ordinaryCommit.getRevision()), ordinaryTag);
+			assertOnlyTag(nestedReader.getTagsOnRevision(namespacedCommit.getRevision()), namespacedTag);
+
+			verifyDirectoryEnumeration(nestedRepository, "tags/ordinary", never());
+			verifyDirectoryEnumeration(nestedRepository, "tags/release", atLeastOnce());
+			verifyDirectoryEnumeration(nestedRepository, "tags/release/1.0", never());
+		} finally {
+			nestedReader.getSVNRepository().closeSession();
+			nestedWriter.getSVNRepository().closeSession();
+		}
+	}
+
+	/*
+	 * tags/broken -> expected creation entry /project/tags/broken
+	 *
+	 * missing case:       log contains only /project/tags/other
+	 * contradictory case: exact path exists, but its change type is M instead of A
+	 *
+	 * Either case -> EVCSException; never recurse into tags/broken.
+	 */
+	@Test
+	public void testTagDiscoveryRejectsInvalidCreationMetadata() throws Exception {
+		String tagPath = "tags/broken";
+		String repositoryTagPath = "/project/" + tagPath;
+
+		Map<String, SVNLogEntryPath> missingCreationPath = new HashMap<>();
+		missingCreationPath.put("/project/tags/other", new SVNLogEntryPath(
+				"/project/tags/other", SVNLogEntryPath.TYPE_ADDED, null, -1, SVNNodeKind.DIR));
+		assertInvalidTagCreationMetadata(tagPath, repositoryTagPath, missingCreationPath);
+
+		Map<String, SVNLogEntryPath> contradictoryCreationPath = new HashMap<>();
+		contradictoryCreationPath.put(repositoryTagPath, new SVNLogEntryPath(
+				repositoryTagPath, SVNLogEntryPath.TYPE_MODIFIED, null, -1, SVNNodeKind.DIR));
+		assertInvalidTagCreationMetadata(tagPath, repositoryTagPath, contradictoryCreationPath);
+	}
+
+	/*
+	 * tags/tag1_name -> first-commit lookup
+	 *
+	 * old: log(0..HEAD, limit=0) -> transfer all history
+	 * new: log(0..HEAD, limit=1) -> return only the creation entry
+	 *
+	 * The spy verifies changed paths=true, strict node history=true, and limit=1.
+	 */
+	@Test
+	public void testTagFirstCommitLogIsBounded() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		SVNRepository repository = spy(svn.getSVNRepository());
+		svn.setSVNRepository(repository);
+
+		vcs.getTags();
+
+		verify(repository, atLeastOnce()).log(
+				any(String[].class), eq(0L), eq(-1L), eq(true), eq(true), eq(1L),
+				any(ISVNLogEntryHandler.class));
+	}
+
+	private void assertOnlyTag(List<VCSTag> tags, VCSTag expected) {
+		assertEquals(1, tags.size());
+		assertTrue(tags.contains(expected));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void verifyDirectoryEnumeration(SVNRepository repository, String path, VerificationMode mode)
+			throws SVNException {
+		verify(repository, mode).getDir(
+				eq(path), eq(-1L), (SVNProperties) isNull(), (Collection<SVNDirEntry>) isNull());
+	}
+
+	@SuppressWarnings("unchecked")
+	private void assertInvalidTagCreationMetadata(String tagPath, String repositoryTagPath,
+			Map<String, SVNLogEntryPath> changedPaths) throws Exception {
+		SVNRepository repository = mock(SVNRepository.class);
+		SVNDirEntry tagDirectory = new SVNDirEntry(
+				null, null, "broken", SVNNodeKind.DIR, 0, false, 1, null, null);
+		SVNLogEntry firstEntry = new SVNLogEntry(changedPaths, 1, "author", new Date(), "message");
+
+		doReturn(SVNNodeKind.DIR).when(repository).checkPath(SVNVCS.TAGS_PATH, -1L);
+		doAnswer(invocation -> SVNVCS.TAGS_PATH.equals(invocation.getArguments()[0])
+				? Collections.singletonList(tagDirectory) : Collections.emptyList())
+				.when(repository).getDir(anyString(), anyLong(),
+						(SVNProperties) isNull(), (Collection<SVNDirEntry>) isNull());
+		doReturn(Collections.singletonList(firstEntry)).when(repository).log(
+				any(String[].class), (Collection<SVNLogEntry>) isNull(),
+				eq(0L), eq(-1L), eq(true), eq(true));
+		doAnswer(invocation -> {
+			((ISVNLogEntryHandler) invocation.getArguments()[6]).handleLogEntry(firstEntry);
+			return 1L;
+		}).when(repository).log(
+				any(String[].class), eq(0L), eq(-1L), eq(true), eq(true), eq(1L),
+				any(ISVNLogEntryHandler.class));
+		doReturn(repositoryTagPath.substring(1)).when(repository).getRepositoryPath(tagPath);
+		svn.setSVNRepository(repository);
+
+		try {
+			vcs.getTags();
+			fail("Expected invalid tag creation metadata to fail discovery");
+		} catch (EVCSException e) {
+			assertTrue(e.getCause() instanceof SVNException);
+		}
+		verifyDirectoryEnumeration(repository, tagPath, never());
 	}
 	
 	@Test

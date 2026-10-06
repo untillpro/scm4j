@@ -431,10 +431,14 @@ public class SVNVCS implements IVCS {
 	}
 	
 	private SVNLogEntry getDirFirstCommit(final String dir) throws SVNException {
-		@SuppressWarnings("unchecked")
-		Collection<SVNLogEntry> entries = repository.log(new String[] { dir }, null, 0 /* start from first commit */,
-				-1 /* to the head commit */, true, true);
-		return entries.iterator().next();
+		final SVNLogEntry[] firstEntry = new SVNLogEntry[1];
+		repository.log(new String[] { dir }, 0 /* start from first commit */,
+				-1 /* to the head commit */, true, true, 1 /* limit */,
+				logEntry -> firstEntry[0] = logEntry);
+		if (firstEntry[0] == null) {
+			throw invalidCreationMetadata(dir);
+		}
+		return firstEntry[0];
 	}
 
 	SVNLogEntry getBranchFirstCommit(final String branchPath) throws SVNException {
@@ -789,13 +793,13 @@ public class SVNVCS implements IVCS {
 
 			String tagPath = StringUtils.appendIfMissing(tagDirectory, "/") + dirEntry.getName();
 			SVNLogEntry tagEntry = getDirFirstCommit(tagPath);
-			SVNLogEntryPath copyEntry = findCopyEntry(tagEntry, tagPath);
-			if (copyEntry == null) {
+			SVNLogEntryPath creationEntry = getCreationEntry(tagEntry, tagPath);
+			if (creationEntry.getCopyPath() == null) {
 				collectTags(tagPath, onRevision, tags);
 				continue;
 			}
 
-			long tagCopyFrom = copyEntry.getCopyRevision();
+			long tagCopyFrom = creationEntry.getCopyRevision();
 			if (onRevision == null || tagCopyFrom == onRevision) {
 				SVNProperties props = repository.getRevisionProperties(tagCopyFrom, null);
 				String tagName = StringUtils.removeStart(tagPath, TAGS_PATH);
@@ -806,14 +810,28 @@ public class SVNVCS implements IVCS {
 		}
 	}
 
-	private SVNLogEntryPath findCopyEntry(SVNLogEntry tagEntry, String tagPath) {
-		String absoluteTagPath = "/" + StringUtils.removeStart(tagPath, "/");
-		for (SVNLogEntryPath entryPath : tagEntry.getChangedPaths().values()) {
-			if (absoluteTagPath.equals(entryPath.getPath()) && entryPath.getCopyPath() != null) {
-				return entryPath;
-			}
+	private SVNLogEntryPath getCreationEntry(SVNLogEntry tagEntry, String tagPath) throws SVNException {
+		String repositoryTagPath = repository.getRepositoryPath(tagPath);
+		String absoluteTagPath = "/" + StringUtils.removeStart(repositoryTagPath, "/");
+		if (tagEntry.getChangedPaths() == null) {
+			throw invalidCreationMetadata(tagPath);
 		}
-		return null;
+		SVNLogEntryPath creationEntry = tagEntry.getChangedPaths().get(absoluteTagPath);
+		if (creationEntry == null || !absoluteTagPath.equals(creationEntry.getPath())
+				|| creationEntry.getType() != SVNLogEntryPath.TYPE_ADDED) {
+			throw invalidCreationMetadata(tagPath);
+		}
+		boolean hasCopyPath = creationEntry.getCopyPath() != null;
+		boolean hasCopyRevision = creationEntry.getCopyRevision() >= 0;
+		if (hasCopyPath != hasCopyRevision) {
+			throw invalidCreationMetadata(tagPath);
+		}
+		return creationEntry;
+	}
+
+	private SVNException invalidCreationMetadata(String path) {
+		return new SVNException(SVNErrorMessage.create(SVNErrorCode.UNKNOWN,
+				"Missing or inconsistent creation metadata for SVN path ''{0}''", path));
 	}
 
 	@Override
