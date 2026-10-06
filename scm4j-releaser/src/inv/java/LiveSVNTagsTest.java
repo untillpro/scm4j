@@ -19,6 +19,7 @@ import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
 import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
+// ./gradlew :scm4j-releaser:invTest --tests "LiveSVNTagsTest"
 public class LiveSVNTagsTest {
 
 	private static final String COMPONENT =
