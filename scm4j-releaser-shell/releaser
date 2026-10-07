@@ -11,6 +11,13 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 SCM4J_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
 LIBS="$SCM4J_ROOT/scm4j-releaser/build/libs"
 
+commit=$(git -C "$SCM4J_ROOT" rev-parse HEAD)
+if tag=$(git -C "$SCM4J_ROOT" describe --tags --exact-match HEAD 2>/dev/null); then
+	info "Run scm4j-releaser from commit $commit, tag $tag"
+else
+	info "Run scm4j-releaser from commit $commit"
+fi
+
 info "Build scm4j-releaser from $SCM4J_ROOT..."
 "$SCM4J_ROOT/gradlew" -p "$SCM4J_ROOT" :scm4j-releaser:fatJar
 

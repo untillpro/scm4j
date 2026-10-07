@@ -13,6 +13,7 @@ Shell runner for [scm4j-releaser](../scm4j-releaser).
 # Under the Hood
 
 - `releaser` resolves the monorepo root from its own location, regardless of the current working directory
+- Before building, `releaser` prints the current commit hash and, when `HEAD` is tagged, its tag
 - On every invocation, `releaser` uses the root Gradle wrapper to build the scm4j-releaser fat JAR from the current checkout; Gradle skips unchanged build work
 - After a successful build, `releaser` runs the generated fat JAR and passes through the supplied CLI arguments
 - `releaser.cmd` on Windows finds `git.exe` and `sh.exe`, then launches `sh releaser`
