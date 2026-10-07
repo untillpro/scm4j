@@ -15,6 +15,7 @@ fi
 test_name=""
 target_pid=""
 stack_pattern="org.junit"
+display_name=""
 dump_file="$(mktemp)"
 trap 'rm -f "$dump_file"' EXIT
 
@@ -65,19 +66,37 @@ else
             break
         fi
     done
+
+    # Keep active tests as the default when both are running. If no active
+    # JUnit test exists, fall back to a releaser started by releaser-shell.
+    if [[ -z "$target_pid" && -z "$test_name" ]]; then
+        mapfile -t releaser_pids < <(
+            "$jps" -lv |
+            awk '$2 == "org.scm4j.releaser.cli.CLI" { print $1 }'
+        )
+        for pid in "${releaser_pids[@]}"; do
+            if ! capture_dump "$pid"; then
+                continue
+            fi
+            target_pid="$pid"
+            stack_pattern="ExtendedStatusBuilder"
+            display_name="Status-building"
+            break
+        done
+    fi
 fi
 
 if [[ -z "$target_pid" ]]; then
     if [[ -n "$test_name" ]]; then
         echo "Running test '$test_name' was not found in a Gradle or IDE test JVM." >&2
     else
-        echo "No active JUnit test was found in a Gradle or IDE test JVM." >&2
+        echo "No active JUnit test or scm4j-releaser CLI was found." >&2
     fi
     "$jps" -lv
     exit 1
 fi
 
-display_name="${test_name:-Active test}"
+display_name="${display_name:-${test_name:-Active test}}"
 echo "$display_name threads in JVM $target_pid:"
 awk -v pattern="$stack_pattern" '
     BEGIN { RS=""; ORS="\n\n" }
