@@ -27,4 +27,4 @@ if [ ! -f "$jar" ]; then
 	exit 1
 fi
 
-exec java -cp "$jar" -Djava.util.concurrent.ForkJoinPool.common.parallelism=64 org.scm4j.releaser.cli.CLI "$@"
+exec java -cp "$jar" -Djava.util.concurrent.ForkJoinPool.common.parallelism=8 org.scm4j.releaser.cli.CLI "$@"
