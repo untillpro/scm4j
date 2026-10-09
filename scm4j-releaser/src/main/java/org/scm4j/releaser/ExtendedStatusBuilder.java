@@ -20,14 +20,15 @@ import org.scm4j.vcs.api.WalkDirection;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static org.scm4j.releaser.Utils.reportDuration;
 
 public class ExtendedStatusBuilder {
 
-	private static final int PARALLEL_CALCULATION_AWAIT_TIME = 500;
 	private static final int COMMITS_RANGE_LIMIT = 10;
 
 	private final VCSRepositoryFactory repoFactory;
@@ -58,28 +59,27 @@ public class ExtendedStatusBuilder {
 		String originalThreadName = currentThread.getName();
 		currentThread.setName(comp.getName());
 		VCSRepository repo = null;
+		VCSComponentLocation componentLocation = null;
+		CompletableFuture<ExtendedStatus> candidate = null;
+		boolean owner = false;
 		try {
 			repo = repoFactory.getVCSRepository(comp);
 			if (progress != null) {
 				repo.getVCS().setRetryStatusReporter((operation, failure) -> progress.reportStatus(String.format(
 						"retrying %s for %s due to %s", operation, comp.getCoordsNoComment(), failure)));
 			}
-			VCSComponentLocation componentLocation = repo.getComponentLocation();
-			ExtendedStatus existing = cache.putIfAbsent(componentLocation, ExtendedStatus.DUMMY);
+			componentLocation = repo.getComponentLocation();
+			candidate = new CompletableFuture<>();
+			CompletableFuture<ExtendedStatus> existingCalculation = cache.putIfAbsent(componentLocation, candidate);
+			owner = existingCalculation == null;
 
-			while (ExtendedStatus.DUMMY == existing) {
-				try {
-					Thread.sleep(PARALLEL_CALCULATION_AWAIT_TIME);
-					existing = cache.get(componentLocation);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
+			if (!owner) {
+				ExtendedStatus existing = awaitStatus(existingCalculation);
+				return new ExtendedStatus(existing.getNextVersion(), existing.getStatus(), existing.getSubComponents(),
+						comp, repo);
 			}
 
-			if (null != existing) {
-				return new ExtendedStatus(existing.getNextVersion(), existing.getStatus(), existing.getSubComponents(), comp, repo);
-			}
-
+			// we're the first, let's calculate
 			DelayedTagsFile dtf = new DelayedTagsFile();
 			DelayedTag dt = dtf.getDelayedTag(componentLocation);
 
@@ -87,19 +87,46 @@ public class ExtendedStatusBuilder {
 				getPatchStatus(comp, cache, progress, repo, dt) :
 				getMinorStatus(comp, cache, progress, repo, dt);
 
-			cache.replace(componentLocation, res);
+			candidate.complete(res);
 			return res;
-		} catch (Exception e) {
-			if (repo != null) {
-				cache.remove(repo.getComponentLocation());
+		} catch (Throwable failure) {
+			Throwable normalizedFailure = normalizeFailure(failure, comp);
+			if (owner) {
+				candidate.completeExceptionally(normalizedFailure);
+				cache.remove(componentLocation, candidate);
 			}
-			if (e instanceof EReleaserException) {
-				throw e;
-			}
-			throw new EBuildStatus(e, comp);
+			throw propagate(normalizedFailure);
 		} finally {
 			currentThread.setName(originalThreadName);
 		}
+	}
+
+	private ExtendedStatus awaitStatus(CompletableFuture<ExtendedStatus> calculation) throws InterruptedException {
+		try {
+			return calculation.get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw e;
+		} catch (ExecutionException e) {
+			throw propagate(e.getCause());
+		}
+	}
+
+	private Throwable normalizeFailure(Throwable failure, Component comp) {
+		if (failure instanceof Error || failure instanceof EReleaserException) {
+			return failure;
+		}
+		if (failure instanceof Exception) {
+			return new EBuildStatus((Exception) failure, comp);
+		}
+		return new RuntimeException(failure);
+	}
+
+	private RuntimeException propagate(Throwable failure) {
+		if (failure instanceof Error) {
+			throw (Error) failure;
+		}
+		return (RuntimeException) failure;
 	}
 
 	ExtendedStatus getMinorStatus(Component comp, CachedStatuses cache, IProgress progress, VCSRepository repo, DelayedTag dt) {

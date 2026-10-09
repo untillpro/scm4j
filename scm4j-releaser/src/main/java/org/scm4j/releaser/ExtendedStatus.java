@@ -7,8 +7,6 @@ import java.util.LinkedHashMap;
 
 public class ExtendedStatus {
 
-	public static final ExtendedStatus DUMMY = new ExtendedStatus(null, null, null, null, null);
-	
 	private final Component comp;
 	private final Version nextVersion;
 	private final BuildStatus status;
@@ -42,9 +40,6 @@ public class ExtendedStatus {
 	
 	@Override
 	public String toString() {
-		if (this == DUMMY) {
-			return "<DUMMY>";
-		}
  		String targetBranch = Utils.getReleaseBranchName(repo, nextVersion);
  		return String.format("%s %s, target version: %s, target branch: %s", status, comp.getCoords(), nextVersion, targetBranch);
 	}

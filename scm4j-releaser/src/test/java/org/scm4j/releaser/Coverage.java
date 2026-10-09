@@ -15,7 +15,6 @@ public class Coverage {
 		for (VCSType type : VCSType.values()) {
 			Utils.getBuildTimeEnvVars(type,"", "", "");
 		}
-		ExtendedStatus.DUMMY.toString();
 		new Constants();
 	}
 }
