@@ -224,6 +224,7 @@ public class CLI {
 	}
 
 	public static void main(String[] args) throws Exception {
+		System.out.println("scm4j-releaser " + BuildInfo.getCommit());
 		AnsiConsole.systemInstall();
 		System.exit(new CLI().exec(args));
 	}

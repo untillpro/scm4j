@@ -144,8 +144,31 @@ project(':scm4j-releaser') {
     def requestedReleaserVersion = providers.gradleProperty('releaserVersion')
             .map { it.trim() }
     def publicationReleaserVersion = requestedReleaserVersion.getOrElse('')
+    def detectedBuildCommit = providers.exec {
+        workingDir(rootProject.projectDir)
+        commandLine('git', 'rev-parse', 'HEAD')
+    }.standardOutput.asText.map { it.trim() }
+    def generatedBuildInfoDir = layout.buildDirectory.dir('generated/build-info')
+
+    def generateBuildInfo = tasks.register('generateBuildInfo') {
+        inputs.property('buildCommit', detectedBuildCommit)
+        outputs.dir(generatedBuildInfoDir)
+        doLast {
+            def commit = detectedBuildCommit.get()
+            if (!commit) {
+                throw new GradleException('Build commit is blank')
+            }
+            def buildInfo = generatedBuildInfoDir.get()
+                    .file('META-INF/scm4j-releaser-build.properties').asFile
+            buildInfo.parentFile.mkdirs()
+            buildInfo.text = "commit=${commit}\n"
+        }
+    }
 
     sourceSets {
+        main {
+            resources.srcDir(generatedBuildInfoDir)
+        }
         inv {
             java.srcDir 'src/inv/java'
             compileClasspath += sourceSets.main.output + sourceSets.test.output
@@ -187,6 +210,10 @@ project(':scm4j-releaser') {
 
     tasks.named('test', Test) {
         jvmArgs '-Xmx128m'
+    }
+
+    tasks.named('processResources') {
+        dependsOn(generateBuildInfo)
     }
 
     def fatJar = tasks.register('fatJar', Jar) {
