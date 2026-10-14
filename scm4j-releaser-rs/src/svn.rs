@@ -330,7 +330,18 @@ fn release_is_done(
     let Some(previous) = version.previous_patch() else {
         return Ok(false);
     };
-    Ok(svn.last_message(branch)?.contains("#scm-ver") && svn.exists(&tag_path(config, &previous)))
+    let tag = tag_path(config, &previous);
+    if !svn.last_message(branch)?.contains("#scm-ver") || !svn.exists(&tag) {
+        return Ok(false);
+    }
+    let branch_history = svn.log_revisions(branch, 2)?;
+    let tag_history = svn.log_revisions(&tag, 2)?;
+    // A tag copy adds its own revision before the copied branch history.
+    // The version bump must immediately follow the revision that was tagged.
+    Ok(match (branch_history.get(1), tag_history.get(1)) {
+        (Some(parent), Some(tagged)) => parent == tagged,
+        _ => false,
+    })
 }
 
 fn latest_release(svn: &Svn, config: &Config) -> Result<(Version, String), String> {
@@ -510,6 +521,21 @@ impl Svn {
             .ok_or_else(|| "invalid SVN log XML".to_owned())?
             + start;
         Ok(xml[start..end].to_owned())
+    }
+
+    fn log_revisions(&self, relative: &str, count: usize) -> Result<Vec<String>, String> {
+        let xml = self.run([
+            "log",
+            "--xml",
+            "-l",
+            &count.to_string(),
+            &self.url(relative),
+        ])?;
+        let pattern = regex::Regex::new(r#"<logentry\s+revision="([0-9]+)""#).unwrap();
+        Ok(pattern
+            .captures_iter(&xml)
+            .map(|entry| entry[1].to_owned())
+            .collect())
     }
 
     fn copy(

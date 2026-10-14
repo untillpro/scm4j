@@ -1006,6 +1006,66 @@ fn svn_component_can_be_forked_and_built() {
     harness.succeeds(&["build", "org.example:legacy"]);
     assert_eq!(repository.cat("branches/release/3.4/version"), "3.4.1");
     assert!(repository.exists("tags/3.4.0"));
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy", "--show-done"])
+        .contains("DONE"));
+}
+
+#[test]
+fn svn_changes_between_tag_and_version_bump_require_build() {
+    let mut harness = Harness::new("svn-intervening-commit");
+    let repository = harness.add_svn("org.example:legacy", "3.4.0-SNAPSHOT", None);
+    harness.succeeds(&["fork", "org.example:legacy"]);
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "copy",
+            &format!("{}/branches/release/3.4", repository.url),
+            &format!("{}/tags/3.4.0", repository.url),
+            "-m",
+            "3.4.0 release",
+        ],
+    );
+    let checkout = harness.temp.0.join("release-checkout");
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "checkout",
+            &format!("{}/branches/release/3.4", repository.url),
+            path(&checkout).as_str(),
+        ],
+    );
+
+    // A tag without a version bump is not DONE, but rebuilding cannot reuse it.
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy"])
+        .contains("BUILD"));
+    assert!(harness
+        .fails(&["build", "org.example:legacy"])
+        .contains("already exists"));
+
+    fs::write(checkout.join("content.txt"), "intervening change\n").unwrap();
+    successful_command(&checkout, "svn", ["commit", "-m", "feature after tag"]);
+    // The latest commit has no service marker: the new change needs a build.
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy"])
+        .contains("BUILD"));
+    fs::write(checkout.join("version"), "3.4.1").unwrap();
+    successful_command(&checkout, "svn", ["commit", "-m", "#scm-ver 3.4.1"]);
+
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy"])
+        .contains("BUILD"));
+    harness.succeeds(&["build", "org.example:legacy"]);
+    assert_eq!(
+        repository.cat("tags/3.4.1/content.txt"),
+        "intervening change"
+    );
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy", "--show-done"])
+        .contains("DONE"));
 }
 
 #[test]
