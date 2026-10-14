@@ -995,6 +995,171 @@ fn monorepo_components_with_the_same_artifact_use_subfolder_scoped_refs() {
 }
 
 #[test]
+fn git_scm_ignore_commits_do_not_trigger_releases() {
+    for subfolder in [None, Some("components/legacy")] {
+        let mut harness = Harness::new("git-ignore");
+        let repository = harness.add_git(
+            "org.example:legacy",
+            "3.4.0-SNAPSHOT",
+            None,
+            subfolder,
+            Some("git --version"),
+        );
+        let component_file = |file: &str| {
+            if let Some(folder) = subfolder {
+                format!("{folder}/{file}")
+            } else {
+                file.to_owned()
+            }
+        };
+        let commit = |branch: &str, file: &str, content: &str, message: &str| {
+            commit_to_remote_branch_with_message(
+                &harness.temp.0,
+                &repository.bare,
+                branch,
+                &component_file(file),
+                content,
+                message,
+            );
+        };
+        harness.succeeds(&["fork", "org.example:legacy"]);
+        // Ignored changes between the tag and bump must not require a rebuild.
+        let branch = if subfolder.is_some() {
+            "components/legacy/release/3.4"
+        } else {
+            "release/3.4"
+        };
+        let tag = if subfolder.is_some() {
+            "components/legacy/3.4.0"
+        } else {
+            "3.4.0"
+        };
+        git_bare(&repository.bare, ["tag", tag, branch]);
+        commit(
+            branch,
+            "content.txt",
+            "documentation",
+            "docs\n\n#scm-ignore",
+        );
+        commit(branch, "version", "3.4.1", "#scm-ver 3.4.1");
+        commit(
+            branch,
+            "content.txt",
+            "formatting",
+            "#scm-ignore formatting",
+        );
+        commit("main", "content.txt", "docs on develop", "#scm-ignore docs");
+        assert!(harness
+            .succeeds(&["status", "org.example:legacy", "--show-done"])
+            .contains("DONE"));
+        assert!(harness
+            .succeeds(&["fork", "org.example:legacy"])
+            .contains("No fork needed"));
+        assert!(harness
+            .succeeds(&["build", "org.example:legacy"])
+            .contains("already built"));
+
+        // Ignored commits cannot hide a real change; the next build includes them.
+        commit(branch, "content.txt", "new feature", "feature");
+        commit(
+            branch,
+            "content.txt",
+            "new feature with formatting",
+            "#scm-ignore formatting",
+        );
+        assert!(harness
+            .succeeds(&["status", "org.example:legacy"])
+            .contains("BUILD"));
+        harness.succeeds(&["build", "org.example:legacy"]);
+        let next_tag = if subfolder.is_some() {
+            "refs/tags/components/legacy/3.4.1"
+        } else {
+            "refs/tags/3.4.1"
+        };
+        assert_eq!(
+            repository.show(next_tag, "content.txt"),
+            "new feature with formatting"
+        );
+        assert!(harness
+            .succeeds(&["status", "org.example:legacy", "--show-done"])
+            .contains("DONE"));
+    }
+}
+
+#[test]
+fn svn_scm_ignore_commits_do_not_trigger_releases() {
+    let mut harness = Harness::new("svn-ignore");
+    let repository = harness.add_svn("org.example:legacy", "3.4.0-SNAPSHOT", None);
+    harness.succeeds(&["fork", "org.example:legacy"]);
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "copy",
+            &format!("{}/branches/release/3.4", repository.url),
+            &format!("{}/tags/3.4.0", repository.url),
+            "-m",
+            "3.4.0 release",
+        ],
+    );
+    let checkout = harness.temp.0.join("release-checkout");
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "checkout",
+            &format!("{}/branches/release/3.4", repository.url),
+            path(&checkout).as_str(),
+        ],
+    );
+    let commit = |file: &str, content: &str, message: &str| {
+        fs::write(checkout.join(file), content).unwrap();
+        successful_command(&checkout, "svn", ["commit", "-m", message]);
+    };
+    commit("content.txt", "documentation", "docs\n\n#scm-ignore");
+    commit("version", "3.4.1", "#scm-ver 3.4.1");
+    // More than one log page of ignored commits must still reach the version bump.
+    for index in 0..33 {
+        commit(
+            "content.txt",
+            &format!("formatting {index}"),
+            "#scm-ignore formatting",
+        );
+    }
+    let develop = harness.temp.0.join("legacy-svn-seed");
+    successful_command(&develop, "svn", ["update"]);
+    fs::write(develop.join("content.txt"), "develop docs").unwrap();
+    successful_command(&develop, "svn", ["commit", "-m", "#scm-ignore docs"]);
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy", "--show-done"])
+        .contains("DONE"));
+    assert!(harness
+        .succeeds(&["fork", "org.example:legacy"])
+        .contains("No fork needed"));
+    assert!(harness
+        .succeeds(&["build", "org.example:legacy"])
+        .contains("already built"));
+
+    commit("content.txt", "new feature", "feature");
+    commit(
+        "content.txt",
+        "new feature with formatting",
+        "#scm-ignore formatting",
+    );
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy"])
+        .contains("BUILD"));
+    harness.succeeds(&["build", "org.example:legacy"]);
+    assert_eq!(
+        repository.cat("tags/3.4.1/content.txt"),
+        "new feature with formatting"
+    );
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy", "--show-done"])
+        .contains("DONE"));
+}
+
+#[test]
 fn svn_component_can_be_forked_and_built() {
     let mut harness = Harness::new("svn");
     let repository = harness.add_svn("org.example:legacy", "3.4.0-SNAPSHOT", None);
@@ -1096,6 +1261,17 @@ fn git_component_locks_an_svn_dependency() {
 }
 
 fn commit_to_remote_branch(root: &Path, bare: &Path, branch: &str, file: &str, content: &str) {
+    commit_to_remote_branch_with_message(root, bare, branch, file, content, "patch feature");
+}
+
+fn commit_to_remote_branch_with_message(
+    root: &Path,
+    bare: &Path,
+    branch: &str,
+    file: &str,
+    content: &str,
+    message: &str,
+) {
     let repository = bare.file_stem().unwrap().to_string_lossy();
     let sequence = NEXT_TEMP.fetch_add(1, Ordering::Relaxed);
     let clone = root.join(format!(
@@ -1108,7 +1284,7 @@ fn commit_to_remote_branch(root: &Path, bare: &Path, branch: &str, file: &str, c
     git(&clone, ["checkout", branch]);
     fs::write(clone.join(file), content).unwrap();
     git(&clone, ["add", file]);
-    git(&clone, ["commit", "-m", "patch feature"]);
+    git(&clone, ["commit", "-m", message]);
     git(&clone, ["push", "origin", branch]);
 }
 

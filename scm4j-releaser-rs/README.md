@@ -19,6 +19,11 @@ dependency-first. Before a Git parent component is built, dependency versions in
 are locked to the released versions. Git components may live in a configured `subfolder`; SVN components must
 remain at their configured branch root. Execution is intentionally sequential.
 
+Commits whose message contains `#scm-ignore` are skipped when deciding whether a fork or build is
+needed, in both Git and SVN. Add this marker manually for changes that do not affect the build result.
+Ignored commits do not hide earlier changes that still require a release. Their files are included
+when a subsequent release is built. Git's configured `subfolder` filter still applies.
+
 ## Configuration
 
 Configuration is searched first in `<home_dir>/.scm4j`, matching the Java releaser. For compatibility,

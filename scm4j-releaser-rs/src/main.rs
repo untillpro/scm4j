@@ -721,27 +721,34 @@ fn component_log(
     count: usize,
     format: &str,
 ) -> Result<String, String> {
-    if config.subfolder.is_empty() {
-        git.run([
-            "log",
-            &format!("-{count}"),
-            &format!("--format={format}"),
-            revision,
-        ])
-    } else {
-        git.run([
-            "log",
-            &format!("-{count}"),
-            &format!("--format={format}"),
-            revision,
-            "--",
-            &config.subfolder,
-        ])
+    git_component_log(git, revision, config, count, format, true)
+}
+
+fn git_component_log(
+    git: &Git,
+    revision: &str,
+    config: &Config,
+    count: usize,
+    format: &str,
+    ignore_marked: bool,
+) -> Result<String, String> {
+    let mut args = vec![
+        "log".to_owned(),
+        format!("-{count}"),
+        format!("--format={format}"),
+    ];
+    if ignore_marked {
+        args.extend(["--fixed-strings", "--invert-grep", "--grep=#scm-ignore"].map(str::to_owned));
     }
+    args.push(revision.to_owned());
+    if !config.subfolder.is_empty() {
+        args.extend(["--".to_owned(), config.subfolder.clone()]);
+    }
+    git.run(args)
 }
 
 fn component_head(git: &Git, revision: &str, config: &Config) -> Result<String, String> {
-    let commit = component_log(git, revision, config, 1, "%H")?;
+    let commit = git_component_log(git, revision, config, 1, "%H", false)?;
     if commit.is_empty() {
         Err(format!(
             "no commits found for component `{}`",
@@ -988,6 +995,7 @@ fn release_is_done(
         "1",
         &format!("refs/tags/{}", git_tag_name(config, &previous)),
     ])?;
+    let tagged = component_log(git, &tagged, config, 1, "%H")?;
     Ok(parent == tagged)
 }
 

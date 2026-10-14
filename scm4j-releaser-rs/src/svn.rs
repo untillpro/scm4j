@@ -337,7 +337,7 @@ fn release_is_done(
     let branch_history = svn.log_revisions(branch, 2)?;
     let tag_history = svn.log_revisions(&tag, 2)?;
     // A tag copy adds its own revision before the copied branch history.
-    // The version bump must immediately follow the revision that was tagged.
+    // Ignoring marked commits, the version bump must follow the tagged revision.
     Ok(match (branch_history.get(1), tag_history.get(1)) {
         (Some(parent), Some(tagged)) => parent == tagged,
         _ => false,
@@ -504,7 +504,12 @@ impl Svn {
     }
 
     fn last_message(&self, relative: &str) -> Result<String, String> {
-        self.run(["log", "-l", "1", &self.url(relative)])
+        Ok(self
+            .meaningful_log(relative, 1)?
+            .into_iter()
+            .next()
+            .map(|(_, message)| message)
+            .unwrap_or_default())
     }
 
     fn head_revision(&self, relative: &str) -> Result<String, String> {
@@ -524,18 +529,56 @@ impl Svn {
     }
 
     fn log_revisions(&self, relative: &str, count: usize) -> Result<Vec<String>, String> {
-        let xml = self.run([
-            "log",
-            "--xml",
-            "-l",
-            &count.to_string(),
-            &self.url(relative),
-        ])?;
-        let pattern = regex::Regex::new(r#"<logentry\s+revision="([0-9]+)""#).unwrap();
-        Ok(pattern
-            .captures_iter(&xml)
-            .map(|entry| entry[1].to_owned())
+        Ok(self
+            .meaningful_log(relative, count)?
+            .into_iter()
+            .map(|(revision, _)| revision)
             .collect())
+    }
+
+    fn meaningful_log(
+        &self,
+        relative: &str,
+        count: usize,
+    ) -> Result<Vec<(String, String)>, String> {
+        let entries =
+            regex::Regex::new(r#"(?s)<logentry\s+revision="([0-9]+)"[^>]*>(.*?)</logentry>"#)
+                .unwrap();
+        let messages = regex::Regex::new(r"(?s)<msg>(.*?)</msg>").unwrap();
+        let mut result = Vec::new();
+        let mut range = "HEAD:0".to_owned();
+        loop {
+            let xml = self.run([
+                "log",
+                "--xml",
+                "-l",
+                "32",
+                "-r",
+                &range,
+                &self.url(relative),
+            ])?;
+            let mut oldest = None;
+            for entry in entries.captures_iter(&xml) {
+                let revision = entry[1]
+                    .parse::<u64>()
+                    .map_err(|e| format!("invalid SVN revision: {e}"))?;
+                oldest = Some(revision);
+                let message = messages
+                    .captures(&entry[2])
+                    .map(|m| m[1].to_owned())
+                    .unwrap_or_default();
+                if !message.contains("#scm-ignore") {
+                    result.push((entry[1].to_owned(), message));
+                    if result.len() == count {
+                        return Ok(result);
+                    }
+                }
+            }
+            match oldest {
+                Some(revision) if revision > 1 => range = format!("{}:0", revision - 1),
+                _ => return Ok(result),
+            }
+        }
     }
 
     fn copy(
