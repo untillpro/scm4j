@@ -285,9 +285,26 @@ fn tag_and_bump(
     crate::external::action(format_args!(
         "Creating SVN tag `{tag}` from `{branch}` at revision `{revision}`"
     ));
-    svn.copy(branch, &tag, Some(revision), &format!("{version} release"))?;
-    svn.checkout(branch, None, &svn.workspace)?;
+    let source = format!("SVN revision `r{revision}` of branch `{branch}`");
+    svn.copy(branch, &tag, Some(revision), &format!("{version} release"))
+        .map_err(|e| crate::tag_failure(&tag, &source, "creating the SVN tag", e))?;
+    svn.checkout(branch, None, &svn.workspace).map_err(|e| {
+        crate::tag_failure(
+            &tag,
+            &source,
+            "checking out the release branch after creating the SVN tag",
+            e,
+        )
+    })?;
     svn.write_and_commit_version(&svn.workspace, &config.version_file, &version.next_patch())
+        .map_err(|e| {
+            crate::tag_failure(
+                &tag,
+                &source,
+                "updating the release version after creating the SVN tag",
+                e,
+            )
+        })
 }
 
 fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), String> {

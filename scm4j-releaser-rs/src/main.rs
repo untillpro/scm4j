@@ -1123,6 +1123,10 @@ fn tag_and_bump_inner(
     preserve_newer_version: bool,
 ) -> Result<(), String> {
     let tag_name = git_tag_name(config, version);
+    let source = format!(
+        "Git commit `{commit}` (branch `{branch}`, local repository `{}`)",
+        git.directory().display()
+    );
     external::action(format_args!(
         "Creating Git tag `{tag_name}` for commit `{commit}`"
     ));
@@ -1133,11 +1137,26 @@ fn tag_and_bump_inner(
         "-m",
         &format!("{version} release"),
         commit,
-    ])?;
+    ])
+    .map_err(|e| tag_failure(&tag_name, &source, "creating the local Git tag", e))?;
     let next = version.next_patch();
-    let branch_version = read_version(git, "HEAD", config)?;
+    let branch_version = read_version(git, "HEAD", config).map_err(|e| {
+        tag_failure(
+            &tag_name,
+            &source,
+            "reading the release version after creating the local tag",
+            e,
+        )
+    })?;
     if !preserve_newer_version || branch_version < next {
-        write_and_commit_version(git, config, &next)?;
+        write_and_commit_version(git, config, &next).map_err(|e| {
+            tag_failure(
+                &tag_name,
+                &source,
+                "updating the release version after creating the local tag",
+                e,
+            )
+        })?;
     }
     external::action(format_args!(
         "Publishing Git tag `{tag_name}` and branch `{branch}`"
@@ -1148,8 +1167,23 @@ fn tag_and_bump_inner(
         "origin",
         &format!("{branch}:{branch}"),
         &format!("refs/tags/{tag_name}"),
-    ])?;
+    ])
+    .map_err(|e| {
+        tag_failure(
+            &tag_name,
+            &source,
+            "publishing the Git tag and release branch",
+            e,
+        )
+    })?;
     Ok(())
+}
+
+pub(crate) fn tag_failure(tag: &str, source: &str, stage: &str, error: String) -> String {
+    eprintln!(
+        "WARNING: release tagging did not complete while {stage}. Expected tag `{tag}` at {source}. Verify the tag and release version and repair them manually before retrying."
+    );
+    error
 }
 
 fn run_after_tag(config: &Config, work: &Path, version: &Version) -> Result<(), String> {

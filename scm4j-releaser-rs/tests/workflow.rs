@@ -995,6 +995,110 @@ fn monorepo_components_with_the_same_artifact_use_subfolder_scoped_refs() {
 }
 
 #[test]
+fn git_tag_failure_warns_with_tag_and_commit_for_manual_repair() {
+    let mut harness = Harness::new("git-tag-failure");
+    let repository = harness.add_git(
+        "org.example:service",
+        "1.0.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:service"]);
+    harness.succeeds(&["build", "org.example:service", "--delayed-tag"]);
+    let commit = git_bare(&repository.bare, ["rev-parse", "refs/heads/release/1.0"]);
+    let hook = repository.bare.join("hooks/pre-receive");
+    fs::write(
+        &hook,
+        "#!/bin/sh\necho 'test: publication rejected' >&2\nexit 1\n",
+    )
+    .unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let error = harness.fails(&["tag", "org.example:service"]);
+    assert!(
+        error.contains("WARNING: release tagging did not complete"),
+        "{error}"
+    );
+    assert!(
+        error.contains("publishing the Git tag and release branch"),
+        "{error}"
+    );
+    assert!(error.contains("Expected tag `1.0.0`"), "{error}");
+    assert!(error.contains(&format!("Git commit `{commit}`")), "{error}");
+    assert!(error.contains("repair them manually"), "{error}");
+    assert!(error.contains("test: publication rejected"), "{error}");
+    assert!(!repository.has_ref("refs/tags/1.0.0"));
+    assert_eq!(
+        repository.show("refs/heads/release/1.0", "version"),
+        "1.0.0"
+    );
+
+    // The leftover local tag also produces repair context on a retry.
+    let error = harness.fails(&["tag", "org.example:service"]);
+    assert!(error.contains("creating the local Git tag"), "{error}");
+    assert!(error.contains("Expected tag `1.0.0`"), "{error}");
+    assert!(error.contains(&commit), "{error}");
+    assert!(error.contains("already exists"), "{error}");
+}
+
+#[test]
+fn svn_tag_failure_warns_with_tag_and_revision_for_manual_repair() {
+    let mut harness = Harness::new("svn-tag-failure");
+    let repository = harness.add_svn("org.example:legacy", "3.4.0-SNAPSHOT", None);
+    harness.succeeds(&["fork", "org.example:legacy"]);
+    let revision = successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "info",
+            "--show-item",
+            "last-changed-revision",
+            &format!("{}/branches/release/3.4", repository.url),
+        ],
+    );
+    let hooks = harness.temp.0.join("legacy-svn/hooks");
+    if cfg!(windows) {
+        fs::write(
+            hooks.join("pre-commit.bat"),
+            "@echo off\r\necho test: commit rejected 1>&2\r\nexit /b 1\r\n",
+        )
+        .unwrap();
+    } else {
+        let hook = hooks.join("pre-commit");
+        fs::write(
+            &hook,
+            "#!/bin/sh\necho 'test: commit rejected' >&2\nexit 1\n",
+        )
+        .unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+    }
+    let error = harness.fails(&["build", "org.example:legacy"]);
+    assert!(
+        error.contains("WARNING: release tagging did not complete"),
+        "{error}"
+    );
+    assert!(error.contains("creating the SVN tag"), "{error}");
+    assert!(error.contains("Expected tag `tags/3.4.0`"), "{error}");
+    assert!(
+        error.contains(&format!("SVN revision `r{revision}`")),
+        "{error}"
+    );
+    assert!(error.contains("branch `branches/release/3.4`"), "{error}");
+    assert!(error.contains("repair them manually"), "{error}");
+    assert!(error.contains("test: commit rejected"), "{error}");
+    assert!(!repository.exists("tags/3.4.0"));
+    assert_eq!(repository.cat("branches/release/3.4/version"), "3.4.0");
+}
+
+#[test]
 fn git_scm_ignore_commits_do_not_trigger_releases() {
     for subfolder in [None, Some("components/legacy")] {
         let mut harness = Harness::new("git-ignore");
