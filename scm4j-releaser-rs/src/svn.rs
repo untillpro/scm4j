@@ -139,7 +139,8 @@ fn status(
         return Err(format!("develop SNAPSHOT patch must be 0: {dev_version}"));
     }
     let expected = release_path(config, &dev_version);
-    let needs_fork = !svn.exists(&expected) && !svn.last_message(develop)?.contains("#scm-ver");
+    validate_develop_release_line(svn, config, develop, &dev_version)?;
+    let needs_fork = develop_has_changes(svn, config, develop)?;
     if verbose {
         println!("develop: {develop} ({dev_version})");
     }
@@ -189,11 +190,8 @@ fn fork(svn: &Svn, config: &Config, develop: &str) -> Result<(), String> {
     }
     let release = version.release_zero();
     let branch = release_path(config, &release);
-    if svn.exists(&branch) {
-        println!("Release branch `{branch}` already exists");
-        return Ok(());
-    }
-    if svn.last_message(develop)?.contains("#scm-ver") && latest_release(svn, config).is_ok() {
+    validate_develop_release_line(svn, config, develop, &version)?;
+    if !develop_has_changes(svn, config, develop)? {
         println!("No fork needed for {}", display_component(config));
         return Ok(());
     }
@@ -366,7 +364,9 @@ fn latest_release(svn: &Svn, config: &Config) -> Result<(Version, String), Strin
         Some(line) => format!("{line}.0").parse::<Version>()?,
         None => {
             let develop = config.develop_branch.as_deref().unwrap_or("trunk");
-            svn.read_version(develop, &config.version_file)?
+            let version = svn.read_version(develop, &config.version_file)?;
+            validate_develop_release_line(svn, config, develop, &version)?;
+            version
                 .previous_minor_release()
                 .ok_or_else(|| "no release branch; run `fork`".to_owned())?
         }
@@ -377,6 +377,41 @@ fn latest_release(svn: &Svn, config: &Config) -> Result<(Version, String), Strin
     } else {
         Err("no release branch; run `fork`".to_owned())
     }
+}
+
+fn validate_develop_release_line(
+    svn: &Svn,
+    config: &Config,
+    develop: &str,
+    version: &Version,
+) -> Result<(), String> {
+    let branch = release_path(config, version);
+    if svn.exists(&branch) {
+        return Err(format!(
+            "develop `{develop}` version `{version}` has not advanced past existing release branch `{branch}`; increase the develop minor version (normally to `{}`)",
+            version.next_minor_snapshot()
+        ));
+    }
+    Ok(())
+}
+
+fn develop_has_changes(svn: &Svn, config: &Config, develop: &str) -> Result<bool, String> {
+    let Ok((_, branch)) = latest_release(svn, config) else {
+        return Ok(true);
+    };
+    let revision = svn.branch_point(&branch, develop)?;
+    // The copied revision itself already belongs to the release branch.
+    let head = svn
+        .head_revision(develop)?
+        .parse::<u64>()
+        .map_err(|e| format!("invalid SVN revision: {e}"))?;
+    if head <= revision {
+        return Ok(false);
+    }
+    let range = format!("HEAD:{}", revision + 1);
+    Ok(!svn
+        .meaningful_log_range(develop, 1, range, true)?
+        .is_empty())
 }
 
 fn release_path(config: &Config, version: &Version) -> String {
@@ -558,12 +593,27 @@ impl Svn {
         relative: &str,
         count: usize,
     ) -> Result<Vec<(String, String)>, String> {
+        self.meaningful_log_range(relative, count, "HEAD:0".to_owned(), false)
+    }
+
+    fn meaningful_log_range(
+        &self,
+        relative: &str,
+        count: usize,
+        mut range: String,
+        skip_version: bool,
+    ) -> Result<Vec<(String, String)>, String> {
         let entries =
             regex::Regex::new(r#"(?s)<logentry\s+revision="([0-9]+)"[^>]*>(.*?)</logentry>"#)
                 .unwrap();
         let messages = regex::Regex::new(r"(?s)<msg>(.*?)</msg>").unwrap();
         let mut result = Vec::new();
-        let mut range = "HEAD:0".to_owned();
+        let lower = range
+            .split_once(':')
+            .unwrap()
+            .1
+            .parse::<u64>()
+            .map_err(|e| format!("invalid SVN log range: {e}"))?;
         loop {
             let xml = self.run([
                 "log",
@@ -584,7 +634,9 @@ impl Svn {
                     .captures(&entry[2])
                     .map(|m| m[1].to_owned())
                     .unwrap_or_default();
-                if !message.contains("#scm-ignore") {
+                if !message.contains("#scm-ignore")
+                    && !(skip_version && message.contains("#scm-ver"))
+                {
                     result.push((entry[1].to_owned(), message));
                     if result.len() == count {
                         return Ok(result);
@@ -592,10 +644,63 @@ impl Svn {
                 }
             }
             match oldest {
-                Some(revision) if revision > 1 => range = format!("{}:0", revision - 1),
+                Some(revision) if revision > lower.max(1) => {
+                    range = format!("{}:{lower}", revision - 1)
+                }
                 _ => return Ok(result),
             }
         }
+    }
+
+    fn repository_path(&self, relative: &str) -> Result<String, String> {
+        let value = self.run(["info", "--show-item", "relative-url", &self.url(relative)])?;
+        let value = value
+            .trim()
+            .strip_prefix('^')
+            .ok_or_else(|| "invalid SVN repository-relative URL".to_owned())?;
+        let mut decoded = Vec::new();
+        let mut bytes = value.as_bytes().iter().copied();
+        while let Some(byte) = bytes.next() {
+            if byte == b'%' {
+                let hex: String = bytes.by_ref().take(2).map(char::from).collect();
+                decoded.push(u8::from_str_radix(&hex, 16).map_err(|e| e.to_string())?);
+            } else {
+                decoded.push(byte);
+            }
+        }
+        String::from_utf8(decoded).map_err(|e| e.to_string())
+    }
+
+    fn branch_point(&self, branch: &str, develop: &str) -> Result<u64, String> {
+        let xml = self.run([
+            "log",
+            "--xml",
+            "--verbose",
+            "--stop-on-copy",
+            "-r",
+            "0:HEAD",
+            "-l",
+            "1",
+            &self.url(branch),
+        ])?;
+        let branch_path = self.repository_path(branch)?;
+        let develop_path = self.repository_path(develop)?;
+        let paths = regex::Regex::new(r"(?s)<path\s+([^>]*)>(.*?)</path>").unwrap();
+        let source = regex::Regex::new(r#"copyfrom-path="([^"]*)""#).unwrap();
+        let revision = regex::Regex::new(r#"copyfrom-rev="([0-9]+)""#).unwrap();
+        for path in paths.captures_iter(&xml) {
+            if xml_text(&path[2]) != branch_path {
+                continue;
+            }
+            if let (Some(source), Some(revision)) =
+                (source.captures(&path[1]), revision.captures(&path[1]))
+            {
+                if xml_text(&source[1]) == develop_path {
+                    return revision[1].parse::<u64>().map_err(|e| e.to_string());
+                }
+            }
+        }
+        Err(format!("cannot determine SVN branch point: `{branch}` was not copied directly from `{develop}`"))
     }
 
     fn copy(
@@ -659,6 +764,15 @@ impl Svn {
         )?;
         Ok(())
     }
+}
+
+fn xml_text(value: &str) -> String {
+    value
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&apos;", "'")
+        .replace("&amp;", "&")
 }
 
 #[cfg(test)]

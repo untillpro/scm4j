@@ -764,7 +764,9 @@ fn latest_release(git: &Git, config: &Config) -> Result<(Version, String), Strin
         Some(line) => format!("{line}.0").parse::<Version>()?,
         None => {
             let develop = discover_develop_branch(git, config)?;
-            read_version(git, &format!("origin/{develop}"), config)?
+            let version = read_version(git, &format!("origin/{develop}"), config)?;
+            validate_develop_release_line(git, config, &develop, &version)?;
+            version
                 .previous_minor_release()
                 .ok_or_else(|| "no release branch; run `fork`".to_owned())?
         }
@@ -780,6 +782,49 @@ fn latest_release(git: &Git, config: &Config) -> Result<(Version, String), Strin
     } else {
         Err("no release branch; run `fork`".to_owned())
     }
+}
+
+fn validate_develop_release_line(
+    git: &Git,
+    config: &Config,
+    develop: &str,
+    version: &Version,
+) -> Result<(), String> {
+    let branch = release_branch_name(config, version);
+    if git.succeeds([
+        "show-ref",
+        "--verify",
+        "--quiet",
+        &format!("refs/remotes/origin/{branch}"),
+    ]) {
+        return Err(format!(
+            "develop `{develop}` version `{version}` has not advanced past existing release branch `{branch}`; increase the develop minor version (normally to `{}`)",
+            version.next_minor_snapshot()
+        ));
+    }
+    Ok(())
+}
+
+fn develop_has_changes(git: &Git, config: &Config, develop: &str) -> Result<bool, String> {
+    let Ok((_, branch)) = latest_release(git, config) else {
+        return Ok(true);
+    };
+    let dev_ref = format!("origin/{develop}");
+    let base = git.run(["merge-base", &dev_ref, &format!("origin/{branch}")])?;
+    let mut args = vec![
+        "log".to_owned(),
+        "-1".to_owned(),
+        "--format=%H".to_owned(),
+        "--fixed-strings".to_owned(),
+        "--invert-grep".to_owned(),
+        "--grep=#scm-ignore".to_owned(),
+        "--grep=#scm-ver".to_owned(),
+        format!("{base}..{dev_ref}"),
+    ];
+    if !config.subfolder.is_empty() {
+        args.extend(["--".to_owned(), config.subfolder.clone()]);
+    }
+    Ok(!git.run(args)?.is_empty())
 }
 
 fn status(
@@ -814,13 +859,8 @@ fn status(
         return Err(format!("develop SNAPSHOT patch must be 0: {dev_version}"));
     }
     let expected_branch = release_branch_name(config, &dev_version);
-    let last_message = component_log(git, &dev_ref, config, 1, "%B")?;
-    let needs_fork = !git.succeeds([
-        "show-ref",
-        "--verify",
-        "--quiet",
-        &format!("refs/remotes/origin/{expected_branch}"),
-    ]) && !last_message.contains("#scm-ver");
+    validate_develop_release_line(git, config, develop, &dev_version)?;
+    let needs_fork = develop_has_changes(git, config, develop)?;
     if verbose {
         println!("develop: {develop} ({dev_version})");
     }
@@ -872,17 +912,8 @@ fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
     }
     let release = version.release_zero();
     let branch = release_branch_name(config, &release);
-    if git.succeeds([
-        "show-ref",
-        "--verify",
-        "--quiet",
-        &format!("refs/remotes/origin/{branch}"),
-    ]) {
-        println!("Release branch `{branch}` already exists");
-        return Ok(());
-    }
-    let last_message = component_log(git, &dev_ref, config, 1, "%B")?;
-    if last_message.contains("#scm-ver") && latest_release(git, config).is_ok() {
+    validate_develop_release_line(git, config, develop, &version)?;
+    if !develop_has_changes(git, config, develop)? {
         println!("No fork needed for {}", display_component(config));
         return Ok(());
     }

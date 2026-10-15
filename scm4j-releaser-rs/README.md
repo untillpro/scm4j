@@ -24,6 +24,16 @@ needed, in both Git and SVN. Add this marker manually for changes that do not af
 Ignored commits do not hide earlier changes that still require a release. Their files are included
 when a subsequent release is built. Git's configured `subfolder` filter still applies.
 
+Fork detection inspects develop commits after the release boundary: the merge base with the
+release branch in Git, or the release branch's actual `copyfrom-rev` in SVN. Both `#scm-ignore`
+and `#scm-ver` commits are skipped; a version marker does not hide earlier changes in that
+range. Git's `subfolder` filter applies. SVN release branches must have been copied directly
+from the configured develop path.
+
+In both Git and SVN, if develop's release line already has a release branch, `status`, `fork`,
+and `build` report an error asking you to increase develop's minor version. An explicitly
+selected release line can still be used independently of develop's version.
+
 ## Configuration
 
 Configuration is searched first in `<home_dir>/.scm4j`, matching the Java releaser. For compatibility,

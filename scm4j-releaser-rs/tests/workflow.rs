@@ -1099,6 +1099,142 @@ fn svn_tag_failure_warns_with_tag_and_revision_for_manual_repair() {
 }
 
 #[test]
+fn git_manual_branch_uses_common_ancestor_instead_of_version_messages() {
+    for subfolder in [None, Some("components/legacy")] {
+        let mut harness = Harness::new("git-manual-boundary");
+        let repository = harness.add_git(
+            "org.example:legacy",
+            "3.4.0-SNAPSHOT",
+            None,
+            subfolder,
+            Some("git --version"),
+        );
+        let branch = subfolder.map_or("release/3.4", |_| "components/legacy/release/3.4");
+        git_bare(&repository.bare, ["branch", branch, "main"]);
+        let commit = |branch: &str, file: &str, content: &str, message: &str| {
+            let file =
+                subfolder.map_or_else(|| file.to_owned(), |folder| format!("{folder}/{file}"));
+            commit_to_remote_branch_with_message(
+                &harness.temp.0,
+                &repository.bare,
+                branch,
+                &file,
+                content,
+                message,
+            );
+        };
+        commit(branch, "version", "3.4.0", "manual release version");
+        // The manual version bump has no scm-ver marker, and initial history is unmarked.
+        commit(
+            "main",
+            "version",
+            "3.5.0-SNAPSHOT",
+            "manual version bump #scm-ignore",
+        );
+        commit(
+            "main",
+            "content.txt",
+            "already merged",
+            "#scm-ignore merged change",
+        );
+        commit("main", "content.txt", "formatting", "#scm-ver formatting");
+        if subfolder.is_some() {
+            commit_to_remote_branch_with_message(
+                &harness.temp.0,
+                &repository.bare,
+                "main",
+                "sibling.txt",
+                "sibling feature",
+                "feature",
+            );
+        }
+        assert!(harness
+            .succeeds(&["status", "org.example:legacy"])
+            .contains("BUILD"));
+        assert!(harness
+            .succeeds(&["fork", "org.example:legacy"])
+            .contains("No fork needed"));
+        let next_branch = subfolder.map_or("release/3.5", |_| "components/legacy/release/3.5");
+        assert!(!repository.has_ref(&format!("refs/heads/{next_branch}")));
+
+        commit("main", "content.txt", "new feature", "feature");
+        commit(
+            "main",
+            "version",
+            "3.5.0-SNAPSHOT\n",
+            "#scm-ver 3.5.0-SNAPSHOT",
+        );
+        commit(
+            "main",
+            "content.txt",
+            "new feature with formatting",
+            "#scm-ignore formatting",
+        );
+        // Neither marker may hide the earlier real change in the range.
+        assert!(harness
+            .succeeds(&["status", "org.example:legacy"])
+            .contains("FORK"));
+        harness.succeeds(&["fork", "org.example:legacy"]);
+        assert!(repository.has_ref(&format!("refs/heads/{next_branch}")));
+    }
+}
+
+#[test]
+fn git_existing_current_release_reports_missing_develop_version_bump() {
+    for subfolder in [None, Some("components/legacy")] {
+        let mut harness = Harness::new("git-missing-bump");
+        let repository = harness.add_git(
+            "org.example:legacy",
+            "3.4.0-SNAPSHOT",
+            None,
+            subfolder,
+            Some("git --version"),
+        );
+        let prefix = subfolder.map_or(String::new(), |folder| format!("{folder}/"));
+        let branch = format!("{prefix}release/3.4");
+        git_bare(&repository.bare, ["branch", &branch, "main"]);
+        // An older release exists too, so silently falling back to it would be possible.
+        git_bare(
+            &repository.bare,
+            ["branch", &format!("{prefix}release/3.3"), "main"],
+        );
+        commit_to_remote_branch_with_message(
+            &harness.temp.0,
+            &repository.bare,
+            &branch,
+            &format!("{prefix}version"),
+            "3.4.0",
+            "manual release version",
+        );
+        let develop_before = git_bare(&repository.bare, ["rev-parse", "main"]);
+        let release_before = git_bare(&repository.bare, ["rev-parse", &branch]);
+        for command in ["status", "fork", "build"] {
+            let output = harness.run(&[command, "org.example:legacy"]);
+            assert!(
+                !output.status.success(),
+                "{command} must reject the unchanged develop version"
+            );
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            assert!(stderr.contains("has not advanced"), "{stderr}");
+            assert!(stderr.contains(&branch), "{stderr}");
+            assert!(stderr.contains("3.5.0-SNAPSHOT"), "{stderr}");
+        }
+        assert_eq!(
+            git_bare(&repository.bare, ["rev-parse", "main"]),
+            develop_before
+        );
+        assert_eq!(
+            git_bare(&repository.bare, ["rev-parse", &branch]),
+            release_before
+        );
+        assert!(git_bare(&repository.bare, ["tag", "--list"]).is_empty());
+        assert!(harness
+            .succeeds(&["status", "org.example:legacy:3.4.0"])
+            .contains("BUILD"));
+    }
+}
+
+#[test]
 fn git_scm_ignore_commits_do_not_trigger_releases() {
     for subfolder in [None, Some("components/legacy")] {
         let mut harness = Harness::new("git-ignore");
@@ -1261,6 +1397,152 @@ fn svn_scm_ignore_commits_do_not_trigger_releases() {
     assert!(harness
         .succeeds(&["status", "org.example:legacy", "--show-done"])
         .contains("DONE"));
+}
+
+#[test]
+fn svn_manual_branch_uses_copy_boundary_instead_of_version_messages() {
+    let mut harness = Harness::new("svn-manual-boundary");
+    let repository = harness.add_svn("org.example:legacy", "3.4.0-SNAPSHOT", None);
+    let develop = harness.temp.0.join("legacy-svn-seed");
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "copy",
+            "--parents",
+            &format!("{}/trunk", repository.url),
+            &format!("{}/branches/release/3.4", repository.url),
+            "-m",
+            "manual release branch",
+        ],
+    );
+    // There is no scm-ver marker anywhere in this legacy history.
+    fs::write(develop.join("version"), "3.5.0-SNAPSHOT").unwrap();
+    successful_command(
+        &develop,
+        "svn",
+        ["commit", "-m", "manual version bump #scm-ignore"],
+    );
+    for index in 0..34 {
+        fs::write(
+            develop.join("content.txt"),
+            format!("merged change {index}"),
+        )
+        .unwrap();
+        successful_command(
+            &develop,
+            "svn",
+            ["commit", "-m", "already merged #scm-ignore"],
+        );
+    }
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy"])
+        .contains("BUILD"));
+    assert!(harness
+        .succeeds(&["fork", "org.example:legacy"])
+        .contains("No fork needed"));
+    assert!(!repository.exists("branches/release/3.5"));
+
+    fs::write(develop.join("content.txt"), "new feature").unwrap();
+    successful_command(&develop, "svn", ["commit", "-m", "feature"]);
+    fs::write(develop.join("version"), "3.5.0-SNAPSHOT\n").unwrap();
+    successful_command(&develop, "svn", ["commit", "-m", "#scm-ver 3.5.0-SNAPSHOT"]);
+    // A newer version marker must not hide an earlier real change.
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy"])
+        .contains("FORK"));
+    harness.succeeds(&["fork", "org.example:legacy"]);
+    assert!(repository.exists("branches/release/3.5"));
+}
+
+#[test]
+fn svn_existing_current_release_reports_missing_develop_version_bump() {
+    let mut harness = Harness::new("svn-missing-bump");
+    let repository = harness.add_svn("org.example:legacy", "3.4.0-SNAPSHOT", None);
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "copy",
+            "--parents",
+            &format!("{}/trunk", repository.url),
+            &format!("{}/branches/release/3.4", repository.url),
+            "-m",
+            "manual release branch",
+        ],
+    );
+    let release = harness.temp.0.join("manual-release");
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "checkout",
+            &format!("{}/branches/release/3.4", repository.url),
+            path(&release).as_str(),
+        ],
+    );
+    fs::write(release.join("version"), "3.4.0").unwrap();
+    successful_command(&release, "svn", ["commit", "-m", "manual release version"]);
+    for command in ["status", "fork", "build"] {
+        let output = harness.run(&[command, "org.example:legacy"]);
+        assert!(
+            !output.status.success(),
+            "{command} must reject the unchanged develop version"
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.contains("has not advanced"), "{stderr}");
+        assert!(stderr.contains("branches/release/3.4"), "{stderr}");
+        assert!(stderr.contains("3.5.0-SNAPSHOT"), "{stderr}");
+    }
+    assert!(!repository.exists("tags/3.4.0"));
+    assert_eq!(repository.cat("trunk/version"), "3.4.0-SNAPSHOT");
+    assert_eq!(repository.cat("branches/release/3.4/version"), "3.4.0");
+    // An explicitly selected release line remains usable independently of trunk's version.
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy:3.4.0"])
+        .contains("BUILD"));
+}
+
+#[test]
+fn svn_branch_point_uses_copied_revision_not_copy_commit_revision() {
+    let mut harness = Harness::new("svn-old-copy");
+    let repository = harness.add_svn("org.example:legacy", "3.4.0-SNAPSHOT", None);
+    let develop = harness.temp.0.join("legacy-svn-seed");
+    let copied = successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "info",
+            "--show-item",
+            "last-changed-revision",
+            &format!("{}/trunk", repository.url),
+        ],
+    );
+    fs::write(develop.join("content.txt"), "not included in release").unwrap();
+    successful_command(
+        &develop,
+        "svn",
+        ["commit", "-m", "feature before copy commit"],
+    );
+    successful_command(
+        &harness.temp.0,
+        "svn",
+        [
+            "copy",
+            "--parents",
+            "-r",
+            copied.trim(),
+            &format!("{}/trunk", repository.url),
+            &format!("{}/branches/release/3.4", repository.url),
+            "-m",
+            "copy earlier revision",
+        ],
+    );
+    fs::write(develop.join("version"), "3.5.0-SNAPSHOT").unwrap();
+    successful_command(&develop, "svn", ["commit", "-m", "#scm-ver 3.5.0-SNAPSHOT"]);
+    assert!(harness
+        .succeeds(&["status", "org.example:legacy"])
+        .contains("FORK"));
 }
 
 #[test]
