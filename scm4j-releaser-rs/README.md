@@ -37,6 +37,13 @@ In both Git and SVN, if develop's release line already has a release branch, `st
 and `build` report an error asking you to increase develop's minor version. An explicitly
 selected release line can still be used independently of develop's version.
 
+For an unversioned component, dependency changes turn an otherwise completed release into
+`FORK`, including changes propagated through intermediate dependencies. Run `fork` before
+`build` to create the parent's next release line; the previous release branch is preserved.
+For an explicitly selected release line, the same condition is reported as `BUILD_MDEPS`.
+Git also detects dependency versions that have already been released but differ from the
+parent's release-branch `mdeps`.
+
 ## Configuration
 
 Configuration is searched first in `<home_dir>/.scm4j`, matching the Java releaser. For compatibility,

@@ -615,8 +615,87 @@ fn status_prints_dependency_tree_with_planned_actions() {
 }
 
 #[test]
-fn status_marks_done_parent_for_rebuild_when_dependency_will_build() {
-    let mut harness = Harness::new("status-build-mdeps");
+fn dependency_changes_fork_unlocked_parent_but_rebuild_locked_release() {
+    for dependency_already_built in [false, true] {
+        let mut harness = Harness::new("dependency-parent-fork");
+        let dependency = harness.add_git(
+            "org.example:dependency",
+            "2.3.0-SNAPSHOT",
+            None,
+            None,
+            Some("git --version"),
+        );
+        let middle = harness.add_git(
+            "org.example:middle",
+            "4.0.0-SNAPSHOT",
+            Some("org.example:dependency\n"),
+            None,
+            Some("git --version"),
+        );
+        let root = harness.add_git(
+            "org.example:root",
+            "1.0.0-SNAPSHOT",
+            Some("org.example:middle\n"),
+            None,
+            Some("git --version"),
+        );
+        harness.succeeds(&["fork", "org.example:root"]);
+        harness.succeeds(&["build", "org.example:root"]);
+        let old_root = git_bare(&root.bare, ["rev-parse", "release/1.0"]);
+        let old_middle = git_bare(&middle.bare, ["rev-parse", "release/4.0"]);
+        commit_to_remote_branch(
+            &harness.temp.0,
+            &dependency.bare,
+            "release/2.3",
+            "patch.txt",
+            "dependency patch",
+        );
+        if dependency_already_built {
+            harness.succeeds(&["build", "org.example:dependency"]);
+        }
+        let output = harness.succeeds(&["status", "org.example:root", "--show-done"]);
+        assert!(output.contains("org.example:root [FORK]"), "{output}");
+        assert!(output.contains("org.example:middle [FORK]"), "{output}");
+        let locked = harness.succeeds(&["status", "org.example:root:1.0.0", "--show-done"]);
+        assert!(
+            locked.contains("org.example:root [BUILD_MDEPS]"),
+            "{locked}"
+        );
+        assert!(
+            locked.contains("org.example:middle [BUILD_MDEPS]"),
+            "{locked}"
+        );
+        assert!(!locked.contains("[FORK]"), "{locked}");
+        assert!(harness
+            .fails(&["build", "org.example:root"])
+            .contains("run `fork` first"));
+        assert_eq!(git_bare(&root.bare, ["rev-parse", "release/1.0"]), old_root);
+        assert_eq!(
+            git_bare(&middle.bare, ["rev-parse", "release/4.0"]),
+            old_middle
+        );
+        harness.succeeds(&["fork", "org.example:root"]);
+        assert!(root.has_ref("refs/heads/release/1.1"));
+        assert!(middle.has_ref("refs/heads/release/4.1"));
+        // Repeating fork before build must not create yet another minor release.
+        harness.succeeds(&["fork", "org.example:root"]);
+        assert!(!root.has_ref("refs/heads/release/1.2"));
+        harness.succeeds(&["build", "org.example:root"]);
+        assert!(root.has_ref("refs/tags/1.1.0"));
+        assert_eq!(git_bare(&root.bare, ["rev-parse", "release/1.0"]), old_root);
+        assert_eq!(
+            git_bare(&middle.bare, ["rev-parse", "release/4.0"]),
+            old_middle
+        );
+        assert!(harness
+            .succeeds(&["status", "org.example:root", "--show-done"])
+            .contains("org.example:root [DONE]"));
+    }
+}
+
+#[test]
+fn dependency_changes_build_patch_when_parent_release_is_explicit() {
+    let mut harness = Harness::new("locked-dependency-patch");
     let dependency = harness.add_git(
         "org.example:dependency",
         "2.3.0-SNAPSHOT",
@@ -624,7 +703,7 @@ fn status_marks_done_parent_for_rebuild_when_dependency_will_build() {
         None,
         Some("git --version"),
     );
-    harness.add_git(
+    let root = harness.add_git(
         "org.example:root",
         "1.0.0-SNAPSHOT",
         Some("org.example:dependency\n"),
@@ -640,15 +719,53 @@ fn status_marks_done_parent_for_rebuild_when_dependency_will_build() {
         "patch.txt",
         "dependency patch",
     );
-
-    let output = harness.succeeds(&["status", "org.example:root"]);
-    let tree = output
-        .split_once("Dependency tree (dependencies execute first):\n")
-        .map(|(_, tree)| tree)
-        .expect("status output must contain a dependency tree");
-    assert!(
-        tree.starts_with("org.example:root [BUILD_MDEPS]\n`-- org.example:dependency [BUILD]\n")
+    harness.succeeds(&["build", "org.example:root:1.0.0"]);
+    assert!(dependency.has_ref("refs/tags/2.3.1"));
+    assert!(root.has_ref("refs/tags/1.0.1"));
+    assert!(!root.has_ref("refs/heads/release/1.1"));
+    assert_eq!(
+        root.show("refs/tags/1.0.1", "mdeps"),
+        "org.example:dependency:2.3.1"
     );
+    assert!(harness
+        .succeeds(&["status", "org.example:root:1.0.0", "--show-done"])
+        .contains("org.example:root [DONE]"));
+}
+
+#[test]
+fn dependency_changes_fork_svn_parent_without_parent_commits() {
+    let mut harness = Harness::new("svn-dependency-parent-fork");
+    let dependency = harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    let root = harness.add_svn(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some("org.example:dependency\n"),
+    );
+    harness.succeeds(&["fork", "org.example:root"]);
+    harness.succeeds(&["build", "org.example:root"]);
+    commit_to_remote_branch(
+        &harness.temp.0,
+        &dependency.bare,
+        "release/2.3",
+        "patch.txt",
+        "dependency patch",
+    );
+    assert!(harness
+        .succeeds(&["status", "org.example:root"])
+        .contains("org.example:root [FORK]"));
+    assert!(harness
+        .fails(&["build", "org.example:root"])
+        .contains("run `fork` first"));
+    harness.succeeds(&["fork", "org.example:root"]);
+    assert!(root.exists("branches/release/1.1"));
+    assert_eq!(root.cat("branches/release/1.0/version"), "1.0.1");
+    assert_eq!(root.cat("trunk/version"), "1.2.0-SNAPSHOT");
 }
 
 #[test]

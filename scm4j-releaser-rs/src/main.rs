@@ -111,17 +111,50 @@ fn execute() -> Result<(), String> {
     } else {
         resolve_component_graph(&catalog, &components, &work, &mut fetched_repositories)?
     };
-    if command == "status" {
-        let mut actions = HashMap::new();
+    let mut actions = HashMap::new();
+    let mut dependency_forks = HashSet::new();
+    if matches!(command, "status" | "fork" | "build") {
+        // Plan before changing dependencies, so their actions remain visible to parents.
         for config in &configs {
             let component_work = work.join("components").join(safe_name(&config.component));
             fs::create_dir_all(&component_work)
                 .map_err(|e| format!("cannot create {}: {e}", component_work.display()))?;
-            let action = inspect_status(config, &work, &component_work, &mut fetched_repositories)?;
+            let own = inspect_status(config, &work, &component_work, &mut fetched_repositories)?;
+            let dependency_changes = dependencies
+                .get(&config.component)
+                .into_iter()
+                .flatten()
+                .any(|dependency| actions.get(dependency).copied() != Some("DONE"));
+            let action = if own == "DONE"
+                && (dependency_changes
+                    || lock_git_mdeps(&catalog, config, &work, &mut fetched_repositories, true)?)
+            {
+                if config.release_line.is_none() {
+                    dependency_forks.insert(config.component.clone());
+                    "FORK"
+                } else {
+                    "BUILD_MDEPS"
+                }
+            } else {
+                own
+            };
             actions.insert(config.component.clone(), action);
         }
+    }
+    if command == "status" {
         print_dependency_tree(&catalog, &components, &dependencies, &actions, show_done)?;
         return Ok(());
+    }
+    if command == "build" {
+        if let Some(config) = configs
+            .iter()
+            .find(|config| dependency_forks.contains(&config.component))
+        {
+            return Err(format!(
+                "dependency changes require a new release branch for `{}`; run `fork` first",
+                config.component
+            ));
+        }
     }
     let root_components = components
         .iter()
@@ -137,7 +170,7 @@ fn execute() -> Result<(), String> {
             continue;
         }
         if command == "build" {
-            lock_git_mdeps(&catalog, &config, &work, &mut fetched_repositories)?;
+            lock_git_mdeps(&catalog, &config, &work, &mut fetched_repositories, false)?;
         }
         let delay_this_component = delayed && root_components.contains(&config.component);
         execute_config(
@@ -146,10 +179,11 @@ fn execute() -> Result<(), String> {
             &work,
             &component_work,
             delay_this_component,
+            dependency_forks.contains(&config.component),
             &mut fetched_repositories,
         )?;
         if command == "fork" {
-            lock_git_mdeps(&catalog, &config, &work, &mut fetched_repositories)?;
+            lock_git_mdeps(&catalog, &config, &work, &mut fetched_repositories, false)?;
         }
     }
     Ok(())
@@ -330,13 +364,13 @@ fn print_dependency_tree(
         if !printed.insert(component.clone()) {
             continue;
         }
-        if show_done || planned_action(&component, dependencies, actions) != "DONE" {
+        if show_done || planned_action(&component, actions) != "DONE" {
             print_dependency_node(&component, "", true, true, dependencies, actions, show_done);
         }
     }
     if printed
         .iter()
-        .all(|component| planned_action(component, dependencies, actions) == "DONE")
+        .all(|component| planned_action(component, actions) == "DONE")
         && !show_done
     {
         println!("(no actions)");
@@ -360,14 +394,14 @@ fn print_dependency_node(
     } else {
         "|-- "
     };
-    let action = planned_action(component, dependencies, actions);
+    let action = planned_action(component, actions);
     println!("{prefix}{connector}{component} [{action}]");
     let children: Vec<_> = dependencies
         .get(component)
         .map(Vec::as_slice)
         .unwrap_or(&[])
         .iter()
-        .filter(|child| show_done || planned_action(child, dependencies, actions) != "DONE")
+        .filter(|child| show_done || planned_action(child, actions) != "DONE")
         .collect();
     let child_prefix = if root {
         prefix.to_owned()
@@ -389,23 +423,8 @@ fn print_dependency_node(
     }
 }
 
-fn planned_action(
-    component: &str,
-    dependencies: &HashMap<String, Vec<String>>,
-    actions: &HashMap<String, &'static str>,
-) -> &'static str {
-    let own = actions.get(component).copied().unwrap_or("UNKNOWN");
-    if own == "DONE"
-        && dependencies
-            .get(component)
-            .into_iter()
-            .flatten()
-            .any(|dependency| planned_action(dependency, dependencies, actions) != "DONE")
-    {
-        "BUILD_MDEPS"
-    } else {
-        own
-    }
+fn planned_action(component: &str, actions: &HashMap<String, &'static str>) -> &'static str {
+    actions.get(component).copied().unwrap_or("UNKNOWN")
 }
 
 fn read_develop_mdeps(
@@ -502,18 +521,19 @@ fn lock_git_mdeps(
     config: &Config,
     shared_work: &Path,
     fetched_repositories: &mut HashSet<PathBuf>,
-) -> Result<(), String> {
+    dry_run: bool,
+) -> Result<bool, String> {
     if config.scm_type != ScmType::Git {
-        return Ok(());
+        return Ok(false);
     }
     let git = prepare_repository(config, shared_work, fetched_repositories)?;
     let Ok((_, branch)) = latest_release(&git, config) else {
-        return Ok(());
+        return Ok(false);
     };
     let revision = format!("origin/{branch}");
     let path = component_path(config, "mdeps");
     if !git.succeeds(["cat-file", "-e", &format!("{revision}:{path}")]) {
-        return Ok(());
+        return Ok(false);
     }
     let original = git.show_file(&revision, &path)?;
     let mut changed = false;
@@ -562,7 +582,10 @@ fn lock_git_mdeps(
         output.push(replacement);
     }
     if !changed {
-        return Ok(());
+        return Ok(false);
+    }
+    if dry_run {
+        return Ok(true);
     }
     for change in changes {
         external::action(format_args!("{change}"));
@@ -577,7 +600,7 @@ fn lock_git_mdeps(
     git.run(["commit", "-m", "#scm-mdeps"])?;
     git.run(["push", "origin", &format!("{branch}:{branch}")])?;
     println!("Locked mdeps in {branch}");
-    Ok(())
+    Ok(true)
 }
 
 fn execute_config(
@@ -586,6 +609,7 @@ fn execute_config(
     shared_work: &Path,
     component_work: &Path,
     delayed: bool,
+    dependency_changes: bool,
     fetched_repositories: &mut HashSet<PathBuf>,
 ) -> Result<(), String> {
     match config.scm_type {
@@ -594,13 +618,13 @@ fn execute_config(
             let develop = discover_develop_branch(&git, config)?;
             match command {
                 "status" => status(&git, config, &develop, true).map(|_| ()),
-                "fork" => fork(&git, config, &develop),
+                "fork" => fork(&git, config, &develop, dependency_changes),
                 "build" => build(&git, config, component_work, delayed),
                 "tag" => tag(&git, config, component_work),
                 _ => Err(format!("unknown command `{command}`; use --help")),
             }
         }
-        ScmType::Svn => svn::execute(command, config, component_work, delayed),
+        ScmType::Svn => svn::execute(command, config, component_work, delayed, dependency_changes),
     }
 }
 
@@ -927,7 +951,7 @@ fn status(
     }
 }
 
-fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
+fn fork(git: &Git, config: &Config, develop: &str, dependency_changes: bool) -> Result<(), String> {
     if config.release_line.is_some() {
         return Err("fork does not accept a locked release version".to_owned());
     }
@@ -944,7 +968,7 @@ fn fork(git: &Git, config: &Config, develop: &str) -> Result<(), String> {
     let release = version.release_zero();
     let branch = release_branch_name(config, &release);
     validate_develop_release_line(git, config, develop, &version)?;
-    if !develop_has_changes(git, config, develop)? {
+    if !dependency_changes && !develop_has_changes(git, config, develop)? {
         println!("No fork needed for {}", display_component(config));
         return Ok(());
     }

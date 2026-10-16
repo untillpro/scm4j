@@ -6,7 +6,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub fn execute(command: &str, config: &Config, work: &Path, delayed: bool) -> Result<(), String> {
+pub fn execute(
+    command: &str,
+    config: &Config,
+    work: &Path,
+    delayed: bool,
+    dependency_changes: bool,
+) -> Result<(), String> {
     if !config.subfolder.is_empty() {
         return Err("subfolder is supported for Git only".to_owned());
     }
@@ -20,7 +26,7 @@ pub fn execute(command: &str, config: &Config, work: &Path, delayed: bool) -> Re
     let develop = config.develop_branch.as_deref().unwrap_or("trunk");
     match command {
         "status" => status(&svn, config, develop, true).map(|_| ()),
-        "fork" => fork(&svn, config, develop),
+        "fork" => fork(&svn, config, develop, dependency_changes),
         "build" => build(&svn, config, work, delayed),
         "tag" => tag(&svn, config, work),
         _ => Err(format!("unknown command `{command}`; use --help")),
@@ -175,7 +181,7 @@ fn status(
     }
 }
 
-fn fork(svn: &Svn, config: &Config, develop: &str) -> Result<(), String> {
+fn fork(svn: &Svn, config: &Config, develop: &str, dependency_changes: bool) -> Result<(), String> {
     if config.release_line.is_some() {
         return Err("fork does not accept a locked release version".to_owned());
     }
@@ -191,7 +197,7 @@ fn fork(svn: &Svn, config: &Config, develop: &str) -> Result<(), String> {
     let release = version.release_zero();
     let branch = release_path(config, &release);
     validate_develop_release_line(svn, config, develop, &version)?;
-    if !develop_has_changes(svn, config, develop)? {
+    if !dependency_changes && !develop_has_changes(svn, config, develop)? {
         println!("No fork needed for {}", display_component(config));
         return Ok(());
     }
