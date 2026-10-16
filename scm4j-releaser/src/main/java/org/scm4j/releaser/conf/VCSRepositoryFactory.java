@@ -10,20 +10,26 @@ import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 import java.io.File;
 
 public class VCSRepositoryFactory {
-	
+
 	public static final VCSType DEFAULT_VCS_TYPE = VCSType.GIT;
 	public static final String DEFAULT_VCS_WORKSPACE_DIR = new File(Constants.BASE_WORKING_DIR,
 			"releaser-vcs-workspaces").getPath();
 	private final RegexConfig cc;
 	private final RegexConfig creds;
+	private final IVCSWorkspace workspace;
 
 	public VCSRepositoryFactory() {
-		this(new RegexConfig(), new RegexConfig());
+		this(new RegexConfig(), new RegexConfig(), new VCSWorkspace(DEFAULT_VCS_WORKSPACE_DIR));
 	}
 
 	public VCSRepositoryFactory(RegexConfig cc, RegexConfig creds) {
+		this(cc, creds, new VCSWorkspace(DEFAULT_VCS_WORKSPACE_DIR));
+	}
+
+	VCSRepositoryFactory(RegexConfig cc, RegexConfig creds, IVCSWorkspace workspace) {
 		this.cc = cc;
 		this.creds = creds;
+		this.workspace = workspace;
 	}
 
 	public void load(IConfigUrls configUrls) {
@@ -83,13 +89,12 @@ public class VCSRepositoryFactory {
 				VCSRepository.DEFAULT_RELEASE_BRANCH_PREFIX);
 		String releaseCommand = cc.getPropByName(componentName, "releaseCommand", null);
 		String componentSubfolder = componentLocation.getSubfolder();
-		IVCSWorkspace ws = new VCSWorkspace(DEFAULT_VCS_WORKSPACE_DIR);
 		return new VCSRepository(comp.getCoords().getArtifactId(), componentLocation, credentials, type,
 				developBranch, releaseBranchPrefix,
-				VCSFactory.getVCS(type, credentials, url, ws, componentSubfolder),
+				VCSFactory.getVCS(type, credentials, url, workspace, componentSubfolder),
 				BuilderFactory.getBuilder(releaseCommand));
 	}
-	
+
 	private VCSType getVCSType(String type, String url) {
 		if (type != null && type.toLowerCase().contains(VCSType.GIT.toString().toLowerCase()))
 			return VCSType.GIT;

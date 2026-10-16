@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLockInterruptionException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 
@@ -18,11 +19,15 @@ import org.junit.Test;
 public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
 	private IVCSRepositoryWorkspace r;
+	private IVCSRepositoryWorkspace component;
+	private IVCSRepositoryWorkspace sibling;
 
 	@Before
 	public void setUp() {
 		IVCSWorkspace w = new VCSWorkspace(WORKSPACE_DIR);
-		r = w.getVCSRepositoryWorkspace(TEST_REPO_URL);
+		r = w.getVCSRepositoryWorkspace(TEST_REPO_URL, null);
+		component = w.getVCSRepositoryWorkspace(TEST_REPO_URL, "components/first");
+		sibling = w.getVCSRepositoryWorkspace(TEST_REPO_URL, "components/second");
 	}
 
 	@Test
@@ -60,7 +65,9 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 	@Test
 	public void testNewWorkingCopyIsNotPublishedBeforeLockIsAcquired() throws Exception {
 		String workingCopyId = "new-working-copy";
-		File lockFile = new File(r.getRepoFolder(), VCSLockedWorkingCopy.LOCK_FILE_PREFIX + workingCopyId);
+		assertTrue(r.getWritableWorkingCopiesFolder().mkdirs());
+		File lockFile = new File(r.getWritableWorkingCopiesFolder(),
+				VCSLockedWorkingCopy.LOCK_FILE_PREFIX + workingCopyId);
 		assertTrue(lockFile.createNewFile());
 
 		try (FileOutputStream stream = new FileOutputStream(lockFile);
@@ -72,8 +79,27 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 				// Expected: the new working-copy directory must not be visible unless its lock is owned.
 			}
 
-			assertFalse(new File(r.getRepoFolder(), workingCopyId).exists());
+			assertFalse(new File(r.getWritableWorkingCopiesFolder(), workingCopyId).exists());
 		}
+	}
+
+	@Test
+	public void testInterruptedAllocationDoesNotPublishWorkingCopy() throws Exception {
+		String workingCopyId = "interrupted-working-copy";
+		assertTrue(r.getWritableWorkingCopiesFolder().mkdirs());
+		File lockFile = new File(r.getWritableWorkingCopiesFolder(),
+				VCSLockedWorkingCopy.LOCK_FILE_PREFIX + workingCopyId);
+		assertTrue(lockFile.createNewFile());
+		Thread.currentThread().interrupt();
+		try {
+			new VCSLockedWorkingCopy(r, workingCopyId);
+			fail("Interrupted allocation must fail");
+		} catch (FileLockInterruptionException expected) {
+			assertTrue(Thread.currentThread().isInterrupted());
+		} finally {
+			Thread.interrupted();
+		}
+		assertFalse(new File(r.getWritableWorkingCopiesFolder(), workingCopyId).exists());
 	}
 
 	@Test
@@ -93,11 +119,36 @@ public class VCSLockedWorkingCopyTest extends VCSWCTestBase {
 
 	@Test
 	public void testCorruptingWorkspace() throws Exception {
+		assertTrue(r.getPreparedRepositoryFolder().mkdirs());
+		File preparedMarker = new File(r.getPreparedRepositoryFolder(), "prepared.marker");
+		assertTrue(preparedMarker.createNewFile());
 		VCSLockedWorkingCopy workspace = new VCSLockedWorkingCopy(r);
 		workspace.setCorrupted(true);
 		workspace.close();
 		assertFalse(workspace.getFolder().exists());
 		assertFalse(workspace.getLockFile().exists());
+		assertTrue("Corrupt derivatives must not remove the status snapshot", preparedMarker.exists());
+		assertFalse("Corrupt derivatives must not mark the status snapshot corrupt",
+				new File(r.getPreparedRepositoryFolder(), VCSLockedWorkingCopy.LOCK_FILE_PREFIX
+						+ r.getPreparedRepositoryFolder().getName()).exists());
+	}
+
+	@Test
+	public void testSiblingMutationWorkingCopiesAreIsolatedFromPreparedRepository() throws Exception {
+		assertEquals(component.getPreparedRepositoryFolder(), sibling.getPreparedRepositoryFolder());
+		assertEquals(component.getWritableWorkingCopiesFolder(), sibling.getWritableWorkingCopiesFolder());
+
+		try (IVCSLockedWorkingCopy first = component.getVCSLockedWorkingCopy();
+			 IVCSLockedWorkingCopy second = sibling.getVCSLockedWorkingCopy()) {
+			assertNotEquals(first.getFolder(), second.getFolder());
+			assertNotEquals(first.getLockFile(), second.getLockFile());
+			assertNotEquals(component.getPreparedRepositoryFolder(), first.getFolder());
+			assertNotEquals(component.getPreparedRepositoryFolder(), second.getFolder());
+			assertEquals(component, first.getVCSRepository());
+			assertEquals(sibling, second.getVCSRepository());
+			assertEquals(component.getWritableWorkingCopiesFolder(), first.getFolder().getParentFile());
+			assertEquals(component.getWritableWorkingCopiesFolder(), second.getFolder().getParentFile());
+		}
 	}
 
 	@Test

@@ -58,10 +58,15 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy {
 	}
 
 	private void init() throws IOException {
-		File[] files = vcsRepo.getRepoFolder().listFiles();
+		File workingCopiesFolder = vcsRepo.getWritableWorkingCopiesFolder();
+		if (!workingCopiesFolder.isDirectory() && !workingCopiesFolder.mkdirs()
+				&& !workingCopiesFolder.isDirectory()) {
+			throw new IOException("Failed to create working-copies directory " + workingCopiesFolder);
+		}
+		File[] files = workingCopiesFolder.listFiles();
 		for (File file : files != null ? files : new File[0]) {
 			if (file.isDirectory()) {
-				lockFile = new File(vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + file.getName());
+				lockFile = new File(workingCopiesFolder, LOCK_FILE_PREFIX + file.getName());
 				if (!lockFile.exists()) {
 					continue;
 				}
@@ -98,8 +103,9 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy {
 	}
 
 	private void createNewLockedWorkingCopy() throws IOException {
-		folder = new File(vcsRepo.getRepoFolder(), uuid);
-		lockFile = new File(vcsRepo.getRepoFolder(), LOCK_FILE_PREFIX + folder.getName());
+		File workingCopiesFolder = vcsRepo.getWritableWorkingCopiesFolder();
+		folder = new File(workingCopiesFolder, uuid);
+		lockFile = new File(workingCopiesFolder, LOCK_FILE_PREFIX + folder.getName());
 		boolean lockFileCreated = lockFile.createNewFile();
 		boolean folderCreated = false;
 		try {
@@ -151,11 +157,36 @@ public class VCSLockedWorkingCopy implements IVCSLockedWorkingCopy {
 			return;
 		}
 
-		closeLockResources();
-		state = VCSLockedWorkingCopyState.OBSOLETE;
+		IOException failure = null;
 		if (corrupt) {
-			FileUtils.deleteDirectory(folder);
-			lockFile.delete();
+			try {
+				// Remove the discoverable directory while its lease is still held so it cannot be
+				// acquired between lock release and corrupt-copy cleanup.
+				FileUtils.deleteDirectory(folder);
+			} catch (IOException e) {
+				failure = e;
+			}
+		}
+		try {
+			closeLockResources();
+		} catch (IOException e) {
+			if (failure == null) {
+				failure = e;
+			} else {
+				failure.addSuppressed(e);
+			}
+		}
+		state = VCSLockedWorkingCopyState.OBSOLETE;
+		if (corrupt && lockFile.exists() && !lockFile.delete()) {
+			IOException e = new IOException("Failed to remove corrupt working copy lock file " + lockFile);
+			if (failure == null) {
+				failure = e;
+			} else {
+				failure.addSuppressed(e);
+			}
+		}
+		if (failure != null) {
+			throw failure;
 		}
 	}
 

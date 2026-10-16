@@ -1,10 +1,12 @@
 package org.scm4j.vcs.svn;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.verification.VerificationMode;
 import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.IVCSMutationSession;
 import org.scm4j.vcs.api.VCSChangeType;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
@@ -13,6 +15,8 @@ import org.scm4j.vcs.api.abstracttest.VCSAbstractTest;
 import org.scm4j.vcs.api.exceptions.EVCSBranchNotFound;
 import org.scm4j.vcs.api.exceptions.EVCSException;
 import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
+import org.scm4j.vcs.api.workingcopy.IVCSWorkspace;
+import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNProxyManager;
 import org.tmatesoft.svn.core.auth.SVNAuthentication;
@@ -29,6 +33,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.SocketException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +41,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -73,6 +85,11 @@ public class SVNVCSTest extends VCSAbstractTest {
 	@Override
 	public String getVCSTypeString() {
 		return "svn";
+	}
+
+	@Override
+	protected boolean sparseCheckoutIncludesParentFiles() {
+		return false;
 	}
 
 	@Override
@@ -234,6 +251,219 @@ public class SVNVCSTest extends VCSAbstractTest {
 	@Test
 	public void testVCSTypeString() {
 		assertEquals(vcs.getVCSTypeString(), SVNVCS.SVN_VCS_TYPE_STRING);
+	}
+
+	@Test(timeout = 15000)
+	public void testSiblingReadsWaitForOnePreparedRevisionThenRunConcurrently() throws Exception {
+		String firstPath = "components/first/value.txt";
+		String secondPath = "components/second/value.txt";
+		vcsTestDataGen.setFileContent(null, firstPath, "first", "first component added");
+		vcsTestDataGen.setFileContent(null, secondPath, "second", "second component added");
+		IVCSWorkspace workspace = new VCSWorkspace(new File(TEST_BASE_DIR, "svn-shared-workspace").getPath());
+		IVCSRepositoryWorkspace firstRepository = workspace.getVCSRepositoryWorkspace(
+				repoUrl, "components/first");
+		IVCSRepositoryWorkspace secondRepository = workspace.getVCSRepositoryWorkspace(
+				repoUrl, "components/second");
+		SVNVCS first = new SVNVCS(firstRepository, null, null);
+		SVNVCS second = new SVNVCS(secondRepository, null, null);
+		CountDownLatch callersReady = new CountDownLatch(2);
+		CountDownLatch start = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			Future<String> firstRead = executor.submit(() -> concurrentRead(first, firstPath, callersReady, start));
+			Future<String> secondRead = executor.submit(() -> concurrentRead(second, secondPath, callersReady, start));
+			assertTrue(callersReady.await(5, TimeUnit.SECONDS));
+			start.countDown();
+
+			assertEquals("first", firstRead.get(10, TimeUnit.SECONDS));
+			assertEquals("second", secondRead.get(10, TimeUnit.SECONDS));
+			assertEquals(firstRepository.getPreparedRepositoryFolder(),
+					secondRepository.getPreparedRepositoryFolder());
+			assertFalse("SVN status reads must not materialize a prepared working copy",
+					firstRepository.getPreparedRepositoryFolder().exists());
+			assertFalse("SVN status reads must not create a writable-copy pool",
+					firstRepository.getWritableWorkingCopiesFolder().exists());
+			assertEquals(Collections.emptyList(), writableCopyNames(firstRepository));
+		} finally {
+			executor.shutdownNow();
+			assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	public void testConcurrentReadOperationsOwnIndependentRepositorySessions() throws Exception {
+		VCSCommit fileCommit = vcsTestDataGen.setFileContent(
+				null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		Set<SVNRepository> openedSessions = Collections.newSetFromMap(
+				new ConcurrentHashMap<SVNRepository, Boolean>());
+		doAnswer(invocation -> {
+			SVNRepository readSession = spy((SVNRepository) invocation.callRealMethod());
+			assertTrue("Every status operation must own a fresh SVNRepository", openedSessions.add(readSession));
+			return readSession;
+		}).when(svn).openReadRepository();
+		ExecutorService executor = Executors.newFixedThreadPool(5);
+		try {
+			List<Future<?>> reads = Arrays.asList(
+					executor.submit(() -> svn.getCommitsRange(null, null, WalkDirection.DESC, 10)),
+					executor.submit(() -> svn.getTags()),
+					executor.submit(() -> svn.getBranches("")),
+					executor.submit(() -> svn.getBranchesDiff(null, null)),
+					executor.submit(() -> svn.getFileContent(null, FILE1_NAME, fileCommit.getRevision())));
+			for (Future<?> read : reads) {
+				read.get(10, TimeUnit.SECONDS);
+			}
+		} finally {
+			executor.shutdownNow();
+			assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+		}
+		assertTrue("History, tags, branches, diff, and historical content need independent sessions",
+				openedSessions.size() >= 5);
+		for (SVNRepository readSession : openedSessions) {
+			verify(readSession).closeSession();
+		}
+	}
+
+	@Test
+	public void testImplicitHeadReadsRemainPinnedWhenRemoteAdvances() {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, "initial snapshot value");
+		VCSCommit pinnedHead = svn.getHeadCommit(null);
+
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_2, "remote advanced after snapshot");
+
+		assertEquals(LINE_1, svn.getFileContent(null, FILE1_NAME, null));
+		assertEquals(pinnedHead, svn.getHeadCommit(null));
+		assertEquals(pinnedHead.getRevision(), svn.log(null, 1).get(0).getRevision());
+	}
+
+	@Test
+	public void testCurrentComponentContentComesFromPinnedRepositoryWithoutCheckout() throws Exception {
+		vcsTestDataGen.setFileContent(null, SPARSE_FILE, LINE_1, "component added");
+		assertEquals(LINE_1, svn.getFileContent(null, SPARSE_FILE, null));
+		assertFalse(mockedVCSRepo.getPreparedRepositoryFolder().exists());
+		reset(mockedVCSRepo);
+		SVNUpdateClient updateClient = spy(svn.getClientManager().getUpdateClient());
+		SVNClientManager manager = spy(svn.getClientManager());
+		svn.setClientManager(manager);
+		doReturn(updateClient).when(manager).getUpdateClient();
+
+		assertEquals(LINE_1, svn.getFileContent(null, SPARSE_FILE, null));
+
+		verify(mockedVCSRepo, never()).getVCSLockedWorkingCopy();
+		verify(updateClient, never()).doCheckout(any(SVNURL.class), any(File.class), any(SVNRevision.class),
+				any(SVNRevision.class), any(SVNDepth.class), anyBoolean());
+		verify(updateClient, never()).doUpdate(any(File[].class), any(SVNRevision.class), any(SVNDepth.class),
+				anyBoolean(), anyBoolean(), anyBoolean());
+	}
+
+	@Test
+	public void testReleaseMutationSessionIsSparseReusableAndLeavesPreparedCopyUntouched() throws Exception {
+		String component = "components/selected";
+		String sibling = "components/sibling/value.txt";
+		String componentPath = component + "/value.txt";
+		vcsTestDataGen.setFileContent(null, componentPath, LINE_1, "component added");
+		vcsTestDataGen.setFileContent(null, sibling, LINE_2, "sibling added");
+		IVCSRepositoryWorkspace repository = localVCSWorkspace.getVCSRepositoryWorkspace(
+				repoUrl, component);
+		SVNVCS componentVCS = new SVNVCS(repository, null, null);
+		componentVCS.getHeadCommit(null);
+		assertFalse(repository.getPreparedRepositoryFolder().exists());
+		String branch = "release/selected";
+
+		try (IVCSMutationSession session = componentVCS.startModify()) {
+			assertTrue(new File(session.getWorkingDirectory(), "value.txt").isFile());
+			assertFalse(new File(session.getWorkingDirectory(), "../sibling/value.txt").exists());
+			session.createBranch(null, branch, "release branch created");
+			session.setFileContent(branch, componentPath, LINE_3, "component updated");
+			assertEquals(LINE_3, session.getFileContent(branch, componentPath, null));
+			assertTrue(session.merge(null, branch, "trunk merged").getSuccess());
+			VCSCommit buildCommit = session.getHeadCommit(branch);
+			session.createTag(branch, TAG_NAME_1, TAG_MESSAGE_1, buildCommit.getRevision());
+			assertEquals(LINE_3, FileUtils.readFileToString(
+					new File(session.getWorkingDirectory(), "value.txt"), StandardCharsets.UTF_8));
+		}
+
+		assertFalse("SVN mutation sessions must not create a prepared working copy",
+				repository.getPreparedRepositoryFolder().exists());
+	}
+
+	@Test
+	public void testPinnedStatusReadsAndModifySessionReadsObserveTheirOwnRevisions() throws Exception {
+		String component = "components/selected";
+		String path = component + "/value.txt";
+		String branch = "release/read-contract";
+		String tag = "selected/releases/1.0";
+		vcsTestDataGen.setFileContent(null, path, LINE_1, "component added");
+		vcsTestDataGen.setFileContent(null, "components/sibling/value.txt", LINE_3, "sibling added");
+		vcsTestDataGen.createBranch(null, branch, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+		IVCSRepositoryWorkspace statusRepository = spy(new VCSWorkspace(
+				new File(TEST_BASE_DIR, "pinned-status").getPath()).getVCSRepositoryWorkspace(repoUrl, component));
+		SVNVCS status = new SVNVCS(statusRepository, null, null);
+		VCSCommit initial = status.getHeadCommit(branch);
+		assertReadResults(status, branch, path, LINE_1, initial, initial, null);
+		IVCSRepositoryWorkspace modifyRepository = spy(new VCSWorkspace(
+				new File(TEST_BASE_DIR, "modify-reads").getPath()).getVCSRepositoryWorkspace(repoUrl, component));
+		SVNVCS modifier = new SVNVCS(modifyRepository, null, null);
+		try (IVCSMutationSession session = modifier.startModify()) {
+			VCSCommit updated = session.setFileContent(branch, path, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+			session.createTag(branch, tag, TAG_MESSAGE_1, updated.getRevision());
+			File workingDirectory = session.getWorkingDirectory();
+			SVNURL before = modifier.getClientManager().getWCClient()
+					.doInfo(workingDirectory, SVNRevision.WORKING).getURL();
+			assertReadResults(session, branch, path, LINE_2, updated, initial, tag);
+			assertEquals(before, modifier.getClientManager().getWCClient()
+					.doInfo(workingDirectory, SVNRevision.WORKING).getURL());
+			assertEquals(LINE_2, FileUtils.readFileToString(
+					new File(workingDirectory, "value.txt"), StandardCharsets.UTF_8));
+			assertFalse(new File(workingDirectory, "../sibling/value.txt").exists());
+			verify(modifyRepository, times(1)).getVCSLockedWorkingCopy();
+			assertReadResults(status, branch, path, LINE_1, initial, initial, null);
+			assertTrue("The pinned status generation must not see a later tag", status.getTags().isEmpty());
+		}
+		verify(statusRepository, never()).getVCSLockedWorkingCopy();
+		assertFalse(statusRepository.getPreparedRepositoryFolder().exists());
+		assertFalse(statusRepository.getWritableWorkingCopiesFolder().exists());
+		assertReadResults(modifier, branch, path, LINE_2, modifier.getHeadCommit(branch), initial, tag);
+	}
+
+	private void assertReadResults(IVCS reader, String branch, String path, String content,
+			VCSCommit head, VCSCommit initial, String tag) {
+		assertEquals(content, reader.getFileContent(branch, path, null));
+		assertEquals(Collections.singletonMap(path, content),
+				reader.getFilesContent(branch, Arrays.asList(path, path), null));
+		assertEquals(Collections.singletonMap(path, LINE_1),
+				reader.getFilesContent(branch, Collections.singletonList(path), initial.getRevision()));
+		assertTrue(reader.fileExists(branch, path));
+		assertFalse(reader.fileExists(branch, path + ".missing"));
+		assertEquals(head, reader.getHeadCommit(branch));
+		assertEquals(head, reader.log(branch, 1).get(0));
+		assertEquals(head, reader.getCommitsRange(branch, null, WalkDirection.DESC, 1, path).get(0));
+		assertTrue(reader.getCommitsRange(branch, initial.getRevision(), head.getRevision()).contains(head));
+		String branchParent = branch.substring(0, branch.lastIndexOf('/') + 1);
+		assertTrue(reader.getBranches(branchParent).contains(branch));
+		assertTrue(reader.getBranchesDiff(branch, branch).isEmpty());
+		if (tag != null) {
+			assertTrue(reader.getTags().stream().anyMatch(found -> tag.equals(found.getTagName())));
+			assertTrue(reader.getTagsOnRevision(head.getRevision()).stream()
+					.anyMatch(found -> tag.equals(found.getTagName())));
+		}
+	}
+
+	@Test
+	public void testFailedModifyInitializationReleasesAndRemovesWorkingCopy() throws Exception {
+		IVCSRepositoryWorkspace repository = new VCSWorkspace(new File(TEST_BASE_DIR, "failed-modify").getPath())
+				.getVCSRepositoryWorkspace(repoUrl, SPARSE_DIRECTORY);
+		SVNVCS modifier = spy(new SVNVCS(repository, null, null));
+		doThrow(testSVNException).when(modifier).getBranchUrl(null);
+		try (IVCSMutationSession unexpected = modifier.startModify()) {
+			fail("A failed checkout must not return a modify session");
+		} catch (EVCSException expected) {
+			assertSame(testSVNException, expected.getCause());
+		}
+		assertTrue(repository.getWritableWorkingCopiesFolder().isDirectory());
+		assertArrayEquals("Failed initialization must remove both checkout and lease file",
+				new String[0], repository.getWritableWorkingCopiesFolder().list());
+		assertFalse(repository.getPreparedRepositoryFolder().exists());
 	}
 
 	@Test

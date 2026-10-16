@@ -9,14 +9,14 @@ import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.MDepsFile;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSRepositoryFactory;
-import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.IVCSMutationSession;
 
 public class SCMProcActualizePatches implements ISCMProc {
-	
+
 	private final CachedStatuses cache;
 	private final VCSRepositoryFactory repoFactory;
 	private final VCSRepository repo;
- 
+
 	public SCMProcActualizePatches(CachedStatuses cache, VCSRepositoryFactory repoFactory, VCSRepository repo) {
 		this.cache = cache;
 		this.repoFactory = repoFactory;
@@ -24,8 +24,7 @@ public class SCMProcActualizePatches implements ISCMProc {
 	}
 
 	@Override
-	public void execute(IProgress progress) {
-		IVCS vcs = repo.getVCS();
+	public void execute(IProgress progress, IVCSMutationSession vcs) {
 		String releaseBranchName = Utils.getReleaseBranchName(repo, cache.get(repo.getComponentLocation()).getNextVersion());
 		String mDepsFilePath = repo.getComponentPath(Constants.MDEPS_FILE_NAME);
 		MDepsFile currentMDepsFile = new MDepsFile(vcs.getFileContent(releaseBranchName, mDepsFilePath, null));

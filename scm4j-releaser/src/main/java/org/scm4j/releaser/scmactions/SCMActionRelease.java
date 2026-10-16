@@ -20,6 +20,7 @@ import org.scm4j.releaser.scmactions.procs.SCMProcActualizePatches;
 import org.scm4j.releaser.scmactions.procs.SCMProcBuild;
 import org.scm4j.releaser.scmactions.procs.SCMProcForkBranch;
 import org.scm4j.releaser.scmactions.procs.SCMProcLockMDeps;
+import org.scm4j.vcs.api.IVCSMutationSession;
 import org.scm4j.vcs.api.VCSChangeListNode;
 
 public class SCMActionRelease extends ActionAbstract {
@@ -64,9 +65,23 @@ public class SCMActionRelease extends ActionAbstract {
 	}
 
 	@Override
-	protected void executeAction(IProgress progress) {
-		for (ISCMProc proc : procs) {
-			proc.execute(progress);
+	protected void executeAction(IProgress progress) throws Exception {
+		if (procs.isEmpty()) {
+			return;
+		}
+		try (IVCSMutationSession session = getVCS().startModify()) {
+			try {
+				for (ISCMProc proc : procs) {
+					proc.execute(progress, session);
+				}
+			} catch (Exception failure) {
+				try {
+					session.setCorrupted(true);
+				} catch (Exception corruptionFailure) {
+					failure.addSuppressed(corruptionFailure);
+				}
+				throw failure;
+			}
 		}
 	}
 
@@ -111,7 +126,7 @@ public class SCMActionRelease extends ActionAbstract {
 	public boolean isExecutable() {
 		return bsFrom != BuildStatus.DONE;
 	}
-	
+
 	public boolean isDelayedTag() {
 		return delayedTag;
 	}

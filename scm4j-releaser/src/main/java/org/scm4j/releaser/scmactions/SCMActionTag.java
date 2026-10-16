@@ -13,18 +13,17 @@ import org.scm4j.releaser.conf.DelayedTagsFile;
 import org.scm4j.releaser.conf.TagDesc;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.exceptions.ENoDelayedTags;
-import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.IVCSMutationSession;
 import org.scm4j.vcs.api.exceptions.EVCSTagExists;
 
 public class SCMActionTag extends ActionAbstract {
-	
+
 	public SCMActionTag(Component comp, VCSRepository repo) {
 		super(comp, new ArrayList<>(), repo);
 	}
-	
+
 	@Override
-	protected void executeAction(IProgress progress) {
-		IVCS vcs = getVCS();
+	protected void executeAction(IProgress progress) throws Exception {
 		DelayedTagsFile dtf = new DelayedTagsFile();
 		DelayedTag delayedTag = dtf.getDelayedTag(repo.getComponentLocation());
 		if (delayedTag == null) {
@@ -33,14 +32,25 @@ public class SCMActionTag extends ActionAbstract {
 
 		String branchName = Utils.getReleaseBranchName(repo, delayedTag.getVersion());
 
-		tagRevision(progress, vcs, delayedTag, branchName);
+		try (IVCSMutationSession session = getVCS().startModify()) {
+			try {
+				tagRevision(progress, session, delayedTag, branchName);
+				bumpPatch(progress, session, delayedTag, branchName);
+			} catch (Exception failure) {
+				try {
+					session.setCorrupted(true);
+				} catch (Exception corruptionFailure) {
+					failure.addSuppressed(corruptionFailure);
+				}
+				throw failure;
+			}
+		}
 
-		bumpPatch(progress, vcs, delayedTag, branchName);
-
-		new DelayedTagsFile().removeTag(repo.getComponentLocation());
+		dtf.removeTag(repo.getComponentLocation());
 	}
 
-	private void bumpPatch(IProgress progress, IVCS vcs, DelayedTag delayedTag, String branchName) {
+	private void bumpPatch(IProgress progress, IVCSMutationSession vcs, DelayedTag delayedTag,
+			String branchName) {
 		Version nextPatchVersion = delayedTag.getVersion().toNextPatch();
 		String versionFilePath = repo.getComponentPath(Constants.VER_FILE_NAME);
 		Version branchHeadVersion = new Version(vcs.getFileContent(branchName, versionFilePath, null));
@@ -51,7 +61,8 @@ public class SCMActionTag extends ActionAbstract {
 		}
 	}
 
-	private void tagRevision(IProgress progress, IVCS vcs, DelayedTag delayedTag, String branchName) {
+	private void tagRevision(IProgress progress, IVCSMutationSession vcs, DelayedTag delayedTag,
+			String branchName) {
 		TagDesc tagDesc = Utils.getTagDesc(repo, delayedTag.getVersion().toString());
 		try {
 			Utils.reportDuration(() -> vcs.createTag(branchName, tagDesc.getName(), tagDesc.getMessage(), delayedTag.getRevision()),
