@@ -21,4 +21,5 @@ public class VCSWorkspaceTest extends VCSWCTestBase {
 		IVCSWorkspace w = new VCSWorkspace();
 		assertEquals(w.getHomeFolder().getPath(), VCSWorkspace.DEFAULT_WORKSPACE_DIR);
 	}
+
 }

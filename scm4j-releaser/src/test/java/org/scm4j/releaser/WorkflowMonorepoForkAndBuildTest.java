@@ -5,14 +5,26 @@ import org.scm4j.releaser.actions.IAction;
 import org.scm4j.releaser.branch.ReleaseBranchFactory;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.VCSRepository;
+import org.scm4j.releaser.conf.VCSRepositoryFactory;
+import org.scm4j.releaser.conf.VCSType;
 import org.scm4j.releaser.testutils.MonorepoTestRepositories;
 import org.scm4j.releaser.testutils.TestBuilder;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
+import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
+import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -52,7 +64,7 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 	}
 
 	@Test
-	public void testStatusCalculatesSharedRepositoryComponentsIndependently() {
+	public void testStatusCalculatesSharedRepositoryComponentsIndependently() throws Exception {
 		// Change only unTill's dependency metadata so one status calculation must traverse both
 		// component subfolders of the shared monorepo. Neither monorepo component is updated here.
 		repoUnTill.getVCS().setFileContent(repoUnTill.getDevelopBranch(),
@@ -81,6 +93,25 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 			assertEquals(monorepoRepositories.getSqliteVersion().toReleaseZeroPatch(),
 					sqliteStatus.getNextVersion());
 		}
+
+		List<ExtendedStatus> concurrentStatuses = calculateSiblingStatusesConcurrently();
+		assertEquals(Arrays.asList(compPostgres.getName(), compSqlite.getName()), concurrentStatuses.stream()
+				.map(status -> status.getComp().getName()).sorted().collect(Collectors.toList()));
+		assertEquals(BuildStatus.FORK, concurrentStatuses.get(0).getStatus());
+		assertEquals(BuildStatus.FORK, concurrentStatuses.get(1).getStatus());
+		IVCSRepositoryWorkspace postgresWorkspace = repositoryWorkspace(repoPostgres);
+		IVCSRepositoryWorkspace sqliteWorkspace = repositoryWorkspace(repoSqlite);
+		assertEquals(postgresWorkspace.getPreparedRepositoryFolder(), sqliteWorkspace.getPreparedRepositoryFolder());
+		if (testingVcsType == VCSType.GIT) {
+			assertTrue(postgresWorkspace.getPreparedRepositoryFolder().isDirectory());
+		} else {
+			assertFalse("SVN status must not create a prepared working copy",
+					postgresWorkspace.getPreparedRepositoryFolder().exists());
+			assertFalse("SVN status must not create a writable-copy pool",
+					postgresWorkspace.getWritableWorkingCopiesFolder().exists());
+		}
+		assertEquals("Status-only siblings must not create mutation checkouts", Collections.emptyList(),
+				writableWorkingCopies(postgresWorkspace));
 	}
 
 	@Test
@@ -108,6 +139,7 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 		// the earlier postgres revision selected by component-filtered history.
 		VCSCommit sqliteRepositoryHead = monorepoRepositories.generateComponentCommit(postgresReleaseBranch,
 				MonorepoTestRepositories.SQLITE_SUBFOLDER, "second sqlite feature added");
+		refreshVerificationRepositories();
 		assertEquals(sqliteRepositoryHead.getRevision(),
 				repoPostgres.getVCS().getHeadCommit(postgresReleaseBranch).getRevision());
 
@@ -120,6 +152,7 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 		assertBuildRevision(compPostgres, repoPostgres, firstPostgresRelease, postgresBuildCommit);
 		assertTagRevision(repoPostgres, firstPostgresRelease, postgresBuildCommit);
 		assertNotEquals(sqliteRepositoryHead.getRevision(), postgresBuildCommit.getRevision());
+		assertSingleSparseMutationWorkspace(repoPostgres);
 		// Verify the externally durable result: locked dependencies and exactly one release of each built component.
 		assertUnTillMDeps(firstUnTillRelease, firstPostgresRelease);
 		assertTagExists(repoUnTill, firstUnTillRelease);
@@ -167,6 +200,54 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 		assertUnTillMDeps(secondUnTillRelease, secondPostgresRelease);
 		assertReleaseCounts(2);
 		assertUnchangedComponents();
+	}
+
+	private List<ExtendedStatus> calculateSiblingStatusesConcurrently() throws Exception {
+		CountDownLatch callersReady = new CountDownLatch(2);
+		CountDownLatch startStatusReads = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		CachedStatuses cache = new CachedStatuses();
+		try {
+			Future<ExtendedStatus> postgres = executor.submit(() -> calculateStatus(
+					compPostgres, cache, callersReady, startStatusReads));
+			Future<ExtendedStatus> sqlite = executor.submit(() -> calculateStatus(
+					compSqlite, cache, callersReady, startStatusReads));
+			assertTrue(callersReady.await(5, TimeUnit.SECONDS));
+			startStatusReads.countDown();
+			return Arrays.asList(postgres.get(15, TimeUnit.SECONDS), sqlite.get(15, TimeUnit.SECONDS));
+		} finally {
+			executor.shutdownNow();
+			assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+		}
+	}
+
+	private ExtendedStatus calculateStatus(Component component, CachedStatuses cache, CountDownLatch ready,
+			CountDownLatch start) throws Exception {
+		ready.countDown();
+		assertTrue(start.await(5, TimeUnit.SECONDS));
+		return new ExtendedStatusBuilder(repoFactory).getAndCacheMinorStatus(component, cache);
+	}
+
+	private IVCSRepositoryWorkspace repositoryWorkspace(VCSRepository repository) {
+		return new VCSWorkspace(VCSRepositoryFactory.DEFAULT_VCS_WORKSPACE_DIR).getVCSRepositoryWorkspace(
+				repository.getUrl(), repository.getSubfolder());
+	}
+
+	private List<File> writableWorkingCopies(IVCSRepositoryWorkspace workspace) {
+		File[] entries = workspace.getWritableWorkingCopiesFolder().listFiles(file -> file.isDirectory());
+		if (entries == null) {
+			return Collections.emptyList();
+		}
+		return Arrays.asList(entries);
+	}
+
+	private void assertSingleSparseMutationWorkspace(VCSRepository repository) {
+		List<File> workingCopies = writableWorkingCopies(repositoryWorkspace(repository));
+		assertEquals("Every action must reuse one retained mutation workspace", 1, workingCopies.size());
+		File mutationRoot = workingCopies.get(0);
+		assertTrue(new File(mutationRoot,
+				MonorepoTestRepositories.POSTGRES_SUBFOLDER + "/" + Constants.VER_FILE_NAME).isFile());
+		assertFalse(new File(mutationRoot, MonorepoTestRepositories.SQLITE_SUBFOLDER).exists());
 	}
 
 	private void assertUnTillMDeps(Version unTillRelease, Version postgresRelease) {

@@ -3,6 +3,7 @@ package org.scm4j.vcs.git;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -22,11 +23,22 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
@@ -46,10 +58,12 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
 import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.IVCSMutationSession;
 import org.scm4j.vcs.api.Utils;
 import org.scm4j.vcs.api.VCSChangeType;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
+import org.scm4j.vcs.api.WalkDirection;
 import org.scm4j.vcs.api.abstracttest.VCSAbstractTest;
 import org.scm4j.vcs.api.exceptions.EVCSException;
 import org.scm4j.vcs.api.workingcopy.IVCSRepositoryWorkspace;
@@ -75,6 +89,8 @@ public class GitVCSTest extends VCSAbstractTest {
 	@After
 	public void tearDown() throws IOException {
 		localGitRepo.close();
+		org.eclipse.jgit.lib.RepositoryCache.clear();
+		new org.eclipse.jgit.storage.file.WindowCacheConfig().install();
 	    FileUtils.deleteDirectory(localGitRepo.getDirectory());
 		ProxySelector.setDefault(proxySelectorBackup);
 	}
@@ -100,6 +116,11 @@ public class GitVCSTest extends VCSAbstractTest {
 	@Override
 	protected String getVCSTypeString() {
 		return GitVCS.GIT_VCS_TYPE_STRING;
+	}
+
+	@Override
+	protected boolean sparseCheckoutIncludesParentFiles() {
+		return true;
 	}
 
 	@Test
@@ -193,6 +214,245 @@ public class GitVCSTest extends VCSAbstractTest {
 		assertEquals(vcs.getVCSTypeString(), GitVCS.GIT_VCS_TYPE_STRING);
 	}
 
+	@Test(timeout = 15000)
+	public void testSiblingStatusReadsShareOnePreparedCloneAndRemainConcurrent() throws Exception {
+		IVCSWorkspace statusWorkspace = new VCSWorkspace(new File(TEST_BASE_DIR, "status-only").getPath());
+		String firstPath = "components/first/value.txt";
+		String secondPath = "components/second/value.txt";
+		vcsTestDataGen.setFileContent(null, firstPath, "first", "first component added");
+		vcsTestDataGen.setFileContent(null, secondPath, "second", "second component added");
+		IVCSRepositoryWorkspace firstRepository = statusWorkspace.getVCSRepositoryWorkspace(
+				repoUrl, "components/first");
+		IVCSRepositoryWorkspace secondRepository = statusWorkspace.getVCSRepositoryWorkspace(
+				repoUrl, "components/second");
+		GitVCS first = new GitVCS(firstRepository);
+		GitVCS second = new GitVCS(secondRepository);
+		CountDownLatch callersReady = new CountDownLatch(2);
+		CountDownLatch start = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			Future<String> firstRead = executor.submit(() -> concurrentRead(first, firstPath, callersReady, start));
+			Future<String> secondRead = executor.submit(() -> concurrentRead(second, secondPath, callersReady, start));
+			assertTrue(callersReady.await(5, TimeUnit.SECONDS));
+			start.countDown();
+
+			assertEquals("first", firstRead.get(10, TimeUnit.SECONDS));
+			assertEquals("second", secondRead.get(10, TimeUnit.SECONDS));
+			assertEquals(firstRepository.getPreparedRepositoryFolder(),
+					secondRepository.getPreparedRepositoryFolder());
+			assertEquals(Collections.emptyList(), writableCopyNames(firstRepository));
+		} finally {
+			executor.shutdownNow();
+			assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	public void testReadAPIsLeaveCapturedSnapshotHeadIndexAndWorktreeUnchanged() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		git.getHeadCommit(null); // Publish the captured refs and object database once.
+		File prepared = mockedVCSRepo.getPreparedRepositoryFolder();
+		String before = gitSnapshotFingerprint(prepared);
+		List<String> copiesBefore = writableCopyNames(mockedVCSRepo);
+		Mockito.reset(mockedVCSRepo);
+
+		assertEquals(LINE_1, git.getFileContent(null, FILE1_NAME, null));
+		assertTrue(git.fileExists(null, FILE1_NAME));
+		assertFalse(git.log(null, 10).isEmpty());
+		assertFalse(git.getTags().isEmpty());
+		git.getBranchesDiff(null, null);
+
+		Mockito.verify(mockedVCSRepo, Mockito.never()).getVCSLockedWorkingCopy();
+		assertEquals(before, gitSnapshotFingerprint(prepared));
+		assertEquals(copiesBefore, writableCopyNames(mockedVCSRepo));
+	}
+
+	@Test
+	public void testComponentMutationSessionsAreLocalSparseAndIndependent() throws Exception {
+		String firstSubfolder = "components/first";
+		String secondSubfolder = "components/second";
+		String firstPath = firstSubfolder + "/value.txt";
+		String secondPath = secondSubfolder + "/value.txt";
+		vcsTestDataGen.setFileContent(null, "repository-metadata.txt", "root", "root metadata added");
+		vcsTestDataGen.setFileContent(null, firstPath, "first", "first component added");
+		vcsTestDataGen.setFileContent(null, secondPath, "second", "second component added");
+		IVCSRepositoryWorkspace firstRepository = localVCSWorkspace.getVCSRepositoryWorkspace(
+				repoUrl, firstSubfolder);
+		IVCSRepositoryWorkspace secondRepository = localVCSWorkspace.getVCSRepositoryWorkspace(
+				repoUrl, secondSubfolder);
+		GitVCS first = new GitVCS(firstRepository);
+		GitVCS second = new GitVCS(secondRepository);
+		first.getHeadCommit(null);
+		String preparedBefore = gitSnapshotFingerprint(firstRepository.getPreparedRepositoryFolder());
+
+		try (IVCSMutationSession firstSession = first.startModify();
+			 IVCSMutationSession secondSession = second.startModify()) {
+			assertNotEquals(firstSession.getWorkingDirectory(), secondSession.getWorkingDirectory());
+			assertNotEquals(firstRepository.getPreparedRepositoryFolder(), firstSession.getWorkingDirectory());
+			assertNotEquals(secondRepository.getPreparedRepositoryFolder(), secondSession.getWorkingDirectory());
+			assertTrue(new File(firstSession.getWorkingDirectory(), "value.txt").isFile());
+			assertTrue(new File(secondSession.getWorkingDirectory(), "value.txt").isFile());
+			assertFalse(new File(firstSession.getWorkingDirectory(), "../second/value.txt").exists());
+			assertFalse(new File(secondSession.getWorkingDirectory(), "../first/value.txt").exists());
+
+			try (Git firstCheckout = Git.open(repositoryRoot(firstSession));
+				 Git secondCheckout = Git.open(repositoryRoot(secondSession))) {
+				assertEquals(repoUrl, firstCheckout.getRepository().getConfig().getString(
+						ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "url"));
+				assertEquals(repoUrl, secondCheckout.getRepository().getConfig().getString(
+						ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "url"));
+				assertNotEquals(firstCheckout.getRepository().getDirectory(),
+						secondCheckout.getRepository().getDirectory());
+			}
+		}
+
+		assertEquals(preparedBefore, gitSnapshotFingerprint(firstRepository.getPreparedRepositoryFolder()));
+	}
+
+	@Test
+	public void testOneMutationSessionCarriesWritesThroughBuildTagAndSnapshotRefresh() throws Exception {
+		String component = "components/selected";
+		String versionPath = component + "/version.txt";
+		vcsTestDataGen.setFileContent(null, "components/sibling/value.txt", "sibling", "sibling added");
+		vcsTestDataGen.setFileContent(null, versionPath, "1.0.0", "component version added");
+		IVCSRepositoryWorkspace repository = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl, component));
+		GitVCS componentVCS = new GitVCS(repository);
+		VCSCommit initial = componentVCS.getHeadCommit(null);
+		assertReadResults(componentVCS, null, versionPath, "1.0.0", initial, initial, null);
+		String cacheBefore = gitSnapshotFingerprint(repository.getPreparedRepositoryFolder());
+		String branch = "release/1.0";
+
+		try (IVCSMutationSession session = componentVCS.startModify()) {
+			session.createBranch(null, branch, "release branch created");
+			session.setFileContent(branch, versionPath, "1.0.1", "patch bumped");
+			assertEquals("1.0.1", session.getFileContent(branch, versionPath, null));
+			assertEquals("1.0.1", FileUtils.readFileToString(
+					new File(session.getWorkingDirectory(), "version.txt"), StandardCharsets.UTF_8));
+			VCSCommit branchHead = session.getHeadCommit(branch);
+			session.createTag(branch, "release/1.0.1", "release tag", branchHead.getRevision());
+			assertFalse("Branch changes must preserve sparse sibling exclusion",
+					new File(repositoryRoot(session), "components/sibling").exists());
+			assertEquals(branchHead, session.getHeadCommit(branch));
+			assertReadResults(session, branch, versionPath, "1.0.1", branchHead, initial, "release/1.0.1");
+			assertEquals(cacheBefore, gitSnapshotFingerprint(repository.getPreparedRepositoryFolder()));
+			Mockito.verify(repository, Mockito.times(1)).getVCSLockedWorkingCopy();
+		}
+
+		// The push invalidates the old captured refs; the next status read refreshes once and publishes them.
+		assertEquals("1.0.1", componentVCS.getFileContent(branch, versionPath, null));
+		assertEquals(1, componentVCS.getTagsOnRevision(componentVCS.getHeadCommit(branch).getRevision()).size());
+		assertReadResults(componentVCS, branch, versionPath, "1.0.1",
+				componentVCS.getHeadCommit(branch), initial, "release/1.0.1");
+	}
+
+	private void assertReadResults(IVCS reader, String branch, String path, String content,
+			VCSCommit head, VCSCommit initial, String tag) {
+		assertEquals(content, reader.getFileContent(branch, path, null));
+		Map<String, String> files = reader.getFilesContent(branch, Arrays.asList(path, path), null);
+		assertEquals(Collections.singletonMap(path, content), files);
+		assertEquals("1.0.0", reader.getFileContent(branch, path, initial.getRevision()));
+		assertTrue(reader.fileExists(branch, path));
+		assertFalse(reader.fileExists(branch, path + ".missing"));
+		assertEquals(head, reader.getHeadCommit(branch));
+		assertEquals(head, reader.log(branch, 1).get(0));
+		assertEquals(head, reader.getCommitsRange(branch, null, WalkDirection.DESC, 1, path).get(0));
+		assertTrue(reader.getBranchesDiff(branch, branch).isEmpty());
+		if (branch != null) {
+			assertTrue(reader.getBranches("").contains(branch));
+		}
+		if (tag != null) {
+			assertTrue(reader.getTags().stream().anyMatch(found -> tag.equals(found.getTagName())));
+			assertTrue(reader.getTagsOnRevision(head.getRevision()).stream()
+					.anyMatch(found -> tag.equals(found.getTagName())));
+			assertTrue(reader.getCommitsRange(branch, initial.getRevision(), head.getRevision()).contains(head));
+		}
+	}
+
+	@Test
+	public void testSessionHeadReadKeepsReleaseBranchCheckedOut() throws Exception {
+		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		try (IVCSMutationSession session = git.startModify()) {
+			session.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+			VCSCommit head = session.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+			File root = repositoryRoot(session);
+			String before = gitSnapshotFingerprint(root);
+			assertEquals(head, session.getHeadCommit(NEW_BRANCH));
+			try (Git checkout = Git.open(root)) {
+				assertEquals("A read must keep the build on its release branch",
+						NEW_BRANCH, checkout.getRepository().getBranch());
+			}
+			assertEquals(before, gitSnapshotFingerprint(root));
+			assertEquals(LINE_2, FileUtils.readFileToString(new File(root, FILE1_NAME), StandardCharsets.UTF_8));
+		}
+	}
+
+	@Test
+	public void testHistoricalSessionFileReadPreservesUncommittedChanges() throws Exception {
+		assertHistoricalSessionReadPreservesUncommittedChanges(false);
+	}
+
+	@Test
+	public void testHistoricalSessionFilesReadPreservesUncommittedChanges() throws Exception {
+		assertHistoricalSessionReadPreservesUncommittedChanges(true);
+	}
+
+	private void assertHistoricalSessionReadPreservesUncommittedChanges(boolean multipleFiles) throws Exception {
+		VCSCommit initial = vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
+		try (IVCSMutationSession session = git.startModify()) {
+			session.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
+			session.setFileContent(NEW_BRANCH, FILE1_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+			File root = repositoryRoot(session);
+			File editedFile = new File(root, FILE1_NAME);
+			FileUtils.writeStringToFile(editedFile, "uncommitted build changes", StandardCharsets.UTF_8);
+			String before = gitSnapshotFingerprint(root);
+			if (multipleFiles) {
+				assertEquals(Collections.singletonMap(FILE1_NAME, LINE_1),
+						session.getFilesContent(NEW_BRANCH, Collections.singletonList(FILE1_NAME), initial.getRevision()));
+			} else {
+				assertEquals(LINE_1, session.getFileContent(NEW_BRANCH, FILE1_NAME, initial.getRevision()));
+			}
+			assertEquals("Historical reads must not reset the build's files", "uncommitted build changes",
+					FileUtils.readFileToString(editedFile, StandardCharsets.UTF_8));
+			assertEquals(before, gitSnapshotFingerprint(root));
+		}
+	}
+
+	private String gitSnapshotFingerprint(File repositoryRoot) throws IOException {
+		File gitDirectory = new File(repositoryRoot, ".git");
+		if (!gitDirectory.isDirectory()) {
+			gitDirectory = repositoryRoot;
+		}
+		StringBuilder result = new StringBuilder();
+		for (String relativePath : Arrays.asList("HEAD", "index", "packed-refs", "config")) {
+			File file = new File(gitDirectory, relativePath);
+			result.append(relativePath).append(':');
+			if (file.isFile()) {
+				result.append(Arrays.hashCode(Files.readAllBytes(file.toPath())));
+			}
+			result.append(';');
+		}
+		File refsDirectory = new File(gitDirectory, "refs");
+		if (refsDirectory.isDirectory()) {
+			List<File> refs = new ArrayList<>(FileUtils.listFiles(refsDirectory, null, true));
+			refs.sort(Comparator.comparing(File::getPath));
+			for (File ref : refs) {
+				result.append(ref.getPath()).append(':')
+						.append(Arrays.hashCode(Files.readAllBytes(ref.toPath()))).append(';');
+			}
+		}
+		return result.toString();
+	}
+
+	private File repositoryRoot(IVCSMutationSession session) {
+		File current = session.getWorkingDirectory();
+		while (current != null && !new File(current, ".git").exists()) {
+			current = current.getParentFile();
+		}
+		assertNotNull(current);
+		return current;
+	}
+
 	@Test
 	public void testExceptions() throws Exception {
 		GitAPIException eApi = new GitAPIException("test git exception") {};
@@ -269,7 +529,7 @@ public class GitVCSTest extends VCSAbstractTest {
 	}
 
 	@Test
-	public void testGetFilesContentResetsWorkingCopyForRevision() throws Exception {
+	public void testGetFilesContentLeavesWorkingCopyUnchangedForRevision() throws Exception {
 		VCSCommit revision = vcsTestDataGen.setFileContent(
 				null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		resetMocks();
@@ -279,7 +539,7 @@ public class GitVCSTest extends VCSAbstractTest {
 		assertEquals(LINE_1, vcs.getFilesContent(null, Arrays.asList(FILE1_NAME), revision.getRevision())
 				.get(FILE1_NAME));
 
-		Mockito.verify(mockedGit).reset();
+		Mockito.verify(mockedGit, Mockito.never()).reset();
 	}
 
 	@Test
@@ -548,6 +808,7 @@ public class GitVCSTest extends VCSAbstractTest {
 	@Test
 	public void testTransientTransportFailureClassification() {
 		assertTrue(GitVCS.isTransientTransportFailure(new SocketException("connection reset")));
+		assertTrue(GitVCS.isTransientTransportFailure(new SocketTimeoutException("read timed out")));
 		assertTrue(GitVCS.isTransientTransportFailure(
 				new RuntimeException("wrapped", new EOFException("unexpected end of stream"))));
 		assertFalse(GitVCS.isTransientTransportFailure(new IOException("unrelated I/O failure")));

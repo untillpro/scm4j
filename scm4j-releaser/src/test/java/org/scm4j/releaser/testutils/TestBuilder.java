@@ -12,6 +12,11 @@ import java.util.Map;
 public class TestBuilder implements IBuilder {
 
 	private static Map<String, TestBuilder> builders;
+	private File workingFolder;
+
+	public File getWorkingFolder() {
+		return workingFolder;
+	}
 
 	public static Map<String, Map<String, String>> getEnvVars() {
 		return envVars;
@@ -29,6 +34,7 @@ public class TestBuilder implements IBuilder {
 
 	@Override
 	public void build(Component comp, File workingFolder, IProgress progress, Map<String, String> buildTimeEnvVars) throws EBuilder {
+		this.workingFolder = workingFolder;
 		builders.put(comp.getName(), this);
 		envVars.put(comp.getName(), buildTimeEnvVars);
 	}

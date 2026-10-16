@@ -5,7 +5,10 @@ import java.io.File;
 public interface IVCSWorkspace {
 
 	/**
-	 * Creates a repository workspace for a repository root or an isolated component subfolder.
+	 * Creates a component-scoped view of a repository workspace.
+	 * <p>
+	 * The component subfolder is logical scope used by VCS operations. It does not identify a
+	 * separate physical clone.
 	 *
 	 * @param repoUrl repository URL
 	 * @param componentSubfolder normalized component path, or {@code null} or empty for the repository root

@@ -2,6 +2,8 @@ package org.scm4j.releaser.testutils;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jgit.lib.RepositoryCache;
+import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.scm4j.releaser.Version;
 import org.scm4j.releaser.Constants;
@@ -45,6 +47,7 @@ public class TestEnvironment implements AutoCloseable {
 	private IVCS unTillVCS;
 	private IVCS ublVCS;
 	private IVCS unTillDbVCS;
+	private IVCSWorkspace workspace;
 	private File credsFile;
 	private File ccFile;
 	private final Version unTillVer = new Version("1.123.3-SNAPSHOT");
@@ -117,7 +120,8 @@ public class TestEnvironment implements AutoCloseable {
 	}
 
 	private void createTestVCSRepos() throws Exception {
-		IVCSWorkspace localVCSWorkspace = new VCSWorkspace(TEST_VCS_WORKSPACES_DIR);
+		workspace = new VCSWorkspace(TEST_VCS_WORKSPACES_DIR);
+		IVCSWorkspace localVCSWorkspace = workspace;
 		File unTillRemoteRepoDir = new File(TEST_REMOTE_REPO_DIR, "unTill-" + RANDOM_VCS_NAME_SUFFIX);
 		File ublRemoteRepoDir = new File(TEST_REMOTE_REPO_DIR, "UBL-" + RANDOM_VCS_NAME_SUFFIX);
 		File unTillRemoteDbRepoDir = new File(TEST_REMOTE_REPO_DIR, "unTillDb-" + RANDOM_VCS_NAME_SUFFIX);
@@ -126,9 +130,9 @@ public class TestEnvironment implements AutoCloseable {
 		IVCSRepositoryWorkspace unTillDbVCSRepoWS;
 		switch (testingVCS) {
 		case GIT:
-			GitVCSUtils.createRepository(unTillRemoteRepoDir);
-			GitVCSUtils.createRepository(ublRemoteRepoDir);
-			GitVCSUtils.createRepository(unTillRemoteDbRepoDir);
+			GitVCSUtils.createRepository(unTillRemoteRepoDir).close();
+			GitVCSUtils.createRepository(ublRemoteRepoDir).close();
+			GitVCSUtils.createRepository(unTillRemoteDbRepoDir).close();
 			unTillVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(unTillRemoteRepoDir));
 			ublVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(ublRemoteRepoDir));
 			unTillDbVCSRepoWS = localVCSWorkspace.getVCSRepositoryWorkspace(getRepositoryUrl(unTillRemoteDbRepoDir));
@@ -172,6 +176,12 @@ public class TestEnvironment implements AutoCloseable {
 		return unTillVCS;
 	}
 
+	public void refreshSnapshots() {
+		for (IVCS vcs : new IVCS[] {unTillVCS, ublVCS, unTillDbVCS}) {
+			workspace.getVCSRepositoryWorkspace(vcs.getRepoUrl()).invalidatePreparedRepositorySnapshot();
+		}
+	}
+
 	public IVCS getUblVCS() {
 		return ublVCS;
 	}
@@ -207,6 +217,8 @@ public class TestEnvironment implements AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
+		RepositoryCache.clear();
+		new WindowCacheConfig().install();
 		if (envDir != null && envDir.exists()) {
 			Utils.waitForDeleteDir(envDir);
 		}

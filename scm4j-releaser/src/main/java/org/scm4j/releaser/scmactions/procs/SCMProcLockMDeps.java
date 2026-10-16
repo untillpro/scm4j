@@ -4,20 +4,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.scm4j.releaser.Version;
 import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.*;
-import org.scm4j.releaser.branch.ReleaseBranchFactory;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.MDepsFile;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSRepositoryFactory;
-import org.scm4j.vcs.api.IVCS;
+import org.scm4j.vcs.api.IVCSMutationSession;
 import org.scm4j.vcs.api.VCSChangeListNode;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SCMProcLockMDeps implements ISCMProc {
-	
-	private final IVCS vcs;
+
 	private final ExtendedStatus status;
 	private final CachedStatuses cache;
 	private final VCSRepositoryFactory repoFactory;
@@ -29,19 +27,17 @@ public class SCMProcLockMDeps implements ISCMProc {
 		this.repo = repo;
 		this.vcsChangeList = vcsChangeList;
 		status = cache.get(repo.getComponentLocation());
-		vcs = repo.getVCS();
 		this.cache = cache;
 		this.repoFactory = repoFactory;
 	}
 
 	@Override
-	public void execute(IProgress progress) {
-		ReleaseBranchFactory.getCRB(repo);
+	public void execute(IProgress progress, IVCSMutationSession vcs) {
 		if (status.getSubComponents().isEmpty()) {
 			progress.reportStatus("no mdeps to lock");
 			if (!vcsChangeList.isEmpty()) {
 				String rbName = Utils.getReleaseBranchName(repo, status.getNextVersion());
-				commitChangeList(rbName, "-SNAPSHOT truncate", progress);
+				commitChangeList(vcs, rbName, "-SNAPSHOT truncate", progress);
 			}
 			return;
 		}
@@ -71,11 +67,12 @@ public class SCMProcLockMDeps implements ISCMProc {
 					Constants.SCM_MDEPS));
 		}
 
-		commitChangeList(rbName, StringUtils.join(statusMessages, ", "), progress);
+		commitChangeList(vcs, rbName, StringUtils.join(statusMessages, ", "), progress);
 	}
 
-	private void commitChangeList(String branchName, String statusMessage, IProgress progress) {
+	private void commitChangeList(IVCSMutationSession vcs, String branchName, String statusMessage,
+			IProgress progress) {
 		Utils.reportDuration(() -> vcs.setFileContent(branchName, vcsChangeList),
 				statusMessage, null, progress);
-}
+	}
 }

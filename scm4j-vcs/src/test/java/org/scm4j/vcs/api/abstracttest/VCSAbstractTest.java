@@ -20,8 +20,11 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -42,6 +45,8 @@ public abstract class VCSAbstractTest {
 	protected static final String SPARSE_DIRECTORY = "components/selected";
 	protected static final String SPARSE_FILE = SPARSE_DIRECTORY + "/feature.txt";
 	protected static final String SPARSE_SIBLING_FILE = "components/sibling/feature.txt";
+	protected static final String SPARSE_ROOT_FILE = "repository-metadata.txt";
+	protected static final String SPARSE_PARENT_FILE = "components/components-metadata.txt";
 	protected static final String MOD_FILE_NAME = "mod file.txt";
 	protected static final String FILE1_ADDED_COMMIT_MESSAGE = FILE1_NAME + " file added";
 	protected static final String FILE2_ADDED_COMMIT_MESSAGE = FILE2_NAME + " file added";
@@ -71,6 +76,7 @@ public abstract class VCSAbstractTest {
 	protected IVCSWorkspace localVCSWorkspace;
 	protected IVCSRepositoryWorkspace localVCSRepo;
 	protected IVCSRepositoryWorkspace mockedVCSRepo;
+	protected IVCSRepositoryWorkspace localVCSGenRepo;
 	protected IVCSLockedWorkingCopy mockedLWC;
 	protected IVCS vcs;
 	protected IVCS vcsTestDataGen;
@@ -108,7 +114,7 @@ public abstract class VCSAbstractTest {
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
 
-		IVCSRepositoryWorkspace localVCSGenRepo = localVCSGenWorkspace.getVCSRepositoryWorkspace(repoUrl);
+		localVCSGenRepo = localVCSGenWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		vcsTestDataGen = getVCS(localVCSGenRepo);
 
 		vcs = getVCS(mockedVCSRepo);
@@ -119,6 +125,9 @@ public abstract class VCSAbstractTest {
 	}
 
 	protected void resetMocks() throws Exception {
+		// Legacy scenarios start a new observation after writes through an independent adapter.
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
+		localVCSGenRepo.invalidatePreparedRepositorySnapshot();
 		if (mockedLWC != null) {
 			mockedLWC.close();
 		}
@@ -185,6 +194,7 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 
 		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_2);
 
 		resetMocks();
@@ -194,6 +204,7 @@ public abstract class VCSAbstractTest {
 		vcsTestDataGen.createBranch(null, NEW_BRANCH, "new branch created");
 		commit = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, MOD_LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_3, CONTENT_CHANGED_COMMIT_MESSAGE);
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
 
 		assertEquals(LINE_3, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null));
 		assertEquals(MOD_LINE_2, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, commit.getRevision()));
@@ -629,9 +640,11 @@ public abstract class VCSAbstractTest {
 	public void testTagListAfterDelete() throws Exception {
 		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		vcs.removeTag(TAG_NAME_1);
+		localVCSGenRepo.invalidatePreparedRepositorySnapshot();
 		assertTrue(vcs.getTags().isEmpty());
 		assertTrue(vcsTestDataGen.getTags().isEmpty());
 		VCSTag tag = vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
 		assertTrue(vcs.getTags().contains(tag));
 	}
 
@@ -697,8 +710,7 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testSparseCheckoutHead() throws Exception {
-		vcsTestDataGen.setFileContent(null, SPARSE_FILE, LINE_1, "selected component added");
-		vcsTestDataGen.setFileContent(null, SPARSE_SIBLING_FILE, LINE_2, "sibling component added");
+		createSparseCheckoutFixture(null);
 
 		File checkoutDir = new File(TEST_BASE_DIR, "sparse-checkout-head");
 		vcs.sparseCheckout(null, checkoutDir.getPath(), null, SPARSE_DIRECTORY);
@@ -708,8 +720,7 @@ public abstract class VCSAbstractTest {
 
 	@Test
 	public void testSparseCheckoutRevision() throws Exception {
-		vcsTestDataGen.setFileContent(null, SPARSE_FILE, LINE_1, "selected component added");
-		vcsTestDataGen.setFileContent(null, SPARSE_SIBLING_FILE, LINE_2, "sibling component added");
+		createSparseCheckoutFixture(null);
 		vcsTestDataGen.createBranch(null, NEW_BRANCH, CREATED_DST_BRANCH_COMMIT_MESSAGE);
 		VCSCommit selectedRevision = vcsTestDataGen.setFileContent(NEW_BRANCH, SPARSE_FILE, LINE_2,
 				"selected component changed");
@@ -722,10 +733,39 @@ public abstract class VCSAbstractTest {
 	}
 
 	private void assertSparseCheckout(File checkoutDir, String expectedContent) throws Exception {
+		assertTrue(new File(checkoutDir, SPARSE_DIRECTORY).isDirectory());
 		File checkedOutFile = new File(checkoutDir, SPARSE_FILE);
 		assertTrue(checkedOutFile.isFile());
 		assertEquals(expectedContent, FileUtils.readFileToString(checkedOutFile, StandardCharsets.UTF_8));
 		assertFalse(new File(checkoutDir, SPARSE_SIBLING_FILE).exists());
+		assertEquals(sparseCheckoutIncludesParentFiles(), new File(checkoutDir, SPARSE_ROOT_FILE).isFile());
+		assertEquals(sparseCheckoutIncludesParentFiles(), new File(checkoutDir, SPARSE_PARENT_FILE).isFile());
+	}
+
+	private void createSparseCheckoutFixture(String branchName) {
+		vcsTestDataGen.setFileContent(branchName, SPARSE_ROOT_FILE, "root", "root metadata added");
+		vcsTestDataGen.setFileContent(branchName, SPARSE_PARENT_FILE, "parent", "parent metadata added");
+		vcsTestDataGen.setFileContent(branchName, SPARSE_FILE, LINE_1, "selected component added");
+		vcsTestDataGen.setFileContent(branchName, SPARSE_SIBLING_FILE, LINE_2, "sibling component added");
+	}
+
+	protected String concurrentRead(IVCS reader, String path, CountDownLatch ready, CountDownLatch start)
+			throws Exception {
+		ready.countDown();
+		assertTrue(start.await(5, TimeUnit.SECONDS));
+		return reader.getFileContent(null, path, null);
+	}
+
+	protected List<String> writableCopyNames(IVCSRepositoryWorkspace repository) {
+		File[] files = repository.getWritableWorkingCopiesFolder().listFiles();
+		List<String> names = new ArrayList<>();
+		for (File file : files == null ? new File[0] : files) {
+			if (file.isDirectory()) {
+				names.add(file.getName());
+			}
+		}
+		Collections.sort(names);
+		return names;
 	}
 
 	@Test
@@ -880,6 +920,8 @@ public abstract class VCSAbstractTest {
 	}
 
 	protected abstract IVCS getVCS(IVCSRepositoryWorkspace mockedVCSRepo);
+
+	protected abstract boolean sparseCheckoutIncludesParentFiles();
 
 	protected abstract void setMakeFailureOnVCSReset(Boolean doMakeFailure) throws Exception;
 

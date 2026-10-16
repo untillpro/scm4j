@@ -60,6 +60,7 @@ public class MonorepoTestRepositories implements AutoCloseable {
 	private IVCS unTillVCS;
 	private IVCS ublVCS;
 	private IVCS monorepoVCS;
+	private IVCSWorkspace workspace;
 	private VCSCommit ublReleaseCommit;
 
 	public MonorepoTestRepositories(VCSType vcsType) {
@@ -80,7 +81,7 @@ public class MonorepoTestRepositories implements AutoCloseable {
 			throw new IOException("failed to create remote repositories directory " + remoteRepositoriesDir);
 		}
 
-		IVCSWorkspace workspace = new VCSWorkspace(vcsWorkspacesDir.getPath());
+		workspace = new VCSWorkspace(vcsWorkspacesDir.getPath());
 		unTillVCS = createRepository(workspace, "unTill");
 		ublVCS = createRepository(workspace, "UBL");
 		monorepoVCS = createRepository(workspace, "components");
@@ -97,7 +98,7 @@ public class MonorepoTestRepositories implements AutoCloseable {
 		IVCSRepositoryWorkspace repositoryWorkspace;
 		switch (vcsType) {
 		case GIT:
-			GitVCSUtils.createRepository(repositoryDir);
+			GitVCSUtils.createRepository(repositoryDir).close();
 			url = getRepositoryUrl(repositoryDir);
 			repositoryWorkspace = workspace.getVCSRepositoryWorkspace(url);
 			return new GitVCS(repositoryWorkspace);
@@ -203,6 +204,12 @@ public class MonorepoTestRepositories implements AutoCloseable {
 		return factory;
 	}
 
+	public void refreshSnapshots() {
+		for (IVCS vcs : new IVCS[] {unTillVCS, ublVCS, monorepoVCS}) {
+			workspace.getVCSRepositoryWorkspace(vcs.getRepoUrl()).invalidatePreparedRepositorySnapshot();
+		}
+	}
+
 	public VCSType getVcsType() {
 		return vcsType;
 	}
@@ -253,6 +260,8 @@ public class MonorepoTestRepositories implements AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
+		org.eclipse.jgit.lib.RepositoryCache.clear();
+		new org.eclipse.jgit.storage.file.WindowCacheConfig().install();
 		if (testDir.exists()) {
 			Utils.waitForDeleteDir(testDir);
 		}
