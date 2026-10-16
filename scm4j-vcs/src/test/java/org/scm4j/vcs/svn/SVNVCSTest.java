@@ -7,6 +7,7 @@ import org.mockito.Matchers;
 import org.mockito.verification.VerificationMode;
 import org.scm4j.vcs.api.IVCS;
 import org.scm4j.vcs.api.IVCSMutationSession;
+import org.scm4j.vcs.api.VCSChangeListNode;
 import org.scm4j.vcs.api.VCSChangeType;
 import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.VCSTag;
@@ -385,6 +386,41 @@ public class SVNVCSTest extends VCSAbstractTest {
 
 		assertFalse("SVN mutation sessions must not create a prepared working copy",
 				repository.getPreparedRepositoryFolder().exists());
+	}
+
+	@Test
+	public void testSessionWritesCommitOnlyRequestedFilesAndAddedParents() throws Exception {
+		String component = "components/selected";
+		String versionPath = component + "/version";
+		String trackedPath = component + "/tracked.txt";
+		vcsTestDataGen.setFileContent(null, versionPath, "1.0.0", "version added");
+		vcsTestDataGen.setFileContent(null, trackedPath, "original", "tracked file added");
+		SVNVCS componentVCS = new SVNVCS(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl, component), null, null);
+		try (IVCSMutationSession session = componentVCS.startModify()) {
+			File workingDirectory = session.getWorkingDirectory();
+			File trackedFile = new File(workingDirectory, "tracked.txt");
+			FileUtils.writeStringToFile(trackedFile, "builder edit", StandardCharsets.UTF_8);
+			session.setFileContent(null, versionPath, "1.0.1", "patch bump");
+			assertEquals("1.0.1", session.getFileContent(null, versionPath, null));
+			assertEquals("original", session.getFileContent(null, trackedPath, null));
+			assertEquals("builder edit", FileUtils.readFileToString(trackedFile, StandardCharsets.UTF_8));
+
+			File unrelatedAddition = new File(workingDirectory, "new/deep/unrequested.txt");
+			FileUtils.writeStringToFile(unrelatedAddition, "not requested", StandardCharsets.UTF_8);
+			componentVCS.getClientManager().getWCClient().doAdd(unrelatedAddition,
+					true, false, false, SVNDepth.EMPTY, false, true);
+			session.setFileContent(null, Arrays.asList(
+					new VCSChangeListNode(component + "/new/deep/first.txt", "first", "first added"),
+					new VCSChangeListNode(component + "/new/deep/second.txt", "second", "second added")));
+			assertEquals("first", session.getFileContent(null, component + "/new/deep/first.txt", null));
+			assertEquals("second", session.getFileContent(null, component + "/new/deep/second.txt", null));
+			assertFalse(session.fileExists(null, component + "/new/deep/unrequested.txt"));
+			assertTrue(unrelatedAddition.isFile());
+			assertEquals(SVNStatusType.STATUS_ADDED, componentVCS.getClientManager().getStatusClient()
+					.doStatus(unrelatedAddition, false).getNodeStatus());
+			assertEquals("original", session.getFileContent(null, trackedPath, null));
+			assertEquals("builder edit", FileUtils.readFileToString(trackedFile, StandardCharsets.UTF_8));
+		}
 	}
 
 	@Test

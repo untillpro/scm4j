@@ -282,8 +282,11 @@ public class SVNVCS implements IVCS {
 			return;
 		}
 		if (isWorkingCopyInited(target)) {
+			// Only fixed-scope sessions preserve sparse depths and local builder edits.
+			boolean sessionTarget = retainedWorkingCopy != null && retainedWorkingCopy.getFolder().equals(target);
 			runWithTransportRetry("SVN switch", () -> updateClient.doSwitch(
-					target, sourceUrl, revision, revision, SVNDepth.EMPTY, true, true, false));
+					target, sourceUrl, revision, revision, sessionTarget ? SVNDepth.UNKNOWN : SVNDepth.EMPTY,
+					true, !sessionTarget, false));
 		} else {
 			runWithTransportRetry("SVN checkout", () -> updateClient.doCheckout(
 					sourceUrl, target, revision, revision, SVNDepth.EMPTY, false));
@@ -422,6 +425,7 @@ public class SVNVCS implements IVCS {
 		try (IVCSLockedWorkingCopy wc = getWorkingCopy()) {
 			checkout(getBranchUrl(branchName), wc.getFolder(), null);
 			StringBuilder commitMessageSB = new StringBuilder();
+			Set<File> commitPaths = new LinkedHashSet<>();
 			for (VCSChangeListNode vcsChangeListNode : vcsChangeList) {
 				String filePath = vcsChangeListNode.getFilePath();
 				File file = new File(wc.getFolder(), filePath);
@@ -442,6 +446,16 @@ public class SVNVCS implements IVCS {
 									true /* force, avoiding "file is already under version control" exception */,
 									false, false, SVNDepth.EMPTY, false, true);
 				}
+				commitPaths.add(file);
+				// Added parents are required, but their other children must not be committed.
+				for (File parent = file.getParentFile(); parent != null && !parent.equals(wc.getFolder());
+						parent = parent.getParentFile()) {
+					if (clientManager.getStatusClient().doStatus(parent, false).getNodeStatus()
+							!= SVNStatusType.STATUS_ADDED) {
+						break;
+					}
+					commitPaths.add(parent);
+				}
 				commitMessageSB.append(vcsChangeListNode.getLogMessage() + VCSChangeListNode.COMMIT_MESSAGES_SEPARATOR);
 			}
 
@@ -450,8 +464,8 @@ public class SVNVCS implements IVCS {
 			try {
 				SVNCommitInfo newCommit = clientManager
 						.getCommitClient()
-						.doCommit(new File[] { wc.getFolder() }, false, commitMessage,
-								new SVNProperties(), null, false, false, SVNDepth.INFINITY);
+						.doCommit(commitPaths.toArray(new File[0]), false, commitMessage,
+								new SVNProperties(), null, false, false, SVNDepth.EMPTY);
 				repo.invalidatePreparedRepositorySnapshot();
 				return newCommit == SVNCommitInfo.NULL ? VCSCommit.EMPTY :
 					new VCSCommit(Long.toString(newCommit.getNewRevision()), commitMessage, newCommit.getAuthor());

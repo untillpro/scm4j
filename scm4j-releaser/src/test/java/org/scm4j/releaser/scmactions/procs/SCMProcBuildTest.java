@@ -1,5 +1,6 @@
 package org.scm4j.releaser.scmactions.procs;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +31,7 @@ import org.scm4j.vcs.api.VCSTag;
 import org.scm4j.vcs.api.WalkDirection;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -50,6 +52,9 @@ public class SCMProcBuildTest {
 
 	private static final String COMPONENT_SUBFOLDER = "components/driver";
 	private static final String COMPONENT_FILE = "feature.txt";
+	private static final String BUILD_OUTPUT = "build/result.txt";
+	private static final String BUILD_OUTPUT_CONTENT = "release result";
+	private static final String BUILDER_EDIT = "builder-local edit";
 	private static final String SIBLING_FILE = "components/sibling/feature.txt";
 	private static final String UNRELATED_FILE = "unrelated/shared-root.txt";
 	private static final String SIBLING_CONTENT_AT_COMPONENT_REVISION = "sibling content at component revision";
@@ -124,6 +129,43 @@ public class SCMProcBuildTest {
 		} catch (ENoReleaseBranch e) {
 			assertEquals(message(vcsType, repository), Utils.getReleaseBranchName(repository, version),
 					e.getReleaseBranchName());
+		}
+	}
+
+	@Test
+	public void testSVNPatchBumpLeavesBuilderEditsUncommitted() throws Exception {
+		try (TestEnvironment env = new TestEnvironment(VCSType.SVN)) {
+			env.generateTestEnvironment();
+			BuildFixture fixture = createFixture(VCSType.SVN, env.getUnTillDbVCS(), "svnBuild",
+					new Version("1.2.3"), COMPONENT_SUBFOLDER);
+			executeBuild(fixture, false);
+			assertEquals("component content", fixture.vcs.getFileContent(fixture.branchName,
+					fixture.repository.getComponentPath(COMPONENT_FILE), null));
+			assertEquals(BUILDER_EDIT, FileUtils.readFileToString(
+					new File(fixture.sessionWorkingDirectory, COMPONENT_FILE), StandardCharsets.UTF_8));
+			assertBuildWorkingFolder(fixture);
+		}
+	}
+
+	@Test
+	public void testBuildResultsSurviveWorkingCopyReuse() throws Exception {
+		try (TestEnvironment env = new TestEnvironment()) {
+			env.generateTestEnvironment();
+			BuildFixture fixture = createFixture(VCSType.GIT, env.getUnTillDbVCS(), "savedResults",
+					new Version("1.2.3"), COMPONENT_SUBFOLDER);
+			File staleResult = new File(Utils.getBuildDir(fixture.repository, fixture.version), "stale.txt");
+			FileUtils.writeStringToFile(staleResult, "previous build", StandardCharsets.UTF_8);
+			executeBuild(fixture, true);
+			assertBuildWorkingFolder(fixture);
+			assertFalse("Rebuilding must replace the previous result snapshot", staleResult.exists());
+			try (IVCSMutationSession next = fixture.vcs.startModify()) {
+				assertEquals(fixture.sessionWorkingDirectory, next.getWorkingDirectory());
+				assertFalse("Session reuse must clean its previous output",
+						new File(next.getWorkingDirectory(), BUILD_OUTPUT).exists());
+				assertEquals(BUILD_OUTPUT_CONTENT, FileUtils.readFileToString(new File(
+						Utils.getBuildDir(fixture.repository, fixture.version),
+						fixture.repository.getComponentPath(BUILD_OUTPUT)), StandardCharsets.UTF_8));
+			}
 		}
 	}
 
@@ -250,10 +292,18 @@ public class SCMProcBuildTest {
 				fixture.branchName, fixture.repository.getUrl()), fixture.builder.buildTimeEnvVars);
 	}
 
-	private void assertBuildWorkingFolder(BuildFixture fixture) {
+	private void assertBuildWorkingFolder(BuildFixture fixture) throws Exception {
 		assertEquals(message(fixture), fixture.sessionWorkingDirectory.getAbsoluteFile(),
 				fixture.builder.workingFolder.getAbsoluteFile());
 		assertTrue(message(fixture), new File(fixture.builder.workingFolder, COMPONENT_FILE).exists());
+		File resultDirectory = Utils.getBuildDir(fixture.repository, fixture.version);
+		assertEquals(BUILD_OUTPUT_CONTENT, FileUtils.readFileToString(new File(resultDirectory,
+				fixture.repository.getComponentPath(BUILD_OUTPUT)), StandardCharsets.UTF_8));
+		assertEquals("Results must be saved before the patch bump", fixture.version.toString(),
+				FileUtils.readFileToString(new File(resultDirectory,
+						fixture.repository.getComponentPath(Constants.VER_FILE_NAME)), StandardCharsets.UTF_8));
+		assertFalse(new File(resultDirectory, ".git").exists());
+		assertFalse(new File(resultDirectory, ".svn").exists());
 	}
 
 	private void assertOnlyComponentMaterialized(BuildFixture fixture) {
@@ -298,9 +348,11 @@ public class SCMProcBuildTest {
 
 		@Override
 		public void build(Component comp, File workingFolder, IProgress progress,
-				Map<String, String> buildTimeEnvVars) {
+				Map<String, String> buildTimeEnvVars) throws Exception {
 			assertTrue("Release content must exist when the builder runs",
 					new File(workingFolder, COMPONENT_FILE).isFile());
+			FileUtils.writeStringToFile(new File(workingFolder, COMPONENT_FILE), BUILDER_EDIT, StandardCharsets.UTF_8);
+			FileUtils.writeStringToFile(new File(workingFolder, BUILD_OUTPUT), BUILD_OUTPUT_CONTENT, StandardCharsets.UTF_8);
 			this.workingFolder = workingFolder;
 			this.buildTimeEnvVars = buildTimeEnvVars;
 		}

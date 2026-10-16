@@ -97,6 +97,13 @@ identity used for reporting, build environment variables, and the tag target. A 
 only changes a sibling can therefore be the physical branch head without changing the component
 content being built.
 
+After a successful build, scm4j copies the component directory, including build outputs, to the
+stable release directory returned by `Utils.getBuildDir()` (under the configured component subfolder
+when present). This is a result snapshot, not another checkout: VCS metadata is excluded. It is saved
+before the patch-version bump, survives pooled working-copy reuse, and is replaced by the next
+successful build for the same release branch. SVN metadata writes commit only their requested paths
+and required added parents, leaving any other tracked files edited by the builder uncommitted.
+
 A delayed-tag action also owns one sparse mutation session because it can tag the saved revision and
 then bump the release branch's patch-version file. Metadata-only commands outside release and
 delayed-tag actions can use direct ref or repository-URL operations without creating a sparse

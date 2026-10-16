@@ -443,6 +443,7 @@ public abstract class WorkflowTestBase {
 		File buildFolder = TestBuilder.getBuilders().get(comp.getName()).getWorkingFolder();
 		assertTrue("Build must use the retained session directory", buildFolder.isDirectory());
 		assertTrue(new File(buildFolder, Constants.VER_FILE_NAME).isFile());
+		assertTrue("Build results must survive working-copy reuse", Utils.getBuildDir(repository, latestVersion).isDirectory());
 
 		DelayedTagsFile dtf = new DelayedTagsFile();
 		DelayedTag dt = dtf.getDelayedTag(repository.getComponentLocation());

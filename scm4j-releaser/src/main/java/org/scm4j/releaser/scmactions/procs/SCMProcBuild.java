@@ -1,6 +1,7 @@
 package org.scm4j.releaser.scmactions.procs;
 
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.scm4j.releaser.Version;
 import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.*;
@@ -87,6 +88,13 @@ public class SCMProcBuild implements ISCMProc {
 	@SneakyThrows
 	private void runBuilder(File buildWorkingDir, IProgress progress, Map<String, String> buildTimeEnvVars) {
 		repo.getBuilder().build(comp, buildWorkingDir, progress, buildTimeEnvVars);
+		// Keep results outside the disposable session without creating another checkout.
+		File buildDir = Utils.getBuildDir(repo, versionToBuild);
+		if (buildDir.exists()) {
+			Utils.waitForDeleteDir(buildDir);
+		}
+		FileUtils.copyDirectory(buildWorkingDir, new File(buildDir, repo.getSubfolder()),
+				file -> !".git".equals(file.getName()) && !".svn".equals(file.getName()));
 	}
 
 	@SneakyThrows
