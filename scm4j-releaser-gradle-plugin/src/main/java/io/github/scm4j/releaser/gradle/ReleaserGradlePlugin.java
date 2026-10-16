@@ -30,6 +30,8 @@ public class ReleaserGradlePlugin implements Plugin<Project> {
 			throw new GradleException("Error reading version file", e);
 		}
 
+		boolean snapshot = project.getVersion().toString().endsWith("-SNAPSHOT");
+
 		// mdeps
 		File mdepsFile = project.file("mdeps");
 		if (mdepsFile.exists()) {
@@ -44,8 +46,14 @@ public class ReleaserGradlePlugin implements Plugin<Project> {
 					Map<String, String> paramObject = new HashMap<>();
 					paramObject.put("group", mdep.getGroup());
 					paramObject.put("name", mdep.getName());
-					paramObject.put("version", mdep.getVersion() != null ? mdep.getVersion()
-							: "latest.integration");
+					String dependencyVersion = mdep.getVersion();
+					if (snapshot && dependencyVersion != null) {
+						project.getLogger().warn(
+								"Ignoring mdeps version {} for {}:{} in SNAPSHOT project {}; using latest.integration",
+								dependencyVersion, mdep.getGroup(), mdep.getName(), project.getPath());
+						dependencyVersion = null;
+					}
+					paramObject.put("version", dependencyVersion != null ? dependencyVersion : "latest.integration");
 					paramObject.put("classifier", mdep.getClassifier());
 					paramObject.put("ext", mdep.getExt());
 					Dependency dependency = project.getDependencies().create(paramObject);

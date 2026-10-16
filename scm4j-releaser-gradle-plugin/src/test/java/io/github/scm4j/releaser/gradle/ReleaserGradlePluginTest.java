@@ -92,6 +92,24 @@ public class ReleaserGradlePluginTest {
 		));
 	}
 
+	@Test public void snapshotIgnoresPinnedMdepsVersions() throws Exception {
+		createFile("version", "1.1-SNAPSHOT\n");
+		createFile("mdeps", "gro.up:pinned:2.0\n"
+				+ "gro.up:unversioned:\n"
+				+ "gro.up:classified:3.0:all@zip # runtimeOnly\n");
+		Project project = createProject();
+		assertThat(project.getConfigurations().getByName("implementation").getDependencies(), contains(
+				allOf(hasProperty("name", is("pinned")), hasProperty("version", is("latest.integration"))),
+				allOf(hasProperty("name", is("unversioned")), hasProperty("version", is("latest.integration")))
+		));
+		org.gradle.api.artifacts.ExternalModuleDependency classified =
+				(org.gradle.api.artifacts.ExternalModuleDependency) project.getConfigurations()
+				.getByName("runtimeOnly").getDependencies().iterator().next();
+		assertEquals("latest.integration", classified.getVersion());
+		assertThat(classified.getArtifacts(), contains(allOf(
+				hasProperty("classifier", is("all")), hasProperty("extension", is("zip")))));
+	}
+
 	@Test public void parserIgnoresIndentedComments() throws Exception {
 		assertThat(ManageableDependencyParser.parse(new ByteArrayInputStream(
 				"  # comment\n\t# another comment\n".getBytes())), empty());

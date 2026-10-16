@@ -34,7 +34,7 @@ org.slf4j:slf4j-api:1.7.36
 com.example:reporting::all@jar # runtimeOnly
 ```
 
-The version may be left empty, in which case the plugin uses `latest.integration`. The configuration defaults to `implementation`. The client build must declare repositories for these dependencies, for example:
+The version may be left empty, in which case the plugin uses `latest.integration`. For a project whose version ends with `-SNAPSHOT`, all dependency versions in `mdeps` are ignored with a warning and replaced by `latest.integration`. Release projects retain explicit dependency versions. The configuration defaults to `implementation`. The client build must declare repositories for these dependencies, for example:
 
 ```groovy
 repositories {
