@@ -44,6 +44,7 @@ public class WorkflowMonorepoPatchesTest extends WorkflowTestBase {
 				MonorepoTestRepositories.POSTGRES_SUBFOLDER, "postgres patch added");
 		VCSCommit sqliteRepositoryHead = monorepoRepositories.generateComponentCommit(releaseBranch,
 				MonorepoTestRepositories.SQLITE_SUBFOLDER, "sqlite release-branch change added");
+		refreshVerificationRepositories();
 		assertNotEquals(postgresPatchCommit.getRevision(), sqliteRepositoryHead.getRevision());
 		assertEquals(sqliteRepositoryHead.getRevision(),
 				repoPostgres.getVCS().getHeadCommit(releaseBranch).getRevision());

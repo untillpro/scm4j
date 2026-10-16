@@ -47,6 +47,7 @@ public class SCMProcBuild implements ISCMProc {
 			throw new ENoBuilder(comp);
 		}
 
+		vcs.checkout(releaseBranchName, vcs.getWorkingDirectory().getPath(), null);
 		build(progress, buildCommit, vcs.getWorkingDirectory());
 
 		tagBuild(progress, vcs, buildCommit);

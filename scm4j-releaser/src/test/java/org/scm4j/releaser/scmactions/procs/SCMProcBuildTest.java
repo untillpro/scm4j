@@ -17,6 +17,9 @@ import org.scm4j.releaser.conf.DelayedTag;
 import org.scm4j.releaser.conf.DelayedTagsFile;
 import org.scm4j.releaser.conf.VCSRepository;
 import org.scm4j.releaser.conf.VCSType;
+import org.scm4j.releaser.conf.VCSFactory;
+import org.scm4j.releaser.conf.Credentials;
+import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 import org.scm4j.releaser.exceptions.ENoReleaseBranch;
 import org.scm4j.releaser.testutils.TestBuilder;
 import org.scm4j.releaser.testutils.TestEnvironment;
@@ -139,7 +142,7 @@ public class SCMProcBuildTest {
 		assertOnlyComponentMaterialized(fixture);
 		// The version bump is written on the current branch head, so it must keep the later unrelated changes.
 		assertEquals(message(fixture), fixture.version.toNextPatch().toString(),
-				vcs.getFileContent(fixture.branchName,
+				fixture.vcs.getFileContent(fixture.branchName,
 						fixture.repository.getComponentPath(Constants.VER_FILE_NAME), null));
 		assertUnrelatedHeadContentPreserved(fixture);
 	}
@@ -181,7 +184,8 @@ public class SCMProcBuildTest {
 	private BuildFixture createFixture(VCSType vcsType, IVCS vcs, String repositoryName, Version version,
 			String subfolder) {
 		RecordingBuilder builder = new RecordingBuilder();
-		IVCS actionVCS = spy(vcs);
+		IVCS actionVCS = spy(VCSFactory.getVCS(vcsType, new Credentials(null, null, false), vcs.getRepoUrl(),
+				new VCSWorkspace(), subfolder));
 		VCSRepository repository = new VCSRepository(repositoryName, actionVCS.getRepoUrl(), subfolder, null,
 				vcsType, null, "release/", actionVCS, builder);
 		Component component = new Component("test:" + repositoryName + ":" + version);
@@ -230,9 +234,15 @@ public class SCMProcBuildTest {
 		verify(fixture.vcs, never()).sparseCheckout(
 				any(), any(), any(), any());
 		verify(fixture.mutationSession).getHeadCommit(fixture.branchName);
-		verify(fixture.mutationSession).getCommitsRange(eq(fixture.branchName),
-				eq(fixture.repositoryHead.getRevision()), eq(WalkDirection.DESC), anyInt(),
-				eq(fixture.repository.getSubfolder()));
+		verify(fixture.mutationSession).checkout(fixture.branchName,
+				fixture.sessionWorkingDirectory.getPath(), null);
+		if (fixture.repository.getSubfolder().isEmpty()) {
+			verify(fixture.mutationSession, never()).getCommitsRange(any(), any(), any(), anyInt(), any());
+		} else {
+			verify(fixture.mutationSession).getCommitsRange(eq(fixture.branchName),
+					eq(fixture.repositoryHead.getRevision()), eq(WalkDirection.DESC), anyInt(),
+					eq(fixture.repository.getSubfolder()));
+		}
 	}
 
 	private void assertBuildRevision(BuildFixture fixture, VCSCommit expectedCommit) {
@@ -289,6 +299,8 @@ public class SCMProcBuildTest {
 		@Override
 		public void build(Component comp, File workingFolder, IProgress progress,
 				Map<String, String> buildTimeEnvVars) {
+			assertTrue("Release content must exist when the builder runs",
+					new File(workingFolder, COMPONENT_FILE).isFile());
 			this.workingFolder = workingFolder;
 			this.buildTimeEnvVars = buildTimeEnvVars;
 		}

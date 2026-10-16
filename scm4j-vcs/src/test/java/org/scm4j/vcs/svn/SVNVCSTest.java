@@ -159,6 +159,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 
 	@Test
 	public void testSVNExceptions() throws SVNException {
+		doThrow(testSVNException).when(svn).openReadRepository();
 		doThrow(testSVNException).when(svn).getBranchUrl(anyString());
 		doThrow(testSVNException).when(svn).listEntries(anyString());
 		doThrow(testSVNException).when(svn).getBranchFirstCommit(anyString());
@@ -228,7 +229,6 @@ public class SVNVCSTest extends VCSAbstractTest {
 		doThrow(testCommonException).when(mockedRepo).getVCSLockedWorkingCopy();
 		testCommonException(() -> svn.setFileContent("", "", "", ""));
 		testCommonException(() -> svn.merge("", "", ""));
-		testCommonException(() -> svn.getBranchesDiff("", ""));
 	}
 
 	private void testSVNException(Runnable toTest) {
@@ -548,10 +548,15 @@ public class SVNVCSTest extends VCSAbstractTest {
 		assertEquals(manager.getProxyUserName(), "user");
 	}
 	
+	private SVNRepository spyReadRepository(SVNVCS vcs) throws SVNException {
+		SVNRepository session = spy(vcs.openReadRepository());
+		doReturn(session).when(vcs).openReadRepository();
+		return session;
+	}
+
 	@Test
 	public void testGetFileContentExceptions() throws Exception {
-		SVNRepository mockedRepo = spy(svn.getSVNRepository());
-		svn.setSVNRepository(mockedRepo);
+		SVNRepository mockedRepo = spyReadRepository(svn);
 		doThrow(testSVNException).when(mockedRepo).getFile(anyString(), anyLong(), any(SVNProperties.class), any(OutputStream.class));
 		try {
 			vcs.getFileContent("", "", "");
@@ -560,15 +565,14 @@ public class SVNVCSTest extends VCSAbstractTest {
 			checkEVCSException(e);
 		}
 
-		SVNRepository repo = svn.getSVNRepository();
-		svn.setSVNRepository(null);
+		doThrow(new NullPointerException()).when(svn).openReadRepository();
 		try {
 			vcs.getFileContent("", "", "");
 			fail();
 		} catch (RuntimeException e) {
 			assertTrue(e.getCause() instanceof NullPointerException);
 		}
-		svn.setSVNRepository(repo);
+		doReturn(mockedRepo).when(svn).openReadRepository();
 
 		doCallRealMethod().when(mockedRepo).getFile(anyString(), anyLong(), any(SVNProperties.class), any(OutputStream.class));
 		doThrow(testSVNException).when(mockedRepo).checkPath(anyString(), anyLong());
@@ -585,8 +589,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		long selectedRevision = 7L;
 		String branchName = "created-later";
 		String branchPath = SVNVCS.BRANCHES_PATH + branchName;
-		SVNRepository mockedRepo = spy(svn.getSVNRepository());
-		svn.setSVNRepository(mockedRepo);
+		SVNRepository mockedRepo = spyReadRepository(svn);
 		SVNException fileNotFound = new SVNException(
 				SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, "not found"));
 		doThrow(fileNotFound).when(mockedRepo).getFile(anyString(), eq(selectedRevision),
@@ -608,8 +611,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		long selectedRevision = 7L;
 		String branchName = "created-later";
 		String branchPath = SVNVCS.BRANCHES_PATH + branchName;
-		SVNRepository mockedRepo = spy(svn.getSVNRepository());
-		svn.setSVNRepository(mockedRepo);
+		SVNRepository mockedRepo = spyReadRepository(svn);
 		doReturn(SVNNodeKind.NONE).when(mockedRepo).checkPath(branchPath, selectedRevision);
 
 		try {
@@ -655,8 +657,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 
 	@Test
 	public void testFileExistsExceptions() throws Exception {
-		SVNRepository mockedRepo = spy(svn.getSVNRepository());
-		svn.setSVNRepository(mockedRepo);
+		SVNRepository mockedRepo = spyReadRepository(svn);
 		doThrow(testSVNException).when(mockedRepo).checkPath(anyString(), anyLong());
 		try {
 			vcs.fileExists("", "");
@@ -749,7 +750,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		IVCSRepositoryWorkspace nestedWorkspace = localVCSWorkspace
 				.getVCSRepositoryWorkspace(projectUrl.toString());
 		SVNVCS nestedWriter = new SVNVCS(nestedWorkspace, null, null);
-		SVNVCS nestedReader = new SVNVCS(nestedWorkspace, null, null);
+		SVNVCS nestedReader = spy(new SVNVCS(nestedWorkspace, null, null));
 		try {
 			SVNVCSUtils.createFolderStructure(nestedWriter, FOLDER_STRUCT_CREATED_COMMIT_MESSAGE);
 			VCSCommit ordinaryCommit = nestedWriter.setFileContent(
@@ -761,8 +762,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 			VCSTag namespacedTag = nestedWriter.createTag(
 					null, "release/1.0", TAG_MESSAGE_2, namespacedCommit.getRevision());
 
-			SVNRepository nestedRepository = spy(nestedReader.getSVNRepository());
-			nestedReader.setSVNRepository(nestedRepository);
+			SVNRepository nestedRepository = spyReadRepository(nestedReader);
 
 			List<VCSTag> tags = nestedReader.getTags();
 			assertEquals(2, tags.size());
@@ -815,13 +815,13 @@ public class SVNVCSTest extends VCSAbstractTest {
 	public void testTagFirstCommitLogIsBounded() throws Exception {
 		vcsTestDataGen.setFileContent(null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
-		SVNRepository repository = spy(svn.getSVNRepository());
-		svn.setSVNRepository(repository);
+		SVNRepository repository = spyReadRepository(svn);
+		long revision = repository.getLatestRevision();
 
 		vcs.getTags();
 
 		verify(repository, atLeastOnce()).log(
-				any(String[].class), eq(0L), eq(-1L), eq(true), eq(true), eq(1L),
+				any(String[].class), eq(0L), eq(revision), eq(true), eq(true), eq(1L),
 				any(ISVNLogEntryHandler.class));
 	}
 
@@ -833,8 +833,9 @@ public class SVNVCSTest extends VCSAbstractTest {
 	@SuppressWarnings("unchecked")
 	private void verifyDirectoryEnumeration(SVNRepository repository, String path, VerificationMode mode)
 			throws SVNException {
+		long revision = repository.getLatestRevision();
 		verify(repository, mode).getDir(
-				eq(path), eq(-1L), (SVNProperties) isNull(), (Collection<SVNDirEntry>) isNull());
+				eq(path), eq(revision), (SVNProperties) isNull(), (Collection<SVNDirEntry>) isNull());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -845,22 +846,24 @@ public class SVNVCSTest extends VCSAbstractTest {
 				null, null, "broken", SVNNodeKind.DIR, 0, false, 1, null, null);
 		SVNLogEntry firstEntry = new SVNLogEntry(changedPaths, 1, "author", new Date(), "message");
 
-		doReturn(SVNNodeKind.DIR).when(repository).checkPath(SVNVCS.TAGS_PATH, -1L);
+		doReturn(SVNNodeKind.DIR).when(repository).checkPath(SVNVCS.TAGS_PATH, 1L);
 		doAnswer(invocation -> SVNVCS.TAGS_PATH.equals(invocation.getArguments()[0])
 				? Collections.singletonList(tagDirectory) : Collections.emptyList())
 				.when(repository).getDir(anyString(), anyLong(),
 						(SVNProperties) isNull(), (Collection<SVNDirEntry>) isNull());
 		doReturn(Collections.singletonList(firstEntry)).when(repository).log(
 				any(String[].class), (Collection<SVNLogEntry>) isNull(),
-				eq(0L), eq(-1L), eq(true), eq(true));
+				eq(0L), eq(1L), eq(true), eq(true));
 		doAnswer(invocation -> {
 			((ISVNLogEntryHandler) invocation.getArguments()[6]).handleLogEntry(firstEntry);
 			return 1L;
 		}).when(repository).log(
-				any(String[].class), eq(0L), eq(-1L), eq(true), eq(true), eq(1L),
+				any(String[].class), eq(0L), eq(1L), eq(true), eq(true), eq(1L),
 				any(ISVNLogEntryHandler.class));
 		doReturn(repositoryTagPath.substring(1)).when(repository).getRepositoryPath(tagPath);
-		svn.setSVNRepository(repository);
+		doReturn(1L).when(repository).getLatestRevision();
+		doReturn(repository).when(svn).openReadRepository();
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
 
 		try {
 			vcs.getTags();

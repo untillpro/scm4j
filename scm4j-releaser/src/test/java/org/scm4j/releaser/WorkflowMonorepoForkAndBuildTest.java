@@ -139,6 +139,7 @@ public class WorkflowMonorepoForkAndBuildTest extends WorkflowTestBase {
 		// the earlier postgres revision selected by component-filtered history.
 		VCSCommit sqliteRepositoryHead = monorepoRepositories.generateComponentCommit(postgresReleaseBranch,
 				MonorepoTestRepositories.SQLITE_SUBFOLDER, "second sqlite feature added");
+		refreshVerificationRepositories();
 		assertEquals(sqliteRepositoryHead.getRevision(),
 				repoPostgres.getVCS().getHeadCommit(postgresReleaseBranch).getRevision());
 

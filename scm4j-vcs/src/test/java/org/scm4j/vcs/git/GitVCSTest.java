@@ -89,6 +89,8 @@ public class GitVCSTest extends VCSAbstractTest {
 	@After
 	public void tearDown() throws IOException {
 		localGitRepo.close();
+		org.eclipse.jgit.lib.RepositoryCache.clear();
+		new org.eclipse.jgit.storage.file.WindowCacheConfig().install();
 	    FileUtils.deleteDirectory(localGitRepo.getDirectory());
 		ProxySelector.setDefault(proxySelectorBackup);
 	}
@@ -214,13 +216,14 @@ public class GitVCSTest extends VCSAbstractTest {
 
 	@Test(timeout = 15000)
 	public void testSiblingStatusReadsShareOnePreparedCloneAndRemainConcurrent() throws Exception {
+		IVCSWorkspace statusWorkspace = new VCSWorkspace(new File(TEST_BASE_DIR, "status-only").getPath());
 		String firstPath = "components/first/value.txt";
 		String secondPath = "components/second/value.txt";
 		vcsTestDataGen.setFileContent(null, firstPath, "first", "first component added");
 		vcsTestDataGen.setFileContent(null, secondPath, "second", "second component added");
-		IVCSRepositoryWorkspace firstRepository = localVCSWorkspace.getVCSRepositoryWorkspace(
+		IVCSRepositoryWorkspace firstRepository = statusWorkspace.getVCSRepositoryWorkspace(
 				repoUrl, "components/first");
-		IVCSRepositoryWorkspace secondRepository = localVCSWorkspace.getVCSRepositoryWorkspace(
+		IVCSRepositoryWorkspace secondRepository = statusWorkspace.getVCSRepositoryWorkspace(
 				repoUrl, "components/second");
 		GitVCS first = new GitVCS(firstRepository);
 		GitVCS second = new GitVCS(secondRepository);
@@ -251,6 +254,7 @@ public class GitVCSTest extends VCSAbstractTest {
 		git.getHeadCommit(null); // Publish the captured refs and object database once.
 		File prepared = mockedVCSRepo.getPreparedRepositoryFolder();
 		String before = gitSnapshotFingerprint(prepared);
+		List<String> copiesBefore = writableCopyNames(mockedVCSRepo);
 		Mockito.reset(mockedVCSRepo);
 
 		assertEquals(LINE_1, git.getFileContent(null, FILE1_NAME, null));
@@ -261,7 +265,7 @@ public class GitVCSTest extends VCSAbstractTest {
 
 		Mockito.verify(mockedVCSRepo, Mockito.never()).getVCSLockedWorkingCopy();
 		assertEquals(before, gitSnapshotFingerprint(prepared));
-		assertEquals(Collections.emptyList(), writableCopyNames(mockedVCSRepo));
+		assertEquals(copiesBefore, writableCopyNames(mockedVCSRepo));
 	}
 
 	@Test
@@ -310,6 +314,7 @@ public class GitVCSTest extends VCSAbstractTest {
 	public void testOneMutationSessionCarriesWritesThroughBuildTagAndSnapshotRefresh() throws Exception {
 		String component = "components/selected";
 		String versionPath = component + "/version.txt";
+		vcsTestDataGen.setFileContent(null, "components/sibling/value.txt", "sibling", "sibling added");
 		vcsTestDataGen.setFileContent(null, versionPath, "1.0.0", "component version added");
 		IVCSRepositoryWorkspace repository = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl, component));
 		GitVCS componentVCS = new GitVCS(repository);
@@ -326,6 +331,8 @@ public class GitVCSTest extends VCSAbstractTest {
 					new File(session.getWorkingDirectory(), "version.txt"), StandardCharsets.UTF_8));
 			VCSCommit branchHead = session.getHeadCommit(branch);
 			session.createTag(branch, "release/1.0.1", "release tag", branchHead.getRevision());
+			assertFalse("Branch changes must preserve sparse sibling exclusion",
+					new File(repositoryRoot(session), "components/sibling").exists());
 			assertEquals(branchHead, session.getHeadCommit(branch));
 			assertReadResults(session, branch, versionPath, "1.0.1", branchHead, initial, "release/1.0.1");
 			assertEquals(cacheBefore, gitSnapshotFingerprint(repository.getPreparedRepositoryFolder()));
@@ -522,7 +529,7 @@ public class GitVCSTest extends VCSAbstractTest {
 	}
 
 	@Test
-	public void testGetFilesContentResetsWorkingCopyForRevision() throws Exception {
+	public void testGetFilesContentLeavesWorkingCopyUnchangedForRevision() throws Exception {
 		VCSCommit revision = vcsTestDataGen.setFileContent(
 				null, FILE1_NAME, LINE_1, FILE1_ADDED_COMMIT_MESSAGE);
 		resetMocks();
@@ -532,7 +539,7 @@ public class GitVCSTest extends VCSAbstractTest {
 		assertEquals(LINE_1, vcs.getFilesContent(null, Arrays.asList(FILE1_NAME), revision.getRevision())
 				.get(FILE1_NAME));
 
-		Mockito.verify(mockedGit).reset();
+		Mockito.verify(mockedGit, Mockito.never()).reset();
 	}
 
 	@Test

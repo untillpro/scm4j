@@ -25,7 +25,6 @@ import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.merge.Merger;
 import org.eclipse.jgit.revwalk.*;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
@@ -88,8 +87,6 @@ public class GitVCS implements IVCS {
 						failedCopy.setCorrupted(true);
 					} catch (Exception | Error cleanupFailure) {
 						failure.addSuppressed(cleanupFailure);
-					} finally {
-						releasePackHandles();
 					}
 					throw failure;
 				}
@@ -233,26 +230,24 @@ public class GitVCS implements IVCS {
 	private GitSnapshot getReadSnapshot() {
 		try {
 			if (retainedWorkingCopy != null) {
-				try (Git git = getLocalGit(retainedWorkingCopy.getFolder().getPath(), true)) {
-					return captureSnapshot(retainedWorkingCopy.getFolder(), git.getRepository());
-				} finally {
-					releasePackHandles();
+				try (Git git = getLocalGit(retainedWorkingCopy.getFolder().getPath(), true);
+					 Repository repository = git.getRepository()) {
+					return captureSnapshot(retainedWorkingCopy.getFolder(), repository);
 				}
 			}
 			return (GitSnapshot) repo.getPreparedRepositorySnapshot(cacheFolder -> {
 				FileUtils.forceMkdir(cacheFolder);
 				boolean refresh = isGitRepositoryInitialized(cacheFolder);
-				try (Git git = getLocalGit(cacheFolder.getPath(), true)) {
-					StoredConfig config = git.getRepository().getConfig();
+				try (Git git = getLocalGit(cacheFolder.getPath(), true);
+					 Repository repository = git.getRepository()) {
+					StoredConfig config = repository.getConfig();
 					config.setString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME,
 							"url", repo.getRepoUrl());
 					config.save();
 					if (refresh) {
 						fetchForSparseCheckout(git);
 					}
-					return captureSnapshot(cacheFolder, git.getRepository());
-				} finally {
-					releasePackHandles();
+					return captureSnapshot(cacheFolder, repository);
 				}
 			});
 		} catch (EVCSException e) {
@@ -303,6 +298,7 @@ public class GitVCS implements IVCS {
 							+ "\n", StandardCharsets.UTF_8);
 
 			StoredConfig config = repository.getConfig();
+			config.setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null, "longpaths", true);
 			config.setString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME,
 					"url", repo.getRepoUrl());
 			config.setString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME,
@@ -555,11 +551,10 @@ public class GitVCS implements IVCS {
 		return repo.getRepoUrl();
 	}
 
-	private SnapshotRepositoryHandle openSnapshotRepository(GitSnapshot snapshot) throws IOException {
-		Repository repository = new FileRepositoryBuilder()
+	private Repository openSnapshotRepository(GitSnapshot snapshot) throws IOException {
+		return new FileRepositoryBuilder()
 				.setGitDir(new File(snapshot.repositoryFolder, Constants.DOT_GIT))
 				.build();
-		return new SnapshotRepositoryHandle(repository);
 	}
 
 	private String snapshotBranchName(GitSnapshot snapshot, String branchName) {
@@ -590,8 +585,7 @@ public class GitVCS implements IVCS {
 		GitSnapshot snapshot = getReadSnapshot();
 		Map<String, String> fileContents = new LinkedHashMap<>();
 		String realBranchName = snapshotBranchName(snapshot, branchName);
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 RevWalk walk = new RevWalk(repository)) {
 			ObjectId commitId = snapshotRevision(repository, snapshot, branchName, revision);
 			if (commitId == null) {
@@ -623,8 +617,7 @@ public class GitVCS implements IVCS {
 	@Override
 	public List<VCSDiffEntry> getBranchesDiff(String srcBranchName, String dstBranchName) {
 		GitSnapshot snapshot = getReadSnapshot();
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 ObjectReader reader = repository.newObjectReader();
 			 RevWalk walk = new RevWalk(repository)) {
 			ObjectId source = snapshotBranchId(snapshot, srcBranchName);
@@ -688,8 +681,7 @@ public class GitVCS implements IVCS {
 	@Override
 	public List<VCSCommit> log(String branchName, int limit) {
 		GitSnapshot snapshot = getReadSnapshot();
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 RevWalk walk = new RevWalk(repository)) {
 			ObjectId head = snapshotBranchId(snapshot, branchName);
 			if (head == null) {
@@ -715,8 +707,7 @@ public class GitVCS implements IVCS {
 	public List<VCSCommit> getCommitsRange(String branchName, String startRevision,
 			String endRevision) {
 		GitSnapshot snapshot = getReadSnapshot();
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 RevWalk walk = new RevWalk(repository)) {
 			ObjectId head = snapshotBranchId(snapshot, branchName);
 			if (head == null) {
@@ -745,8 +736,7 @@ public class GitVCS implements IVCS {
 	public List<VCSCommit> getCommitsRange(String branchName, String startRevision,
 			WalkDirection direction, int limit, String repositoryRelativePath) {
 		GitSnapshot snapshot = getReadSnapshot();
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 RevWalk walk = new RevWalk(repository)) {
 			ObjectId head = snapshotBranchId(snapshot, branchName);
 			if (head == null) {
@@ -798,8 +788,7 @@ public class GitVCS implements IVCS {
 		if (head == null) {
 			return null;
 		}
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 RevWalk walk = new RevWalk(repository)) {
 			return getVCSCommit(walk.parseCommit(head));
 		} catch (Exception e) {
@@ -814,8 +803,7 @@ public class GitVCS implements IVCS {
 		if (head == null) {
 			return false;
 		}
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 RevWalk walk = new RevWalk(repository)) {
 			try (TreeWalk tree = TreeWalk.forPath(repository, filePath, walk.parseCommit(head).getTree())) {
 				return tree != null;
@@ -827,8 +815,7 @@ public class GitVCS implements IVCS {
 
 	private List<VCSTag> getTags(String revision) {
 		GitSnapshot snapshot = getReadSnapshot();
-		try (SnapshotRepositoryHandle handle = openSnapshotRepository(snapshot);
-			 Repository repository = handle.repository;
+		try (Repository repository = openSnapshotRepository(snapshot);
 			 RevWalk walk = new RevWalk(repository)) {
 			List<VCSTag> result = new ArrayList<>();
 			for (Map.Entry<String, ObjectId> capturedRef : snapshot.refs.entrySet()) {
@@ -909,6 +896,18 @@ public class GitVCS implements IVCS {
 
 	private void checkout(Git git, Repository gitRepo, String branchName, String revision) throws Exception {
 		String bn = getRealBranchName(branchName);
+		if (retainedWorkingCopy != null) {
+			// JGit checkout does not preserve native cone-mode sparse checkout on branch changes.
+			if (revision == null) {
+				String source = gitRepo.exactRef(REFS_HEADS + bn) == null
+						? REFS_REMOTES_ORIGIN + bn : REFS_HEADS + bn;
+				runGitCommand(retainedWorkingCopy.getFolder(), "checkout", "-B", bn, source);
+			} else {
+				runGitCommand(retainedWorkingCopy.getFolder(), "checkout", "--detach", revision);
+			}
+			gitRepo.scanForRepoChanges();
+			return;
+		}
 		CheckoutCommand cmd = git.checkout();
 
 		if (retainedWorkingCopy == null) {
@@ -1190,26 +1189,6 @@ public class GitVCS implements IVCS {
 		}
 	}
 
-	private static synchronized void releasePackHandles() {
-		// JGit's process-wide window cache can retain Windows file handles after a repository closes.
-		// Reinstalling the same default configuration releases completed-operation windows without
-		// placing a lock around the status read itself.
-		new WindowCacheConfig().install();
-	}
-
-	private static final class SnapshotRepositoryHandle implements AutoCloseable {
-		private final Repository repository;
-
-		private SnapshotRepositoryHandle(Repository repository) {
-			this.repository = repository;
-		}
-
-		@Override
-		public void close() {
-			releasePackHandles();
-		}
-	}
-
 	private static class GitMutationSession extends GitVCS implements IVCSMutationSession {
 		private final IVCSLockedWorkingCopy workingCopy;
 		private final File workingDirectory;
@@ -1236,6 +1215,12 @@ public class GitVCS implements IVCS {
 		}
 
 		@Override
+		public void checkout(String branchName, String targetPath, String revision) {
+			super.checkout(branchName, workingDirectory.equals(new File(targetPath))
+					? workingCopy.getFolder().getPath() : targetPath, revision);
+		}
+
+		@Override
 		public void setCorrupted(Boolean corrupted) {
 			workingCopy.setCorrupted(corrupted);
 		}
@@ -1248,8 +1233,6 @@ public class GitVCS implements IVCS {
 					workingCopy.close();
 				} catch (Exception e) {
 					throw new EVCSException(e);
-				} finally {
-					releasePackHandles();
 				}
 			}
 		}

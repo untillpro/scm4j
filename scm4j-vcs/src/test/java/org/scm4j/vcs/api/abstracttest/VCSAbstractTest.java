@@ -76,6 +76,7 @@ public abstract class VCSAbstractTest {
 	protected IVCSWorkspace localVCSWorkspace;
 	protected IVCSRepositoryWorkspace localVCSRepo;
 	protected IVCSRepositoryWorkspace mockedVCSRepo;
+	protected IVCSRepositoryWorkspace localVCSGenRepo;
 	protected IVCSLockedWorkingCopy mockedLWC;
 	protected IVCS vcs;
 	protected IVCS vcsTestDataGen;
@@ -113,7 +114,7 @@ public abstract class VCSAbstractTest {
 		localVCSRepo = localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		mockedVCSRepo = Mockito.spy(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl));
 
-		IVCSRepositoryWorkspace localVCSGenRepo = localVCSGenWorkspace.getVCSRepositoryWorkspace(repoUrl);
+		localVCSGenRepo = localVCSGenWorkspace.getVCSRepositoryWorkspace(repoUrl);
 		vcsTestDataGen = getVCS(localVCSGenRepo);
 
 		vcs = getVCS(mockedVCSRepo);
@@ -124,6 +125,9 @@ public abstract class VCSAbstractTest {
 	}
 
 	protected void resetMocks() throws Exception {
+		// Legacy scenarios start a new observation after writes through an independent adapter.
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
+		localVCSGenRepo.invalidatePreparedRepositorySnapshot();
 		if (mockedLWC != null) {
 			mockedLWC.close();
 		}
@@ -190,6 +194,7 @@ public abstract class VCSAbstractTest {
 		verifyMocks();
 
 		vcsTestDataGen.setFileContent(null, FILE3_IN_FOLDER_NAME, LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
 		assertEquals(vcs.getFileContent(null, FILE3_IN_FOLDER_NAME, null), LINE_2);
 
 		resetMocks();
@@ -199,6 +204,7 @@ public abstract class VCSAbstractTest {
 		vcsTestDataGen.createBranch(null, NEW_BRANCH, "new branch created");
 		commit = vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, MOD_LINE_2, CONTENT_CHANGED_COMMIT_MESSAGE);
 		vcsTestDataGen.setFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, LINE_3, CONTENT_CHANGED_COMMIT_MESSAGE);
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
 
 		assertEquals(LINE_3, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, null));
 		assertEquals(MOD_LINE_2, vcs.getFileContent(NEW_BRANCH, FILE3_IN_FOLDER_NAME, commit.getRevision()));
@@ -634,9 +640,11 @@ public abstract class VCSAbstractTest {
 	public void testTagListAfterDelete() throws Exception {
 		vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
 		vcs.removeTag(TAG_NAME_1);
+		localVCSGenRepo.invalidatePreparedRepositorySnapshot();
 		assertTrue(vcs.getTags().isEmpty());
 		assertTrue(vcsTestDataGen.getTags().isEmpty());
 		VCSTag tag = vcsTestDataGen.createTag(null, TAG_NAME_1, TAG_MESSAGE_1, null);
+		localVCSRepo.invalidatePreparedRepositorySnapshot();
 		assertTrue(vcs.getTags().contains(tag));
 	}
 

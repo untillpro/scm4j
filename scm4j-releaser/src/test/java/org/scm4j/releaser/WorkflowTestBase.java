@@ -29,6 +29,7 @@ import org.scm4j.vcs.api.WalkDirection;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -439,7 +440,9 @@ public abstract class WorkflowTestBase {
 		Version latestVersion = crb.getVersion();
 
 		assertNotNull(TestBuilder.getBuilders().get(comp.getName()));
-		assertTrue(Utils.getBuildDir(repository, latestVersion).exists());
+		File buildFolder = TestBuilder.getBuilders().get(comp.getName()).getWorkingFolder();
+		assertTrue("Build must use the retained session directory", buildFolder.isDirectory());
+		assertTrue(new File(buildFolder, Constants.VER_FILE_NAME).isFile());
 
 		DelayedTagsFile dtf = new DelayedTagsFile();
 		DelayedTag dt = dtf.getDelayedTag(repository.getComponentLocation());
@@ -695,7 +698,24 @@ public abstract class WorkflowTestBase {
 		if (cli.exec(args) != CLI.EXIT_CODE_OK) {
 			throw cli.getLastException();
 		}
+		refreshVerificationRepositories();
 		return cli;
+	}
+
+	protected void refreshVerificationRepositories() {
+		// Assertions observe a new command's state, not a snapshot captured before another command wrote.
+		if (workflowEnvironment == WorkflowEnvironment.MONOREPO) {
+			monorepoRepositories.refreshSnapshots();
+			repoFactory = monorepoRepositories.getRepositoryFactory();
+			repoUnTill = repoFactory.getVCSRepository(compUnTill);
+			repoUBL = repoFactory.getVCSRepository(compUBL);
+			repoPostgres = repoFactory.getVCSRepository(compPostgres);
+			repoSqlite = repoFactory.getVCSRepository(compSqlite);
+		} else {
+			env.refreshSnapshots();
+			repoFactory = env.getRepoFactory();
+			refreshStandardRepositories();
+		}
 	}
 
 	private IAction execAndGetAction(Runnable preExec, String... args)  {

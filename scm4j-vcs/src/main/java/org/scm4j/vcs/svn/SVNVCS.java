@@ -548,18 +548,29 @@ public class SVNVCS implements IVCS {
 				}
 			});
 			summarize.run();
+			if (summarized.isEmpty()) {
+				return new ArrayList<>();
+			}
 
+			// Diff branch roots so added/deleted paths need not exist on both sides.
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			SvnDiff diff = operations.createDiff();
+			diff.setSources(SvnTarget.fromURL(getBranchUrl(dstBranchName), revision),
+					SvnTarget.fromURL(getBranchUrl(srcBranchName), revision));
+			diff.setOutput(output);
+			diff.setRelativeToDirectory(new File("").getAbsoluteFile());
+			diff.run();
+			Map<String, String> patches = new HashMap<>();
+			for (String patch : output.toString(StandardCharsets.UTF_8.name()).split("(?m)(?=^Index: )")) {
+				int lineEnd = patch.indexOf('\n');
+				if (patch.startsWith("Index: ") && lineEnd >= 0) {
+					patches.put(patch.substring("Index: ".length(), lineEnd).replaceFirst("\\r$", "").replace('\\', '/'), patch);
+				}
+			}
 			List<VCSDiffEntry> result = new ArrayList<>();
 			for (VCSDiffEntry entry : summarized) {
-				ByteArrayOutputStream output = new ByteArrayOutputStream();
-				SvnDiff diff = operations.createDiff();
-				diff.setSources(
-						SvnTarget.fromURL(getBranchUrl(dstBranchName).appendPath(entry.getFilePath(), true), revision),
-						SvnTarget.fromURL(getBranchUrl(srcBranchName).appendPath(entry.getFilePath(), true), revision));
-				diff.setOutput(output);
-				diff.run();
 				result.add(new VCSDiffEntry(entry.getFilePath(), entry.getChangeType(),
-						output.toString(StandardCharsets.UTF_8.name())));
+						patches.getOrDefault(entry.getFilePath().replace('\\', '/'), "")));
 			}
 			return result;
 		} catch (Exception e) {
@@ -1017,6 +1028,12 @@ public class SVNVCS implements IVCS {
 		@Override
 		public File getWorkingDirectory() {
 			return workingDirectory;
+		}
+
+		@Override
+		public void checkout(String branchName, String targetPath, String revision) {
+			super.checkout(branchName, workingDirectory.equals(new File(targetPath))
+					? workingCopy.getFolder().getPath() : targetPath, revision);
 		}
 
 		@Override
