@@ -15,7 +15,10 @@ Supported workflow:
    dependencies are tagged immediately. `tag` later applies the saved root tags and patch increments.
 
 Managed dependencies from `mdeps` are discovered recursively, deduplicated, checked for cycles, and processed
-dependency-first. Before a Git parent component is built, dependency versions in its release-branch `mdeps`
+dependency-first. Versions in develop-branch `mdeps` are ignored with a warning: those dependencies
+are resolved without a locked version. Release-branch `mdeps` and versions explicitly supplied on the
+command line still select their specified release lines. Classifiers and extensions are preserved.
+Before a Git parent component is built, dependency versions in its release-branch `mdeps`
 are locked to the released versions. Git components may live in a configured `subfolder`; SVN components must
 remain at their configured branch root. Execution is intentionally sequential.
 

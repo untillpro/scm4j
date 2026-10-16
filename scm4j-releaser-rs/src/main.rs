@@ -246,7 +246,7 @@ fn select_component_configs(
         }
         selected.insert(config.component.clone(), config.clone());
         let mdeps = read_develop_mdeps(&config, shared_work, fetched_repositories)?;
-        pending.extend(parse_mdeps(&mdeps).into_iter().rev());
+        pending.extend(component_mdeps(&config, &mdeps, true)?.into_iter().rev());
     }
     Ok(selected)
 }
@@ -273,7 +273,7 @@ fn visit_component(
         .cloned()
         .ok_or_else(|| format!("component `{component}` was not resolved"))?;
     let mdeps = read_develop_mdeps(&config, shared_work, fetched_repositories)?;
-    let dependency_coordinates = parse_mdeps(&mdeps);
+    let dependency_coordinates = component_mdeps(&config, &mdeps, false)?;
     let mut dependency_names = Vec::new();
     for dependency in dependency_coordinates {
         let dependency_component = catalog.resolve(&dependency)?.component;
@@ -441,6 +441,30 @@ fn parse_mdeps(content: &str) -> Vec<String> {
         .collect()
 }
 
+fn component_mdeps(config: &Config, content: &str, warn: bool) -> Result<Vec<String>, String> {
+    parse_mdeps(content).into_iter().map(|coordinate| {
+        if config.release_line.is_some() {
+            return Ok(coordinate);
+        }
+        let unversioned = unversioned_mdep(&coordinate)?;
+        if warn && unversioned != coordinate {
+            eprintln!(
+                "WARNING: ignoring dependency version in develop mdeps of `{}`: `{coordinate}`; resolving the dependency without a locked version",
+                config.component
+            );
+        }
+        Ok(unversioned)
+    }).collect()
+}
+
+fn unversioned_mdep(coordinate: &str) -> Result<String, String> {
+    let base = coordinate.split('@').next().unwrap_or(coordinate);
+    match base.split(':').nth(2) {
+        Some(version) if !version.trim().is_empty() => replace_coordinate_version(coordinate, ""),
+        _ => Ok(coordinate.to_owned()),
+    }
+}
+
 fn replace_coordinate_version(coordinates: &str, version: &str) -> Result<String, String> {
     let extension_pos = coordinates.find('@').unwrap_or(coordinates.len());
     let base = &coordinates[..extension_pos];
@@ -503,7 +527,14 @@ fn lock_git_mdeps(
             output.push(line.to_owned());
             continue;
         }
-        let dependency = catalog.resolve(value)?;
+        // An unlocked parent follows develop dependencies, including when its mdeps
+        // has just been copied into a new release branch with stale versions.
+        let coordinates = if config.release_line.is_none() {
+            unversioned_mdep(value)?
+        } else {
+            value.to_owned()
+        };
+        let dependency = catalog.resolve(&coordinates)?;
         let locked = match dependency.scm_type {
             ScmType::Git => {
                 let dependency_git =

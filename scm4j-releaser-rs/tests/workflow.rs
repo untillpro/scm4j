@@ -476,6 +476,82 @@ fn build_requires_a_release_branch_and_builder() {
 }
 
 #[test]
+fn develop_mdeps_ignore_versions_with_one_warning_per_dependency() {
+    for svn_root in [false, true] {
+        let mut harness = Harness::new("develop-mdeps-version");
+        harness.add_git(
+            "org.example:dependency",
+            "2.3.0-SNAPSHOT",
+            None,
+            None,
+            Some("git --version"),
+        );
+        let mdeps = "org.example:dependency:0.0.0-SNAPSHOT:all@jar # runtimeOnly\n";
+        if svn_root {
+            harness.add_svn("org.example:root", "1.0.0-SNAPSHOT", Some(mdeps));
+        } else {
+            harness.add_git(
+                "org.example:root",
+                "1.0.0-SNAPSHOT",
+                Some(mdeps),
+                None,
+                Some("git --version"),
+            );
+        }
+        let output = harness.run(&["status", "org.example:root"]);
+        assert_success(&["status", "org.example:root"], &output);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stdout.contains("org.example:dependency [FORK]"), "{stdout}");
+        assert_eq!(
+            stderr
+                .matches("WARNING: ignoring dependency version")
+                .count(),
+            1,
+            "{stderr}"
+        );
+        assert!(stderr.contains("org.example:root"), "{stderr}");
+        assert!(
+            stderr.contains("org.example:dependency:0.0.0-SNAPSHOT:all@jar"),
+            "{stderr}"
+        );
+    }
+}
+
+#[test]
+fn fork_replaces_stale_develop_mdeps_versions_with_current_releases() {
+    let mut harness = Harness::new("stale-develop-mdeps");
+    let dependency = harness.add_git(
+        "org.example:dependency",
+        "2.3.0-SNAPSHOT",
+        None,
+        None,
+        Some("git --version"),
+    );
+    let original = "org.example:dependency:0.0.0:all@jar # runtimeOnly\n";
+    let root = harness.add_git(
+        "org.example:root",
+        "1.0.0-SNAPSHOT",
+        Some(original),
+        None,
+        Some("git --version"),
+    );
+    harness.succeeds(&["fork", "org.example:root"]);
+    assert_eq!(root.show("refs/heads/main", "mdeps"), original.trim());
+    assert_eq!(
+        root.show("refs/heads/release/1.0", "mdeps"),
+        "org.example:dependency:2.3.0:all@jar # runtimeOnly"
+    );
+    harness.succeeds(&["build", "org.example:root"]);
+    assert!(dependency.has_ref("refs/tags/2.3.0"));
+    assert!(root.has_ref("refs/tags/1.0.0"));
+    let output = harness.run(&["status", "org.example:root:1.0.0", "--show-done"]);
+    assert_success(&["status", "org.example:root:1.0.0"], &output);
+    assert!(!String::from_utf8_lossy(&output.stderr).contains("ignoring dependency version"));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("org.example:dependency [DONE]"));
+}
+
+#[test]
 fn dependency_graph_is_released_first_and_mdeps_are_locked() {
     let mut harness = Harness::new("dependencies");
     let dependency = harness.add_git(
