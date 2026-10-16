@@ -1,7 +1,6 @@
 package org.scm4j.releaser.scmactions.procs;
 
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.scm4j.releaser.Version;
 import org.scm4j.releaser.progress.IProgress;
 import org.scm4j.releaser.*;
@@ -16,6 +15,15 @@ import org.scm4j.vcs.api.VCSCommit;
 import org.scm4j.vcs.api.WalkDirection;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -93,8 +101,31 @@ public class SCMProcBuild implements ISCMProc {
 		if (buildDir.exists()) {
 			Utils.waitForDeleteDir(buildDir);
 		}
-		FileUtils.copyDirectory(buildWorkingDir, new File(buildDir, repo.getSubfolder()),
-				file -> !".git".equals(file.getName()) && !".svn".equals(file.getName()));
+		Path source = buildWorkingDir.toPath();
+		Path target = new File(buildDir, repo.getSubfolder()).toPath();
+		Files.walkFileTree(source, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attributes) throws IOException {
+				if (isVCSMetadata(directory)) {
+					return FileVisitResult.SKIP_SUBTREE;
+				}
+				Files.createDirectories(target.resolve(source.relativize(directory)));
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
+				if (!isVCSMetadata(file)) {
+					Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.COPY_ATTRIBUTES);
+				}
+				return FileVisitResult.CONTINUE;
+			}
+
+			private boolean isVCSMetadata(Path path) {
+				String name = path.getFileName().toString();
+				return ".git".equals(name) || ".svn".equals(name);
+			}
+		});
 	}
 
 	@SneakyThrows

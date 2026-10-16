@@ -60,7 +60,7 @@ public interface IVCSMutationSession extends IVCS, AutoCloseable {
 		};
 	}
 
-	/** Returns the materialized component directory used by builders. */
+	/** Returns the component directory; SVN materializes it on checkout or a working-copy mutation. */
 	File getWorkingDirectory();
 
 	/** Marks the isolated checkout unusable so it is deleted during {@link #close()}. */

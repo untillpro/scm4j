@@ -143,7 +143,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		vcs.setCredentials("user", "pass");
 		testAuth(svn, "user", "pass");
 	}
-	
+
 	private void testAuth(SVNVCS svn, String user, String pass) throws Exception {
 		SVNRepository repo = svn.getSVNRepository();
 		SVNAuthentication auth = repo.getAuthenticationManager().getFirstAuthentication("svn.simple", "",
@@ -372,6 +372,9 @@ public class SVNVCSTest extends VCSAbstractTest {
 		String branch = "release/selected";
 
 		try (IVCSMutationSession session = componentVCS.startModify()) {
+			assertFalse("Opening a session must not require a default-branch checkout",
+					new File(session.getWorkingDirectory(), "value.txt").exists());
+			session.checkout(null, session.getWorkingDirectory().getPath(), null);
 			assertTrue(new File(session.getWorkingDirectory(), "value.txt").isFile());
 			assertFalse(new File(session.getWorkingDirectory(), "../sibling/value.txt").exists());
 			session.createBranch(null, branch, "release branch created");
@@ -398,6 +401,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		SVNVCS componentVCS = new SVNVCS(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl, component), null, null);
 		try (IVCSMutationSession session = componentVCS.startModify()) {
 			File workingDirectory = session.getWorkingDirectory();
+			session.checkout(null, workingDirectory.getPath(), null);
 			File trackedFile = new File(workingDirectory, "tracked.txt");
 			FileUtils.writeStringToFile(trackedFile, "builder edit", StandardCharsets.UTF_8);
 			session.setFileContent(null, versionPath, "1.0.1", "patch bump");
@@ -486,13 +490,39 @@ public class SVNVCSTest extends VCSAbstractTest {
 	}
 
 	@Test
+	public void testModifySessionSupportsBranchOnlyRepositoryWithoutTrunk() throws Exception {
+		String development = "custom-development";
+		vcsTestDataGen.setFileContent(null, SPARSE_FILE, LINE_1, "component added");
+		vcsTestDataGen.setFileContent(null, SPARSE_SIBLING_FILE, LINE_2, "sibling added");
+		vcsTestDataGen.createBranch(null, development, "development branch created");
+		vcsTestDataGen.deleteBranch(null, "trunk removed");
+		for (String component : Arrays.asList("", SPARSE_DIRECTORY)) {
+			SVNVCS modifier = new SVNVCS(localVCSWorkspace.getVCSRepositoryWorkspace(repoUrl, component), null, null);
+			assertNotNull(modifier.getHeadCommit(development));
+			try (IVCSMutationSession session = modifier.startModify()) {
+				assertEquals(LINE_1, session.getFileContent(development, SPARSE_FILE, null));
+				session.checkout(development, session.getWorkingDirectory().getPath(), null);
+				session.setFileContent(development, SPARSE_FILE, LINE_3, "component updated");
+				String relativeFile = component.isEmpty() ? SPARSE_FILE : "feature.txt";
+				assertEquals(LINE_3, FileUtils.readFileToString(
+						new File(session.getWorkingDirectory(), relativeFile), StandardCharsets.UTF_8));
+				assertEquals(LINE_3, session.getFileContent(development, SPARSE_FILE, null));
+				if (!component.isEmpty()) {
+					assertFalse(new File(session.getWorkingDirectory(), "../sibling").exists());
+				}
+				session.setFileContent(development, SPARSE_FILE, LINE_1, "component restored");
+			}
+		}
+	}
+
+	@Test
 	public void testFailedModifyInitializationReleasesAndRemovesWorkingCopy() throws Exception {
 		IVCSRepositoryWorkspace repository = new VCSWorkspace(new File(TEST_BASE_DIR, "failed-modify").getPath())
 				.getVCSRepositoryWorkspace(repoUrl, SPARSE_DIRECTORY);
 		SVNVCS modifier = spy(new SVNVCS(repository, null, null));
-		doThrow(testSVNException).when(modifier).getBranchUrl(null);
+		doThrow(testSVNException).when(modifier).openReadRepository();
 		try (IVCSMutationSession unexpected = modifier.startModify()) {
-			fail("A failed checkout must not return a modify session");
+			fail("Failed initialization must not return a modify session");
 		} catch (EVCSException expected) {
 			assertSame(testSVNException, expected.getCause());
 		}
@@ -583,7 +613,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		assertEquals(manager.getProxyPort(), 123);
 		assertEquals(manager.getProxyUserName(), "user");
 	}
-	
+
 	private SVNRepository spyReadRepository(SVNVCS vcs) throws SVNException {
 		SVNRepository session = spy(vcs.openReadRepository());
 		doReturn(session).when(vcs).openReadRepository();
@@ -737,7 +767,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 	public void testSVNVCSUtilsCreation() {
 		assertNotNull(new SVNVCSUtils());
 	}
-	
+
 	@Test
 	public void testListEntriesNone() throws Exception {
 		SVNRepository mockedRepo = spy(svn.getSVNRepository());
@@ -745,7 +775,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		doReturn(SVNNodeKind.NONE).when(mockedRepo).checkPath(anyString(), anyLong());
 		assertTrue(svn.listEntries(null).isEmpty()); // expecting no NPE
 	}
-	
+
 	@Test
 	public void testGetTagsNoTagsDir() throws SVNException {
 		// Recursive namespace discovery starts at tags/. A repository without that root
@@ -909,7 +939,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 		}
 		verifyDirectoryEnumeration(repository, tagPath, never());
 	}
-	
+
 	@Test
 	public void testGetTagsOnRevisionExceptions() throws Exception {
 		doThrow(testSVNException).when(svn).getTags(anyString());
@@ -920,7 +950,7 @@ public class SVNVCSTest extends VCSAbstractTest {
 			checkEVCSException(e);
 		}
 	}
-	
+
 	@Test
 	public void testGetTagsExceptions() throws Exception {
 		doThrow(testSVNException).when(svn).getTags((String) isNull());

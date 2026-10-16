@@ -129,13 +129,11 @@ public class SVNVCS implements IVCS {
 	@Override
 	public IVCSMutationSession startModify() {
 		try {
-			SVNSnapshot snapshot = getPreparedSnapshot();
 			return repo.withRepoLock(() -> {
 				IVCSLockedWorkingCopy workingCopy = repo.getVCSLockedWorkingCopy();
 				try {
 					FileUtils.cleanDirectory(workingCopy.getFolder());
-					checkoutSparse(getBranchUrl(null), workingCopy.getFolder(),
-							SVNRevision.create(snapshot.revision), repo.getComponentSubfolder());
+					// Defer checkout until a procedure selects its branch; trunk need not exist.
 					return new SVNMutationSession(this, workingCopy,
 							componentWorkingDirectory(workingCopy.getFolder()));
 				} catch (Exception | Error failure) {

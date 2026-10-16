@@ -19,8 +19,8 @@ import java.util.function.BiConsumer;
  */
 public interface IVCS {
 	/**
-	 * Opens one isolated, component-scoped writable checkout for a release action. The caller owns the
-	 * returned session and must close it.
+	 * Opens one isolated, component-scoped mutation session for a release action. SVN defers checkout
+	 * until a working-copy operation selects its branch. The caller owns the session and must close it.
 	 */
 	IVCSMutationSession startModify();
 

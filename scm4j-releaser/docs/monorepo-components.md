@@ -88,8 +88,10 @@ procedures without allocating another checkout.
   remote at the canonical repository URL. Cone-mode sparse checkout includes the selected component
   subtree and may also include repository-root files and files in leading parent directories chosen
   by Git. Sibling component subtrees remain absent.
-- SVN creates an isolated sparse working copy for the selected component at the published revision.
-  A repository-root component receives a full isolated working copy.
+- SVN leases an isolated directory and defers checkout until a working-copy operation selects its
+  branch. The repository need not contain `trunk/` when another development branch is configured.
+  Checkout materializes only the selected component; a repository-root component receives a full
+  isolated working copy.
 
 The builder runs in the mutation session's component directory while the session remains on the
 release-branch head. scm4j still selects the newest commit that affected the component as the build
@@ -99,7 +101,8 @@ content being built.
 
 After a successful build, scm4j copies the component directory, including build outputs, to the
 stable release directory returned by `Utils.getBuildDir()` (under the configured component subfolder
-when present). This is a result snapshot, not another checkout: VCS metadata is excluded. It is saved
+when present). File attributes, including Unix executable permissions, are preserved and VCS metadata
+is excluded. This is a result snapshot, not another checkout. It is saved
 before the patch-version bump, survives pooled working-copy reuse, and is replaced by the next
 successful build for the same release branch. SVN metadata writes commit only their requested paths
 and required added parents, leaving any other tracked files edited by the builder uncommitted.

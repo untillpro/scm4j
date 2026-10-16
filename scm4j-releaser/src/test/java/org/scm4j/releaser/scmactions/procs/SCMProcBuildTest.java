@@ -12,6 +12,7 @@ import org.scm4j.releaser.CachedStatuses;
 import org.scm4j.releaser.Constants;
 import org.scm4j.releaser.ExtendedStatus;
 import org.scm4j.releaser.Utils;
+import org.scm4j.releaser.actions.ActionSet;
 import org.scm4j.releaser.builders.IBuilder;
 import org.scm4j.releaser.conf.Component;
 import org.scm4j.releaser.conf.DelayedTag;
@@ -22,6 +23,8 @@ import org.scm4j.releaser.conf.VCSFactory;
 import org.scm4j.releaser.conf.Credentials;
 import org.scm4j.vcs.api.workingcopy.VCSWorkspace;
 import org.scm4j.releaser.exceptions.ENoReleaseBranch;
+import org.scm4j.releaser.scmactions.SCMActionRelease;
+import org.scm4j.releaser.scmactions.SCMActionTag;
 import org.scm4j.releaser.testutils.TestBuilder;
 import org.scm4j.releaser.testutils.TestEnvironment;
 import org.scm4j.vcs.api.IVCS;
@@ -32,14 +35,21 @@ import org.scm4j.vcs.api.WalkDirection;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -149,10 +159,22 @@ public class SCMProcBuildTest {
 
 	@Test
 	public void testBuildResultsSurviveWorkingCopyReuse() throws Exception {
+		assertBuildResultsSurviveWorkingCopyReuse(false);
+	}
+
+	@Test
+	public void testExecutableBuildResultsSurviveWorkingCopyReuse() throws Exception {
+		assumeTrue("Executable permissions require a POSIX filesystem",
+				FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+		assertBuildResultsSurviveWorkingCopyReuse(true);
+	}
+
+	private void assertBuildResultsSurviveWorkingCopyReuse(boolean executableOutput) throws Exception {
 		try (TestEnvironment env = new TestEnvironment()) {
 			env.generateTestEnvironment();
 			BuildFixture fixture = createFixture(VCSType.GIT, env.getUnTillDbVCS(), "savedResults",
 					new Version("1.2.3"), COMPONENT_SUBFOLDER);
+			fixture.builder.executableOutput = executableOutput;
 			File staleResult = new File(Utils.getBuildDir(fixture.repository, fixture.version), "stale.txt");
 			FileUtils.writeStringToFile(staleResult, "previous build", StandardCharsets.UTF_8);
 			executeBuild(fixture, true);
@@ -165,6 +187,47 @@ public class SCMProcBuildTest {
 				assertEquals(BUILD_OUTPUT_CONTENT, FileUtils.readFileToString(new File(
 						Utils.getBuildDir(fixture.repository, fixture.version),
 						fixture.repository.getComponentPath(BUILD_OUTPUT)), StandardCharsets.UTF_8));
+				if (executableOutput) {
+					Path savedOutput = new File(Utils.getBuildDir(fixture.repository, fixture.version),
+							fixture.repository.getComponentPath(BUILD_OUTPUT)).toPath();
+					assertEquals(PosixFilePermissions.fromString("rwxr-x--x"), Files.getPosixFilePermissions(savedOutput));
+					assertTrue("Saved build output must remain executable", Files.isExecutable(savedOutput));
+				}
+			}
+		}
+	}
+
+	@Test
+	public void testSVNReleaseAndDelayedTagWithoutTrunk() throws Exception {
+		try (TestEnvironment env = new TestEnvironment(VCSType.SVN)) {
+			env.generateTestEnvironment();
+			String development = "development";
+			for (boolean delayed : new boolean[] {false, true}) {
+				IVCS writer = delayed ? env.getUblVCS() : env.getUnTillDbVCS();
+				writer.createBranch(null, development, "development branch created");
+				writer.setFileContent(development, COMPONENT_SUBFOLDER + "/" + Constants.VER_FILE_NAME,
+						"1.2.3-SNAPSHOT", "development version added");
+				writer.setFileContent(development, COMPONENT_SUBFOLDER + "/" + COMPONENT_FILE,
+						"development content", "development content added");
+				writer.deleteBranch(null, "trunk removed");
+				BuildFixture fixture = createFixture(VCSType.SVN, writer, delayed ? "delayed" : "release",
+						new Version("1.2.3"), COMPONENT_SUBFOLDER, development);
+				assertNotNull(fixture.vcs.getHeadCommit(fixture.repository.getDevelopBranch()));
+				CachedStatuses cache = new CachedStatuses();
+				cache.put(fixture.repository.getComponentLocation(), new ExtendedStatus(fixture.version, BuildStatus.BUILD,
+						new LinkedHashMap<Component, ExtendedStatus>(), fixture.component, fixture.repository));
+				new SCMActionRelease(fixture.component, new ArrayList<>(), cache, env.getRepoFactory(),
+						ActionSet.FULL, delayed, fixture.repository).execute(new ProgressConsole());
+				fixture.sessionWorkingDirectory = fixture.builder.workingFolder;
+				if (delayed) {
+					assertNotNull(new DelayedTagsFile().getDelayedTag(fixture.repository.getComponentLocation()));
+					new SCMActionTag(fixture.component, fixture.repository).execute(new ProgressConsole());
+					assertNull(new DelayedTagsFile().getDelayedTag(fixture.repository.getComponentLocation()));
+				}
+				assertBuildWorkingFolder(fixture);
+				assertTagRevision(fixture, fixture.componentCommit);
+				assertEquals(fixture.version.toNextPatch().toString(), fixture.vcs.getFileContent(fixture.branchName,
+						fixture.repository.getComponentPath(Constants.VER_FILE_NAME), null));
 			}
 		}
 	}
@@ -225,14 +288,19 @@ public class SCMProcBuildTest {
 
 	private BuildFixture createFixture(VCSType vcsType, IVCS vcs, String repositoryName, Version version,
 			String subfolder) {
+		return createFixture(vcsType, vcs, repositoryName, version, subfolder, null);
+	}
+
+	private BuildFixture createFixture(VCSType vcsType, IVCS vcs, String repositoryName, Version version,
+			String subfolder, String development) {
 		RecordingBuilder builder = new RecordingBuilder();
 		IVCS actionVCS = spy(VCSFactory.getVCS(vcsType, new Credentials(null, null, false), vcs.getRepoUrl(),
 				new VCSWorkspace(), subfolder));
 		VCSRepository repository = new VCSRepository(repositoryName, actionVCS.getRepoUrl(), subfolder, null,
-				vcsType, null, "release/", actionVCS, builder);
+				vcsType, development, "release/", actionVCS, builder);
 		Component component = new Component("test:" + repositoryName + ":" + version);
 		String branchName = Utils.getReleaseBranchName(repository, version);
-		actionVCS.createBranch(null, branchName, "release branch created");
+		actionVCS.createBranch(development, branchName, "release branch created");
 		if (!repository.getSubfolder().isEmpty()) {
 			removeRootMetadata(actionVCS, branchName, Constants.VER_FILE_NAME);
 			removeRootMetadata(actionVCS, branchName, Constants.MDEPS_FILE_NAME);
@@ -345,6 +413,7 @@ public class SCMProcBuildTest {
 
 		private File workingFolder;
 		private Map<String, String> buildTimeEnvVars;
+		private boolean executableOutput;
 
 		@Override
 		public void build(Component comp, File workingFolder, IProgress progress,
@@ -353,6 +422,10 @@ public class SCMProcBuildTest {
 					new File(workingFolder, COMPONENT_FILE).isFile());
 			FileUtils.writeStringToFile(new File(workingFolder, COMPONENT_FILE), BUILDER_EDIT, StandardCharsets.UTF_8);
 			FileUtils.writeStringToFile(new File(workingFolder, BUILD_OUTPUT), BUILD_OUTPUT_CONTENT, StandardCharsets.UTF_8);
+			if (executableOutput) {
+				Files.setPosixFilePermissions(new File(workingFolder, BUILD_OUTPUT).toPath(),
+						PosixFilePermissions.fromString("rwxr-x--x"));
+			}
 			this.workingFolder = workingFolder;
 			this.buildTimeEnvVars = buildTimeEnvVars;
 		}
