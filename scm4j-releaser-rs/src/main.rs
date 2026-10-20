@@ -539,7 +539,8 @@ fn lock_git_mdeps(
     let mut changed = false;
     let mut changes = Vec::new();
     let mut output = Vec::new();
-    for line in original.lines() {
+    // Keep line endings and trailing blank lines exactly as stored in Git.
+    for line in original.split_inclusive('\n') {
         let coordinate_end = line.find('#').unwrap_or(line.len());
         let coordinate_field = &line[..coordinate_end];
         let value = coordinate_field.trim();
@@ -594,7 +595,7 @@ fn lock_git_mdeps(
     git.checkout_remote(&branch)?;
     let root = PathBuf::from(git.run(["rev-parse", "--show-toplevel"])?);
     let file = root.join(&path);
-    fs::write(&file, format!("{}\n", output.join("\n")))
+    fs::write(&file, output.concat())
         .map_err(|e| format!("cannot write {}: {e}", file.display()))?;
     git.run(["add", "--", &path])?;
     git.run(["commit", "-m", "#scm-mdeps"])?;

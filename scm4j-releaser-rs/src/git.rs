@@ -78,7 +78,12 @@ impl Git {
     }
 
     pub fn show_file(&self, revision: &str, path: &str) -> Result<String, String> {
-        self.run(["show", &format!("{revision}:{path}")])
+        run_git_in_raw(
+            &self.directory,
+            ["show", &format!("{revision}:{path}")],
+            self.username.as_deref(),
+            self.password.as_deref(),
+        )
     }
 
     pub fn checkout_remote(&self, branch: &str) -> Result<(), String> {
@@ -101,6 +106,19 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
+    run_git_in_raw(directory, args, username, password).map(|output| output.trim().to_owned())
+}
+
+fn run_git_in_raw<I, S>(
+    directory: &Path,
+    args: I,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> Result<String, String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
     let Output {
         status,
         stdout,
@@ -108,7 +126,7 @@ where
     } = crate::external::output(&mut git_command(directory, args, username, password))
         .map_err(|e| format!("failed to start git: {e}"))?;
     if status.success() {
-        Ok(String::from_utf8_lossy(&stdout).trim().to_owned())
+        Ok(String::from_utf8_lossy(&stdout).into_owned())
     } else {
         let detail = String::from_utf8_lossy(&stderr).trim().to_owned();
         Err(if detail.is_empty() {

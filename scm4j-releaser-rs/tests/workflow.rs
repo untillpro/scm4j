@@ -552,6 +552,37 @@ fn fork_replaces_stale_develop_mdeps_versions_with_current_releases() {
 }
 
 #[test]
+fn fork_preserves_mdeps_whitespace_and_trailing_lines() {
+    for ending in ["", "\n", "\n\n", "\n\n  \t\n"] {
+        let mut harness = Harness::new("mdeps-formatting");
+        harness.add_git(
+            "org.example:dependency",
+            "2.3.0-SNAPSHOT",
+            None,
+            None,
+            Some("git --version"),
+        );
+        let original = format!("\n  org.example:dependency  # runtimeOnly{ending}");
+        let root = harness.add_git(
+            "org.example:root",
+            "1.0.0-SNAPSHOT",
+            Some(&original),
+            None,
+            Some("git --version"),
+        );
+        harness.succeeds(&["fork", "org.example:root"]);
+        // Read raw stdout: the usual show helper trims away this regression.
+        let output = command(&root.bare, "git", ["show", "refs/heads/release/1.0:mdeps"]);
+        assert!(output.status.success());
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap(),
+            original.replace("org.example:dependency", "org.example:dependency:2.3.0"),
+            "file ending: {ending:?}"
+        );
+    }
+}
+
+#[test]
 fn dependency_graph_is_released_first_and_mdeps_are_locked() {
     let mut harness = Harness::new("dependencies");
     let dependency = harness.add_git(
