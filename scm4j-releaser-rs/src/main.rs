@@ -1118,7 +1118,27 @@ fn run_build(
     // Worktrees reuse the managed clone's object database, so a monorepo is
     // fetched once even when many releases are built.
     git.run(["worktree", "prune"])?;
-    git.run(["worktree", "add", "--detach", &directory_arg, commit])?;
+    // Configure sparsity before populating the worktree to avoid briefly
+    // checking out the entire monorepo for every component.
+    git.run([
+        "worktree",
+        "add",
+        "--detach",
+        "--no-checkout",
+        &directory_arg,
+        commit,
+    ])?;
+    let build_git = Git::new(
+        directory.clone(),
+        config.username.clone(),
+        config.password.clone(),
+    );
+    if !config.subfolder.is_empty() {
+        // `set` enables worktree-specific configuration, keeping other builds
+        // and the shared managed clone independent of this component's scope.
+        build_git.run(["sparse-checkout", "set", "--cone", "--", &config.subfolder])?;
+    }
+    build_git.run(["reset", "--hard", commit])?;
     let build_directory = if config.subfolder.is_empty() {
         directory.clone()
     } else {

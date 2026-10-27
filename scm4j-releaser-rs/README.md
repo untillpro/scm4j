@@ -117,7 +117,13 @@ SVN credentials use non-interactive CLI arguments and are not cached by the rele
 For Git, `version_file` is resolved relative to `subfolder`, component status only considers commits touching
 that subfolder, and the build command runs there. Repositories are keyed by URL and cloned once even when
 several components use different subfolders of the same monorepo. Release checkouts use `git worktree` and
-share its object database. Branches and tags are namespaced by `subfolder` to prevent components in one
+share its object database. For components with `subfolder`, build worktrees use sparse-checkout in cone
+mode: only that subtree and files directly inside its ancestor directories (including the repository root)
+are checked out. Sibling project directories are omitted. Sparse settings are isolated per build worktree;
+the shared managed clone and components without `subfolder` retain full checkouts. Build commands and
+`afterTag` hooks that need sibling directories must explicitly include them with `git sparse-checkout add`
+before using them. Existing build directories are replaced with sparse worktrees when rebuilt.
+Branches and tags are namespaced by `subfolder` to prevent components in one
 repository from colliding.
 
 SVN repositories use the conventional `trunk`, `branches`, and `tags` layout. A `releaseBranchPrefix` of

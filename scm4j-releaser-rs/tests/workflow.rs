@@ -1177,6 +1177,98 @@ fn delayed_tag_rejects_a_release_branch_that_was_rewritten() {
 }
 
 #[test]
+fn monorepo_builds_checkout_only_the_component_and_ancestor_files() {
+    let mut harness = Harness::new("sparse-builds");
+    harness.add_monorepo(&[
+        ("com.acme:api", "components/acme-api", "1.0.0-SNAPSHOT"),
+        (
+            "org.example:api",
+            "components/example-api",
+            "2.0.0-SNAPSHOT",
+        ),
+    ]);
+    let seed = harness.temp.0.join("monorepo-seed");
+    fs::write(seed.join("version"), "3.0.0-SNAPSHOT\n").unwrap();
+    fs::write(seed.join("README.md"), "shared root file\n").unwrap();
+    fs::write(
+        seed.join("components/build.config"),
+        "shared ancestor file\n",
+    )
+    .unwrap();
+    fs::create_dir_all(seed.join("unrelated")).unwrap();
+    fs::write(seed.join("unrelated/large.txt"), "unrelated project\n").unwrap();
+    git(&seed, ["add", "."]);
+    git(
+        &seed,
+        ["commit", "-m", "add shared files and root component"],
+    );
+    git(&seed, ["push"]);
+    harness.rules.push(format!(
+        "'org.example:root':\n  url: '{}'\n  type: git\n  developBranch: main\n  releaseCommand: 'git --version'\n",
+        path(&harness.temp.0.join("monorepo.git"))
+    ));
+    harness.write_config();
+
+    harness.succeeds(&[
+        "fork",
+        "com.acme:api",
+        "org.example:api",
+        "org.example:root",
+    ]);
+    harness.succeeds(&[
+        "build",
+        "com.acme:api",
+        "org.example:api",
+        "org.example:root",
+    ]);
+
+    let workspace = harness.work.join(".scm4j-releaser");
+    for (component, version, included, excluded) in [
+        ("com.acme_api", "1.0.0", "acme-api", "example-api"),
+        ("org.example_api", "2.0.0", "example-api", "acme-api"),
+    ] {
+        let build = workspace
+            .join("components")
+            .join(component)
+            .join("builds")
+            .join(version);
+        assert!(build
+            .join(format!("components/{included}/content.txt"))
+            .is_file());
+        assert!(!build.join(format!("components/{excluded}")).exists());
+        assert!(!build.join("unrelated").exists());
+        assert!(build.join("README.md").is_file());
+        assert!(build.join("components/build.config").is_file());
+        assert_eq!(git(&build, ["status", "--porcelain"]), "");
+        // Excluded paths remain tracked, rather than being deleted from Git.
+        assert!(!git(
+            &build,
+            ["ls-files", &format!("components/{excluded}/version")]
+        )
+        .is_empty());
+    }
+    let root_build = workspace.join("components/org.example_root/builds/3.0.0");
+    assert!(root_build.join("components/acme-api/content.txt").is_file());
+    assert!(root_build
+        .join("components/example-api/content.txt")
+        .is_file());
+    assert!(root_build.join("unrelated/large.txt").is_file());
+    assert_eq!(git(&root_build, ["status", "--porcelain"]), "");
+    let repositories: Vec<_> = fs::read_dir(workspace.join("repositories"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    assert_eq!(repositories.len(), 1);
+    assert!(repositories[0]
+        .join("components/acme-api/content.txt")
+        .is_file());
+    assert!(repositories[0]
+        .join("components/example-api/content.txt")
+        .is_file());
+    assert!(repositories[0].join("unrelated/large.txt").is_file());
+}
+
+#[test]
 fn monorepo_components_with_the_same_artifact_use_subfolder_scoped_refs() {
     let mut harness = Harness::new("monorepo");
     let bare = harness.add_monorepo(&[
